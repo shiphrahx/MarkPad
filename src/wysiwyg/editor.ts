@@ -1,3 +1,9 @@
+// ProseMirror needs white-space: pre-wrap or it collapses runs of spaces and
+// drops trailing ones, which quietly changes what you typed. The other two
+// draw the gap cursor and the table selection, neither of which is decoration.
+import 'prosemirror-view/style/prosemirror.css'
+import 'prosemirror-gapcursor/style/gapcursor.css'
+import 'prosemirror-tables/style/tables.css'
 import {
   EditorState,
   TextSelection,
