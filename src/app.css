@@ -592,3 +592,82 @@ body {
 .slash-row-selected { background: color-mix(in srgb, var(--accent) 20%, transparent); }
 
 .slash-row mark { background: none; color: var(--accent); font-weight: 600; }
+
+/* Code highlighting
+   ------------------------------------------------------------------------ */
+
+/* Mapped from highlight.js class names onto the app's own palette, rather
+   than importing one of its themes. A theme would bring its own background
+   and its own idea of light and dark, and disagree with everything else. */
+.markpad-document .hljs-keyword,
+.markpad-document .hljs-selector-tag,
+.markpad-document .hljs-literal,
+.markpad-document .hljs-section { color: #a24a86; }
+
+.markpad-document .hljs-string,
+.markpad-document .hljs-attr,
+.markpad-document .hljs-regexp,
+.markpad-document .hljs-addition { color: #3f7f5f; }
+
+.markpad-document .hljs-number,
+.markpad-document .hljs-built_in,
+.markpad-document .hljs-symbol { color: #b3651e; }
+
+.markpad-document .hljs-comment,
+.markpad-document .hljs-quote { color: var(--muted); font-style: italic; }
+
+.markpad-document .hljs-title,
+.markpad-document .hljs-name,
+.markpad-document .hljs-function { color: #3b6ea5; }
+
+.markpad-document .hljs-variable,
+.markpad-document .hljs-template-variable,
+.markpad-document .hljs-type { color: #7a5b9c; }
+
+.markpad-document .hljs-deletion { color: #b3261e; }
+
+@media (prefers-color-scheme: dark) {
+  :root:not([data-theme='light']) .markpad-document .hljs-keyword,
+  :root:not([data-theme='light']) .markpad-document .hljs-selector-tag,
+  :root:not([data-theme='light']) .markpad-document .hljs-literal,
+  :root:not([data-theme='light']) .markpad-document .hljs-section { color: #d79fc6; }
+
+  :root:not([data-theme='light']) .markpad-document .hljs-string,
+  :root:not([data-theme='light']) .markpad-document .hljs-attr,
+  :root:not([data-theme='light']) .markpad-document .hljs-regexp,
+  :root:not([data-theme='light']) .markpad-document .hljs-addition { color: #8ec99f; }
+
+  :root:not([data-theme='light']) .markpad-document .hljs-number,
+  :root:not([data-theme='light']) .markpad-document .hljs-built_in,
+  :root:not([data-theme='light']) .markpad-document .hljs-symbol { color: #e2a76a; }
+
+  :root:not([data-theme='light']) .markpad-document .hljs-title,
+  :root:not([data-theme='light']) .markpad-document .hljs-name,
+  :root:not([data-theme='light']) .markpad-document .hljs-function { color: #7aa7d9; }
+
+  :root:not([data-theme='light']) .markpad-document .hljs-variable,
+  :root:not([data-theme='light']) .markpad-document .hljs-template-variable,
+  :root:not([data-theme='light']) .markpad-document .hljs-type { color: #b9a3dd; }
+}
+
+:root[data-theme='dark'] .markpad-document .hljs-keyword,
+:root[data-theme='dark'] .markpad-document .hljs-selector-tag,
+:root[data-theme='dark'] .markpad-document .hljs-literal,
+:root[data-theme='dark'] .markpad-document .hljs-section { color: #d79fc6; }
+
+:root[data-theme='dark'] .markpad-document .hljs-string,
+:root[data-theme='dark'] .markpad-document .hljs-attr,
+:root[data-theme='dark'] .markpad-document .hljs-regexp,
+:root[data-theme='dark'] .markpad-document .hljs-addition { color: #8ec99f; }
+
+:root[data-theme='dark'] .markpad-document .hljs-number,
+:root[data-theme='dark'] .markpad-document .hljs-built_in,
+:root[data-theme='dark'] .markpad-document .hljs-symbol { color: #e2a76a; }
+
+:root[data-theme='dark'] .markpad-document .hljs-title,
+:root[data-theme='dark'] .markpad-document .hljs-name,
+:root[data-theme='dark'] .markpad-document .hljs-function { color: #7aa7d9; }
+
+:root[data-theme='dark'] .markpad-document .hljs-variable,
+:root[data-theme='dark'] .markpad-document .hljs-template-variable,
+:root[data-theme='dark'] .markpad-document .hljs-type { color: #b9a3dd; }
