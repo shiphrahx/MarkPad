@@ -22,10 +22,16 @@ import { markdownParser } from './parser.js'
 import { toMarkdown } from './serializer.js'
 import { markpadInputRules } from './input-rules.js'
 import { markpadKeymap } from './keymap.js'
+import { placeholder } from './placeholder.js'
+import { selectionToolbar } from './selection-toolbar.js'
+import { slashMenu } from './slash-menu.js'
+import { codeHighlight } from './code-highlight.js'
 
 export interface ReaderOptions {
   readonly platform: Platform
   readonly onChange: () => void
+  /** Opens the link dialog, which lives in the app because it draws one. */
+  readonly onLink: () => void
 }
 
 /**
@@ -70,6 +76,9 @@ export class ReaderEditor {
     return EditorState.create({
       doc: markdownParser.parse(markdown),
       plugins: [
+        // Before the keymap, so the slash menu gets the arrow keys and Enter
+        // while it is open.
+        ...slashMenu(),
         markpadInputRules(),
         ...markpadKeymap(this.options.platform),
         dropCursor({ color: 'var(--accent)' }),
@@ -79,6 +88,9 @@ export class ReaderEditor {
         columnResizing(),
         tableEditing(),
         history(),
+        placeholder(this.options.platform),
+        selectionToolbar({ onLink: this.options.onLink }),
+        codeHighlight(),
       ],
     })
   }

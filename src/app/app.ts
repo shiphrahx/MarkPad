@@ -134,6 +134,7 @@ export class App {
     this.reader = new ReaderEditor({
       platform: host.platform,
       onChange: () => this.onSurfaceEdited(),
+      onLink: () => void this.addLink(),
     })
 
     const sourceHolder = el('div', { class: 'editor', hidden: true })
