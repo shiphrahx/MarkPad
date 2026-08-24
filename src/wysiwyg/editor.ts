@@ -1,4 +1,9 @@
-import { EditorState, TextSelection, type Transaction } from 'prosemirror-state'
+import {
+  EditorState,
+  TextSelection,
+  type Command as ProseCommand,
+  type Transaction,
+} from 'prosemirror-state'
 import { EditorView, type NodeView } from 'prosemirror-view'
 import type { Node as ProseNode } from 'prosemirror-model'
 import { history } from 'prosemirror-history'
@@ -102,6 +107,31 @@ export class ReaderEditor {
 
   focus(): void {
     this.view.focus()
+  }
+
+  /** The address of the link the selection sits in, if it is in one. */
+  linkAtSelection(): string | null {
+    const { state } = this.view
+    const mark = state.schema.marks.link
+    if (!mark) return null
+
+    const { $from, empty } = state.selection
+    const marks = empty ? state.storedMarks ?? $from.marks() : $from.marksAcross(state.selection.$to) ?? []
+    const found = marks.find((candidate) => candidate.type === mark)
+
+    return found ? String(found.attrs.href) : null
+  }
+
+  /** Would this command do anything here? Used to grey out the palette. */
+  can(command: ProseCommand): boolean {
+    return command(this.view.state)
+  }
+
+  /** Run a command and put the cursor back where the typing happens. */
+  run(command: ProseCommand): boolean {
+    const applied = command(this.view.state, this.view.dispatch, this.view)
+    this.view.focus()
+    return applied
   }
 
   /**

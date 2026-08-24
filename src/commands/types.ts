@@ -25,11 +25,12 @@ export interface Command {
   readonly run: () => void | Promise<void>
 }
 
-export type CommandCategory = 'File' | 'Edit' | 'View' | 'Go' | 'Help'
+export type CommandCategory = 'File' | 'Edit' | 'Format' | 'View' | 'Go' | 'Help'
 
 export const CATEGORY_ORDER: readonly CommandCategory[] = [
   'File',
   'Edit',
+  'Format',
   'View',
   'Go',
   'Help',
