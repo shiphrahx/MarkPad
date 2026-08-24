@@ -1,3 +1,4 @@
+mod chrome;
 mod files;
 #[cfg(windows)]
 mod webview2;
@@ -52,7 +53,8 @@ pub fn run() {
         .invoke_handler(tauri::generate_handler![
             read_text_file,
             write_text_file,
-            startup_files
+            startup_files,
+            chrome::set_caption_colors
         ])
         .run(tauri::generate_context!())
         .expect("MarkPad could not start.");

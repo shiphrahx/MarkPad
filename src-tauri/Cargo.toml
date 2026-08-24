@@ -19,10 +19,11 @@ tauri-plugin-dialog = "2"
 serde = { version = "1", features = ["derive"] }
 thiserror = "2"
 
-# Only for the WebView2 check: a message box before any window exists, which
-# needs the Win32 call directly.
+# Two Win32 jobs Tauri does not cover: a message box before any window exists,
+# for the WebView2 check, and colouring the real window caption so the chrome
+# can match the design without faking a title bar.
 [target.'cfg(windows)'.dependencies]
-windows-sys = { version = "0.61", features = ["Win32_UI_WindowsAndMessaging"] }
+windows-sys = { version = "0.61", features = ["Win32_UI_WindowsAndMessaging", "Win32_Graphics_Dwm"] }
 
 [dev-dependencies]
 tempfile = "3"
