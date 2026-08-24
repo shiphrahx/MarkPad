@@ -1,5 +1,12 @@
 import { detectEncoding, detectLineEnding, toEditorText, toFileText } from './text.js'
-import type { Host, Platform, SaveRequest, SaveResult, TextDocument } from './types.js'
+import type {
+  ConfirmRequest,
+  Host,
+  Platform,
+  SaveRequest,
+  SaveResult,
+  TextDocument,
+} from './types.js'
 
 /**
  * A host backed by a Map instead of a disk.
@@ -13,6 +20,14 @@ export class MemoryHost implements Host {
   private readonly files = new Map<string, string>()
   private nextPick: readonly string[] = []
   private nextSavePath: string | null = null
+  private nextConfirm = true
+
+  /** Everything the app has told the user about. */
+  readonly reported: string[] = []
+  /** Every question the app has asked. */
+  readonly asked: ConfirmRequest[] = []
+  /** Every name the app has offered in a save dialog. */
+  readonly suggestedNames: string[] = []
 
   constructor(platform: Platform = 'macos') {
     this.platform = platform
@@ -34,6 +49,10 @@ export class MemoryHost implements Host {
 
   queueSavePick(path: string | null): void {
     this.nextSavePath = path
+  }
+
+  queueConfirm(answer: boolean): void {
+    this.nextConfirm = answer
   }
 
   async readFile(path: string): Promise<TextDocument> {
@@ -58,8 +77,18 @@ export class MemoryHost implements Host {
     return this.nextPick
   }
 
-  async pickPathToSave(): Promise<string | null> {
+  async pickPathToSave(suggestedName: string): Promise<string | null> {
+    this.suggestedNames.push(suggestedName)
     return this.nextSavePath
+  }
+
+  async confirm(question: ConfirmRequest): Promise<boolean> {
+    this.asked.push(question)
+    return this.nextConfirm
+  }
+
+  async report(message: string): Promise<void> {
+    this.reported.push(message)
   }
 }
 

@@ -73,17 +73,11 @@ describe('exportHtml', () => {
 
   it('suggests the markdown file name with an html extension', async () => {
     const host = new MemoryHost('windows')
-    let suggested: string | null = null
-    const original = host.pickPathToSave.bind(host)
-    host.pickPathToSave = async (name: string) => {
-      suggested = name
-      return original(name)
-    }
     host.queueSavePick('C:/out.html')
 
     await exportHtml(buffer('x\n', 'C:/notes.md'), host)
 
-    expect(suggested).toBe('notes.html')
+    expect(host.suggestedNames).toEqual(['notes.html'])
   })
 
   it('does nothing when the dialog is cancelled', async () => {

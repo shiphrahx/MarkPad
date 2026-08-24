@@ -1,7 +1,14 @@
 import { invoke } from '@tauri-apps/api/core'
-import { open, save } from '@tauri-apps/plugin-dialog'
+import { ask, message, open, save } from '@tauri-apps/plugin-dialog'
 import { detectEncoding, detectLineEnding, toEditorText, toFileText } from './text.js'
-import type { Host, Platform, SaveRequest, SaveResult, TextDocument } from './types.js'
+import type {
+  ConfirmRequest,
+  Host,
+  Platform,
+  SaveRequest,
+  SaveResult,
+  TextDocument,
+} from './types.js'
 
 const MARKDOWN_FILTER = {
   name: 'Markdown',
@@ -48,6 +55,19 @@ export class TauriHost implements Host {
 
   async pickPathToSave(suggestedName: string): Promise<string | null> {
     return save({ defaultPath: suggestedName, filters: [MARKDOWN_FILTER] })
+  }
+
+  async confirm(question: ConfirmRequest): Promise<boolean> {
+    return ask(question.message, {
+      title: question.title,
+      kind: 'warning',
+      okLabel: question.okLabel,
+      cancelLabel: question.cancelLabel,
+    })
+  }
+
+  async report(text: string, title = 'MarkPad'): Promise<void> {
+    await message(text, { title, kind: 'error' })
   }
 }
 
