@@ -16,7 +16,8 @@
     "typecheck": "tsc --noEmit",
     "test": "vitest run",
     "test:watch": "vitest",
-    "tauri": "tauri"
+    "tauri": "tauri",
+    "icons": "node scripts/make-icon.mjs build/icon.png && tauri icon build/icon.png"
   },
   "devDependencies": {
     "@tauri-apps/cli": "^2.11.4",

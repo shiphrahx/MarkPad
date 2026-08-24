@@ -12,3 +12,8 @@ coverage/
 
 .DS_Store
 Thumbs.db
+
+# Icons are generated from scripts/make-icon.mjs, not committed. The repo rules
+# say no binaries, and `pnpm icons` rebuilds them from source in one step.
+build/
+src-tauri/icons/
