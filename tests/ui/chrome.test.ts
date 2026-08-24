@@ -184,13 +184,13 @@ describe('StatusBar', () => {
 describe('OutlineRail', () => {
   it('draws nothing for a document with no headings', () => {
     const rail = new OutlineRail(() => {})
-    rail.render(extractHeadings('just prose\n'), 0)
+    rail.render(extractHeadings('just prose\n'), -1)
     expect(rail.element.childNodes).toHaveLength(0)
   })
 
   it('draws one tick per heading, indented by level', () => {
     const rail = new OutlineRail(() => {})
-    rail.render(extractHeadings('# One\n## Two\n'), 0)
+    rail.render(extractHeadings('# One\n## Two\n'), -1)
 
     const ticks = rail.element.querySelectorAll('.rail-tick')
     expect(ticks).toHaveLength(2)
@@ -200,7 +200,7 @@ describe('OutlineRail', () => {
 
   it('keeps the heading text out of the rail but in the tooltip', () => {
     const rail = new OutlineRail(() => {})
-    rail.render(extractHeadings('# A long heading\n'), 0)
+    rail.render(extractHeadings('# A long heading\n'), -1)
 
     expect(rail.element.textContent).toBe('')
     expect(rail.element.querySelector('.rail-tick')?.getAttribute('title')).toBe(
@@ -213,7 +213,9 @@ describe('OutlineRail', () => {
     const text = '# One\n\nbody\n\n## Two\n\nmore\n'
     const headings = extractHeadings(text)
 
-    rail.render(headings, text.indexOf('more'))
+    // The caret is under the second heading, so the rail is told which one
+    // rather than being asked to work it out from an offset it cannot map.
+    rail.render(headings, 1)
 
     const current = rail.element.querySelectorAll('.rail-tick-current')
     expect(current).toHaveLength(1)
@@ -222,7 +224,7 @@ describe('OutlineRail', () => {
 
   it('marks nothing as current above the first heading', () => {
     const rail = new OutlineRail(() => {})
-    rail.render(extractHeadings('intro\n\n# One\n'), 0)
+    rail.render(extractHeadings('intro\n\n# One\n'), -1)
     expect(rail.element.querySelectorAll('.rail-tick-current')).toHaveLength(0)
   })
 
@@ -232,7 +234,7 @@ describe('OutlineRail', () => {
       void gone.push({ text: heading.text, offset: heading.offset, index }),
     )
     const text = '# One\n\n## Two\n'
-    rail.render(extractHeadings(text), 0)
+    rail.render(extractHeadings(text), -1)
 
     rail.element.querySelectorAll<HTMLElement>('.rail-tick')[1]!.click()
 

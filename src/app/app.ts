@@ -157,6 +157,20 @@ export class App {
       if (parsed) this.bindings.push({ command, shortcut: parsed })
     }
 
+    // Scrolling changes nothing about the document, but it changes where the
+    // headings are, and the rail is a picture of where the headings are.
+    let pending = 0
+    const onScroll = () => {
+      if (pending) return
+      pending = requestAnimationFrame(() => {
+        pending = 0
+        this.renderCaretParts()
+      })
+    }
+    this.reader.element.addEventListener('scroll', onScroll, { passive: true })
+    this.view.scrollDOM.addEventListener('scroll', onScroll, { passive: true })
+    addEventListener('resize', onScroll)
+
     this.workspace.subscribe(() => {
       this.render()
       this.rememberSession()
@@ -323,7 +337,7 @@ export class App {
     const active = this.workspace.active
     if (!active) {
       this.status.render(null, null, 0)
-      this.rail.render([], 0)
+      this.rail.render([], -1)
       return
     }
 
@@ -336,7 +350,7 @@ export class App {
         { line: line.number, column: head - line.from + 1 },
         this.words,
       )
-      this.rail.render(this.headings, head)
+      this.rail.render(this.headings, currentHeading(this.headings, head), this.sourceHeadingOffsets())
       return
     }
 
@@ -345,8 +359,27 @@ export class App {
     // the serialised text would be a lie that moved as you typed.
     this.status.render(active, null, this.words)
 
-    const current = this.reader.currentHeadingIndex()
-    this.rail.render(this.headings, this.headings[current]?.offset ?? -1)
+    this.rail.render(
+      this.headings,
+      this.reader.currentHeadingIndex(),
+      this.reader.headingOffsets(),
+    )
+  }
+
+  /**
+   * Where each heading sits in the source view, as a fraction of the
+   * scrollable height. The rendered surface answers the same question about
+   * itself; the rail does not care which one asked.
+   */
+  private sourceHeadingOffsets(): number[] {
+    const scroller = this.view.scrollDOM
+    const total = scroller.scrollHeight
+    if (total <= 0) return []
+
+    return this.headings.map((heading) => {
+      const at = Math.min(heading.offset, this.view.state.doc.length)
+      return this.view.lineBlockAt(at).top / total
+    })
   }
 
   /**
@@ -645,6 +678,15 @@ export class App {
       return
     }
   }
+}
+
+/** The last heading at or above the caret, or -1 when there is none. */
+function currentHeading(headings: readonly Heading[], offset: number): number {
+  let current = -1
+  for (let index = 0; index < headings.length; index++) {
+    if (headings[index]!.offset <= offset) current = index
+  }
+  return current
 }
 
 function describe(error: unknown): string {

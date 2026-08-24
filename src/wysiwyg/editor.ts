@@ -182,6 +182,30 @@ export class ReaderEditor {
     return current
   }
 
+  /**
+   * Where each heading sits, as a fraction of the scrollable height.
+   *
+   * Measured against the scroll container rather than the window, so it stays
+   * right whatever else is on screen. Cheap: a document has a handful of
+   * headings, not a handful of thousands.
+   */
+  headingOffsets(): number[] {
+    const scroller = this.element
+    const total = scroller.scrollHeight
+    if (total <= 0) return []
+
+    return this.headingPositions().map((position) => {
+      try {
+        const box = this.view.coordsAtPos(position + 1)
+        const top = box.top - scroller.getBoundingClientRect().top + scroller.scrollTop
+        return top / total
+      } catch {
+        // A position the view cannot measure yet, usually mid-update.
+        return Number.NaN
+      }
+    })
+  }
+
   private headingPositions(): number[] {
     const positions: number[] = []
     this.view.state.doc.forEach((node, offset) => {
