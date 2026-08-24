@@ -376,19 +376,15 @@ body {
   flex: 1;
   min-width: 0;
   overflow-y: auto;
-  /* The document styles set a max width and centre it; the surface itself
-     needs to fill the pane so clicking beside the text still puts a cursor in
-     it. */
-  max-width: none;
-  padding: 0;
+  /* Layout only. The document styles live on the .ProseMirror element inside,
+     so this stays full width and its scrollbar sits against the right edge of
+     the window where every other scrollbar is. */
 }
 
 .reader[hidden] { display: none; }
 
 .reader .ProseMirror {
   outline: none;
-  max-width: 42rem;
-  margin: 0 auto;
   padding: 2.5rem 1.5rem 8rem;
   min-height: 100%;
 }

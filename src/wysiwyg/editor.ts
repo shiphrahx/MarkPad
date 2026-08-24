@@ -32,7 +32,11 @@ export class ReaderEditor {
   private applyingExternally = false
 
   constructor(private readonly options: ReaderOptions) {
-    this.element.className = 'reader markpad-document'
+    // The scroll container is layout only. The document styles go on the
+    // ProseMirror element inside it, because they cap the width and centre it,
+    // and a centred scroll container puts its scrollbar down the middle of the
+    // window.
+    this.element.className = 'reader'
 
     this.view = new EditorView(this.element, {
       state: this.freshState(''),
@@ -41,6 +45,7 @@ export class ReaderEditor {
         list_item: (node, view, getPos) => new TaskItemView(node, view, getPos),
       },
       attributes: {
+        class: 'markpad-document',
         // The document is the thing being edited, so it gets the name rather
         // than a wrapper nobody can see.
         role: 'textbox',
