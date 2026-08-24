@@ -1,9 +1,9 @@
 import './app.css'
 import { App } from './app/app.js'
 import { TauriHost } from './host/tauri.js'
-import { installMenus } from './ui/menus.js'
 import { resetDiagramTheme } from './preview/draw.js'
 import { apply as applyTheme, onThemeChange, watchSystemTheme } from './ui/theme.js'
+import { applyNativeChrome } from './ui/native-chrome.js'
 import { DOCUMENT_CSS } from './preview/document-css.js'
 
 const root = document.querySelector<HTMLDivElement>('#app')
@@ -25,7 +25,7 @@ const host = new TauriHost()
 // clear of them. Windows draws its caption buttons on the right, where there
 // is nothing to move.
 if (host.platform === 'macos') {
-  document.documentElement.style.setProperty('--chrome-inset', '72px')
+  document.documentElement.style.setProperty('--chrome-inset', '78px')
 }
 const app = new App(host, root)
 
@@ -34,7 +34,8 @@ const app = new App(host, root)
 void start()
 
 async function start(): Promise<void> {
-  await Promise.allSettled([openStartupFiles(), installMenus(app.commands, host.platform)])
+  applyNativeChrome()
+  await openStartupFiles()
   listenForDroppedFiles()
   followSystemTheme()
 }
