@@ -1,10 +1,5 @@
 import type { Buffer } from '../app/buffer.js'
-import {
-  countWords,
-  formatEncoding,
-  formatFileSize,
-  formatLineEnding,
-} from '../app/stats.js'
+import { formatEncoding, formatFileSize, formatLineEnding } from '../app/stats.js'
 import type { Encoding, LineEnding } from '../host/types.js'
 import { el, replace } from './dom.js'
 
@@ -30,13 +25,16 @@ export class StatusBar {
 
   constructor(private readonly handlers: StatusBarHandlers) {}
 
-  render(buffer: Buffer | null, caret: Caret | null): void {
+  /**
+   * The word count is passed in rather than counted here. Counting means
+   * walking the whole document, and the status bar is redrawn every time the
+   * caret moves.
+   */
+  render(buffer: Buffer | null, caret: Caret | null, words: number): void {
     if (buffer === null) {
       replace(this.element)
       return
     }
-
-    const words = countWords(buffer.text)
 
     replace(
       this.element,

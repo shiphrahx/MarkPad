@@ -20,7 +20,7 @@ export function buildCommands(app: App): Command[] {
       title: 'New file',
       category: 'File',
       key: 'Mod+N',
-      run: () => void app.workspace.create(),
+      run: () => app.newFile(),
     },
     {
       id: 'file.open',
@@ -132,7 +132,7 @@ export function buildCommands(app: App): Command[] {
       // Ctrl+Tab is the Windows habit, and the browser engine underneath does
       // not hand it over reliably, so this stays on the arrow keys on both.
       enabled: () => app.workspace.tabs.length > 1,
-      run: () => app.workspace.focusRelative(1),
+      run: () => app.focusRelative(1),
     },
     {
       id: 'go.previousTab',
@@ -140,7 +140,7 @@ export function buildCommands(app: App): Command[] {
       category: 'Go',
       key: 'Mod+Alt+ArrowLeft',
       enabled: () => app.workspace.tabs.length > 1,
-      run: () => app.workspace.focusRelative(-1),
+      run: () => app.focusRelative(-1),
     },
     {
       id: 'go.editor',

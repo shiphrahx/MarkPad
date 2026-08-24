@@ -10,12 +10,32 @@ import { OutlineRail } from '../ui/outline-rail.js'
 import { CommandPalette } from '../ui/palette.js'
 import { PreviewPane } from '../ui/preview-pane.js'
 import { askAboutUnsavedChanges } from '../ui/unsaved-dialog.js'
-import { matchesParsed, parseShortcut, type ParsedShortcut } from '../commands/keys.js'
+import {
+  matchesParsed,
+  parseShortcut,
+  type ParsedShortcut,
+} from '../commands/keys.js'
 import { shortcutFor, type Command } from '../commands/types.js'
+import { countWords } from './stats.js'
 import { isDirty, title as titleOf, type Buffer } from './buffer.js'
-import { extractHeadings } from './outline.js'
+import { extractHeadings, type Heading } from './outline.js'
 import { Workspace } from './workspace.js'
 import { buildCommands } from '../commands/build.js'
+
+/**
+ * How long the editor may run ahead of the rest of the app.
+ *
+ * Everything that has to walk the whole document — pulling the text out of
+ * CodeMirror's rope, counting words, finding headings — happens once when
+ * typing pauses, not once per keystroke. On a 5 MB file each of those is
+ * several milliseconds, and three of them per letter is exactly the thing the
+ * typing budget forbids.
+ *
+ * The visible cost is that the unsaved dot and the word count trail your
+ * typing by a tenth of a second. Nobody has ever noticed that. Everybody
+ * notices the keyboard lagging.
+ */
+const IDLE_MS = 100
 
 /**
  * The app: the workspace, the editor and the chrome, wired together.
@@ -41,9 +61,25 @@ export class App {
    */
   private readonly states = new Map<string, EditorState>()
   private currentId: string | null = null
+  private applyingExternally = false
+
   /** Shortcuts taken apart once, rather than on every keystroke. */
   private readonly bindings: Array<{ command: Command; shortcut: ParsedShortcut }> = []
-  private applyingExternally = false
+
+  private idleTimer: ReturnType<typeof setTimeout> | null = null
+  private unsyncedEdits = false
+  /** Derived from the document, recomputed when typing stops. */
+  private words = 0
+  private headings: readonly Heading[] = []
+  /**
+   * The exact string last put into, or taken out of, the editor.
+   *
+   * Compared by reference, so the common case where the workspace holds the
+   * very string the editor just produced costs nothing. Comparing the contents
+   * of two multi-megabyte strings on every workspace change is the thing this
+   * whole file exists to avoid.
+   */
+  private syncedText: string | null = null
 
   constructor(
     readonly host: Host,
@@ -52,9 +88,9 @@ export class App {
     this.workspace = new Workspace(host)
 
     this.tabs = new TabStrip({
-      onFocus: (id) => this.workspace.focus(id),
+      onFocus: (id) => this.focusTab(id),
       onClose: (id) => void this.closeTab(id),
-      onNew: () => this.workspace.create(),
+      onNew: () => this.newFile(),
     })
 
     this.status = new StatusBar({
@@ -94,6 +130,11 @@ export class App {
     this.workspace.subscribe(() => this.render())
     document.addEventListener('keydown', (event) => this.onKeyDown(event), true)
 
+    // Nothing in the editor is worth losing to a window closing, and the
+    // last tenth of a second of typing lives only in CodeMirror until this
+    // runs.
+    addEventListener('beforeunload', () => this.flush())
+
     this.workspace.create()
   }
 
@@ -104,16 +145,52 @@ export class App {
       EditorView.updateListener.of((update) => {
         if (this.applyingExternally) return
 
-        if (update.docChanged && this.currentId !== null) {
-          this.workspace.setText(this.currentId, update.state.doc.toString())
-          this.preview.update(update.state.doc.toString())
+        if (update.docChanged) {
+          // Deliberately does not touch the document. Everything that has to
+          // read it waits for the pause.
+          this.unsyncedEdits = true
+          this.scheduleIdleWork()
+          this.renderCaretParts()
+        } else if (update.selectionSet) {
+          this.renderCaretParts()
         }
-
-        // The caret moving changes Ln/Col and which heading the rail marks,
-        // and neither of those goes through the workspace.
-        if (update.selectionSet && !update.docChanged) this.renderCaretParts()
       }),
     ]
+  }
+
+  // Keeping the workspace in step with the editor
+
+  private scheduleIdleWork(): void {
+    if (this.idleTimer !== null) clearTimeout(this.idleTimer)
+    this.idleTimer = setTimeout(() => this.flush(), IDLE_MS)
+  }
+
+  /**
+   * Pull the text out of the editor and let everything derived from it catch
+   * up. Called when typing pauses, and before anything that has to see the
+   * current document: saving, closing, exporting, previewing.
+   */
+  flush(): void {
+    if (this.idleTimer !== null) {
+      clearTimeout(this.idleTimer)
+      this.idleTimer = null
+    }
+    if (!this.unsyncedEdits || this.currentId === null) return
+
+    this.unsyncedEdits = false
+
+    const text = this.view.state.doc.toString()
+    this.syncedText = text
+    this.recomputeDerived(text)
+    // Triggers a render through the subscription, which is where the tab dot,
+    // the word count and the rail all catch up at once.
+    this.workspace.setText(this.currentId, text)
+    this.preview.update(text)
+  }
+
+  private recomputeDerived(text: string): void {
+    this.words = countWords(text)
+    this.headings = extractHeadings(text)
   }
 
   // Chrome
@@ -132,10 +209,17 @@ export class App {
     document.title = active ? `${isDirty(active) ? '• ' : ''}${titleOf(active)}` : 'MarkPad'
   }
 
+  /**
+   * The parts that change as the caret moves.
+   *
+   * Cheap on purpose: a line lookup in the rope, and two redraws of a handful
+   * of elements. The word count and the headings come from the last idle pass
+   * rather than being recomputed here.
+   */
   private renderCaretParts(): void {
     const active = this.workspace.active
     if (!active) {
-      this.status.render(null, null)
+      this.status.render(null, null, 0)
       this.rail.render([], 0)
       return
     }
@@ -143,16 +227,19 @@ export class App {
     const head = this.view.state.selection.main.head
     const line = this.view.state.doc.lineAt(head)
 
-    this.status.render(active, { line: line.number, column: head - line.from + 1 })
-    this.rail.render(extractHeadings(active.text), head)
+    this.status.render(
+      active,
+      { line: line.number, column: head - line.from + 1 },
+      this.words,
+    )
+    this.rail.render(this.headings, head)
   }
 
   /**
    * Put the right document in the editor.
    *
-   * Text set from outside, by opening a file or by undoing a close, is applied
-   * as a change rather than a fresh state, so it lands in the undo history
-   * instead of wiping it.
+   * Text set from outside, by opening a file, is applied as a change rather
+   * than a fresh state, so it lands in the undo history instead of wiping it.
    */
   private syncEditor(active: Buffer | null): void {
     if (active === null) {
@@ -166,23 +253,26 @@ export class App {
       const existing = this.states.get(active.id)
       this.applyingExternally = true
       this.view.setState(
-        existing ??
-          EditorState.create({ doc: active.text, extensions: this.extensions() }),
+        existing ?? EditorState.create({ doc: active.text, extensions: this.extensions() }),
       )
       this.applyingExternally = false
 
       this.currentId = active.id
+      this.syncedText = active.text
+      this.recomputeDerived(active.text)
       this.view.focus()
       this.preview.update(active.text, { immediately: true })
       return
     }
 
-    if (this.view.state.doc.toString() !== active.text) {
+    if (active.text !== this.syncedText) {
       this.applyingExternally = true
       this.view.dispatch({
         changes: { from: 0, to: this.view.state.doc.length, insert: active.text },
       })
       this.applyingExternally = false
+      this.syncedText = active.text
+      this.recomputeDerived(active.text)
     }
   }
 
@@ -193,11 +283,28 @@ export class App {
   }
 
   openPalette(): void {
+    this.flush()
     this.palette.open(this.commands)
   }
 
   togglePreview(): void {
+    this.flush()
     this.preview.toggle(this.workspace.active?.text ?? '')
+  }
+
+  newFile(): void {
+    this.flush()
+    this.workspace.create()
+  }
+
+  focusTab(id: string): void {
+    this.flush()
+    this.workspace.focus(id)
+  }
+
+  focusRelative(offset: number): void {
+    this.flush()
+    this.workspace.focusRelative(offset)
   }
 
   goTo(offset: number): void {
@@ -210,6 +317,7 @@ export class App {
 
   /** Save, telling the user plainly if the file could not be written. */
   async save(id: string): Promise<boolean> {
+    this.flush()
     try {
       return await this.workspace.save(id)
     } catch (error) {
@@ -219,6 +327,7 @@ export class App {
   }
 
   async saveAs(id: string): Promise<boolean> {
+    this.flush()
     try {
       return await this.workspace.saveAs(id)
     } catch (error) {
@@ -228,6 +337,7 @@ export class App {
   }
 
   async openFiles(paths: readonly string[]): Promise<void> {
+    this.flush()
     try {
       await this.workspace.open(paths)
     } catch (error) {
@@ -236,6 +346,7 @@ export class App {
   }
 
   async openWithDialog(): Promise<void> {
+    this.flush()
     try {
       await this.workspace.openWithDialog()
     } catch (error) {
@@ -246,10 +357,11 @@ export class App {
   /**
    * Close a tab, asking about unsaved work first.
    *
-   * Three answers, not two: save it, throw it away, or change your mind. A
-   * plain yes or no would make cancelling impossible.
+   * Three answers, not two: save it, throw it away, or change your mind.
    */
   async closeTab(id: string): Promise<boolean> {
+    this.flush()
+
     const buffer = this.workspace.tabs.find((candidate) => candidate.id === id)
     if (!buffer) return false
 

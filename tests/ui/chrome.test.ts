@@ -118,14 +118,14 @@ describe('StatusBar', () => {
 
   it('is empty when nothing is open', () => {
     const status = bar()
-    status.render(null, null)
+    status.render(null, null, 0)
     expect(status.element.textContent).toBe('')
   })
 
   it('shows the word count, caret, encoding, endings and size', () => {
     const status = bar()
     const buffer = { ...opened('C:/a.md', 'one two three\n'), byteLength: 2048 }
-    status.render(buffer, { line: 3, column: 7 })
+    status.render(buffer, { line: 3, column: 7 }, 3)
 
     const text = status.element.textContent ?? ''
     expect(text).toContain('3 words')
@@ -137,14 +137,14 @@ describe('StatusBar', () => {
 
   it('says "1 word" rather than "1 words"', () => {
     const status = bar()
-    status.render(opened('C:/a.md', 'one'), null)
+    status.render(opened('C:/a.md', 'one'), null, 1)
     expect(status.element.textContent).toContain('1 word')
     expect(status.element.textContent).not.toContain('1 words')
   })
 
   it('says when there is a byte order mark', () => {
     const status = bar()
-    status.render({ ...opened('C:/a.md', 'x'), encoding: 'utf-8-bom' }, null)
+    status.render({ ...opened('C:/a.md', 'x'), encoding: 'utf-8-bom' }, null, 1)
     expect(status.element.textContent).toContain('UTF-8 with BOM')
   })
 
@@ -154,7 +154,7 @@ describe('StatusBar', () => {
       onLineEndingChange: (value) => void changes.push(value),
       onEncodingChange: () => {},
     })
-    status.render(opened('C:/a.md', 'x'), null)
+    status.render(opened('C:/a.md', 'x'), null, 1)
 
     const button = [...status.element.querySelectorAll<HTMLElement>('.status-button')].find(
       (candidate) => candidate.textContent === 'LF',
@@ -170,7 +170,7 @@ describe('StatusBar', () => {
       onLineEndingChange: () => {},
       onEncodingChange: (value) => void changes.push(value),
     })
-    status.render(opened('C:/a.md', 'x'), null)
+    status.render(opened('C:/a.md', 'x'), null, 1)
 
     const button = [...status.element.querySelectorAll<HTMLElement>('.status-button')].find(
       (candidate) => candidate.textContent === 'UTF-8',
