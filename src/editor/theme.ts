@@ -22,8 +22,8 @@ export const markpadTheme = EditorView.theme({
   },
   '.cm-content': {
     caretColor: 'var(--ink)',
-    maxWidth: '68ch',
-    margin: '0',
+    maxWidth: '100ch',
+    margin: '0 auto',
     padding: '0 40px',
   },
   '&.cm-focused': {

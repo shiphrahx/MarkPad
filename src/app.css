@@ -322,10 +322,11 @@ body {
   line-height: var(--line-doc);
   background: var(--sheet);
   color: var(--ink);
-  /* Left aligned, as the mockup has it. A measure cap keeps lines readable on
-     a wide window without pushing the text away from the rail. */
-  max-width: 68ch;
-  margin: 0;
+  /* Centred, with a generous measure. Wide enough that a table or a fenced
+     block is not squeezed, narrow enough that a line of prose does not run
+     the whole width of a maximised window. */
+  max-width: 100ch;
+  margin: 0 auto;
   padding: var(--pad-doc);
   min-height: 100%;
   outline: none;
