@@ -478,3 +478,21 @@ body {
 }
 
 .reader.resize-cursor { cursor: col-resize; }
+
+.dialog-input {
+  width: 100%;
+  appearance: none;
+  font: inherit;
+  font-size: 13px;
+  padding: 0.4rem 0.55rem;
+  margin-bottom: 1rem;
+  border: 1px solid var(--rule);
+  border-radius: 6px;
+  background: var(--bg);
+  color: var(--fg);
+}
+
+.dialog-input:focus {
+  outline: none;
+  border-color: var(--accent);
+}
