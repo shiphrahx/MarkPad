@@ -15,6 +15,18 @@ export default defineConfig({
     // Sourcemaps are 2 MB against an 8 MB installer budget, so they only
     // ship in debug builds. Tauri sets TAURI_ENV_DEBUG for those.
     sourcemap: process.env.TAURI_ENV_DEBUG === 'true',
+    rolldownOptions: {
+      output: {
+        // Without this, KaTeX ends up in two identical chunks because it is
+        // reachable from both the editor's popovers and the export path. A
+        // quarter of a megabyte of the same code twice.
+        advancedChunks: {
+          groups: [
+            { name: 'katex', test: /[\/]node_modules[\/]katex[\/]/ },
+          ],
+        },
+      },
+    },
   },
   envPrefix: ['VITE_', 'TAURI_'],
 })
