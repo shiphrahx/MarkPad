@@ -1,0 +1,387 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>MarkPad — UI mockup</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Instrument+Sans:wght@400;500;600&family=JetBrains+Mono:wght@400;500;700&display=swap" rel="stylesheet">
+<style>
+  :root{
+    --page:#EFF1EF;
+    --chrome:#E8EBE9;
+    --sheet:#FFFFFF;
+    --ink:#131A19;
+    --muted:#6E7A78;
+    --mark:#A9B3B0;
+    --rule:#E1E6E3;
+    --accent:#0E7C66;
+    --tint:rgba(14,124,102,.09);
+    --ui:'Instrument Sans',system-ui,sans-serif;
+    --mono:'JetBrains Mono',ui-monospace,Menlo,Consolas,monospace;
+    --shadow:0 1px 2px rgba(19,26,25,.06),0 18px 50px -12px rgba(19,26,25,.22);
+  }
+  .app[data-theme="dark"]{
+    --chrome:#171C1B;
+    --sheet:#121716;
+    --ink:#E4EAE8;
+    --muted:#87938F;
+    --mark:#4A5754;
+    --rule:#232A28;
+    --accent:#4FD1AE;
+    --tint:rgba(79,209,174,.10);
+    --shadow:0 1px 2px rgba(0,0,0,.4),0 18px 50px -12px rgba(0,0,0,.55);
+  }
+
+  *{box-sizing:border-box}
+  html,body{margin:0}
+  body{
+    background:var(--page);
+    color:var(--ink);
+    font-family:var(--ui);
+    -webkit-font-smoothing:antialiased;
+    padding:48px 24px 96px;
+  }
+  .stage{max-width:1000px;margin:0 auto}
+
+  /* ---- page header, written as markdown source ---- */
+  .brief{font-family:var(--mono);margin-bottom:34px}
+  .brief h1{font-size:30px;font-weight:700;margin:0;letter-spacing:-.02em}
+  .brief h1 .hash{color:var(--mark);font-weight:400;margin-right:.4em}
+  .brief p{
+    font-family:var(--ui);color:var(--muted);
+    max-width:56ch;font-size:15px;line-height:1.6;margin:12px 0 0;
+  }
+  .brief .meta{
+    font-size:11px;letter-spacing:.14em;text-transform:uppercase;
+    color:var(--mark);margin:0 0 14px;
+  }
+
+  /* ---- controls ---- */
+  .controls{display:flex;gap:10px;flex-wrap:wrap;margin-bottom:20px}
+  .seg{
+    display:flex;background:rgba(19,26,25,.05);border-radius:9px;padding:3px;
+    border:1px solid rgba(19,26,25,.07);
+  }
+  .seg button{
+    font:500 12.5px/1 var(--ui);color:#5B6664;background:none;border:0;
+    padding:7px 13px;border-radius:6px;cursor:pointer;transition:background .16s,color .16s;
+  }
+  .seg button[aria-pressed="true"]{background:#fff;color:#131A19;box-shadow:0 1px 2px rgba(19,26,25,.14)}
+  .seg button:focus-visible{outline:2px solid var(--accent);outline-offset:1px}
+
+  /* ---- app window ---- */
+  .app{
+    background:var(--sheet);color:var(--ink);
+    border-radius:11px;overflow:hidden;box-shadow:var(--shadow);
+    border:1px solid var(--rule);
+  }
+  .app[data-os="win"]{border-radius:7px}
+
+  .titlebar{
+    display:flex;align-items:center;gap:12px;height:40px;padding:0 12px;
+    background:var(--chrome);border-bottom:1px solid var(--rule);position:relative;
+  }
+  .lights{display:flex;gap:8px}
+  .lights i{width:12px;height:12px;border-radius:50%;display:block}
+  .lights i:nth-child(1){background:#F0605F}
+  .lights i:nth-child(2){background:#F5BD4F}
+  .lights i:nth-child(3){background:#5FC454}
+  .title{
+    font-size:13px;font-weight:500;color:var(--muted);
+    position:absolute;left:50%;transform:translateX(-50%);
+  }
+  .wincaps{display:none;margin-left:auto;height:40px}
+  .wincaps span{
+    width:44px;height:100%;display:grid;place-items:center;
+    font-family:var(--mono);font-size:11px;color:var(--muted);
+  }
+  .wincaps span:last-child:hover{background:#E5484D;color:#fff}
+  .winicon{display:none;font-family:var(--mono);font-weight:700;color:var(--accent);font-size:13px}
+
+  .app[data-os="win"] .lights{display:none}
+  .app[data-os="win"] .wincaps,
+  .app[data-os="win"] .winicon{display:flex;align-items:center}
+  .app[data-os="win"] .title{position:static;transform:none;left:auto;font-size:12.5px}
+
+  /* ---- tabs ---- */
+  .tabs{display:flex;background:var(--chrome);border-bottom:1px solid var(--rule);padding:0 8px;gap:2px}
+  .tab{
+    font-size:12.5px;color:var(--muted);padding:9px 14px;border-radius:7px 7px 0 0;
+    display:flex;align-items:center;gap:7px;white-space:nowrap;
+  }
+  .tab.on{background:var(--sheet);color:var(--ink);font-weight:500;box-shadow:0 1px 0 var(--sheet)}
+  .tab .dot{width:6px;height:6px;border-radius:50%;background:var(--accent)}
+  .tab .new{margin-left:4px;color:var(--mark);font-family:var(--mono)}
+
+  /* ---- body ---- */
+  .body{display:flex;position:relative;min-height:430px}
+
+  /* spine: heading ticks instead of a sidebar */
+  .spine{
+    width:26px;flex:none;border-right:1px solid var(--rule);
+    padding:22px 0;display:flex;flex-direction:column;align-items:center;gap:7px;
+  }
+  .spine b{display:block;height:2px;border-radius:1px;background:var(--mark);transition:background .15s,width .15s}
+  .spine b.h1{width:13px}
+  .spine b.h2{width:9px}
+  .spine b.h3{width:6px}
+  .spine b.here{background:var(--accent)}
+
+  .doc{
+    flex:1;font-family:var(--mono);font-size:13.5px;line-height:2.05;
+    padding:26px 40px;overflow:hidden;
+  }
+  .doc .m{color:var(--mark);font-weight:400}
+  .doc .h1{font-size:20px;font-weight:700;letter-spacing:-.01em}
+  .doc .h2{font-size:16px;font-weight:700;margin-top:4px;display:block}
+  .doc .lead{color:var(--ink)}
+  .doc .b{font-weight:700}
+  .doc .link{color:var(--accent);text-decoration:none}
+  .doc code{background:var(--tint);color:var(--accent);padding:2px 5px;border-radius:4px;font-size:12.5px}
+  .doc .quote{border-left:2px solid var(--rule);padding-left:14px;color:var(--muted);display:block}
+  .doc .caret{
+    display:inline-block;width:1.5px;height:1.05em;background:var(--accent);
+    vertical-align:-.18em;animation:blink 1.15s steps(1,end) infinite;
+  }
+  .doc .sel{background:var(--tint);border-radius:2px}
+  @keyframes blink{50%{opacity:0}}
+  @media (prefers-reduced-motion:reduce){.doc .caret{animation:none}}
+
+  .row{display:block}
+
+  /* popover preview over a table */
+  .pop{
+    position:absolute;right:34px;top:196px;width:262px;
+    background:var(--sheet);border:1px solid var(--rule);border-radius:9px;
+    box-shadow:0 12px 34px -8px rgba(19,26,25,.3);padding:12px 14px;font-family:var(--ui);
+  }
+  .pop .cap{font-size:10px;letter-spacing:.13em;text-transform:uppercase;color:var(--mark);margin-bottom:9px}
+  .pop table{width:100%;border-collapse:collapse;font-size:12px}
+  .pop th{text-align:left;font-weight:600;padding:4px 0;border-bottom:1px solid var(--rule)}
+  .pop td{padding:4px 0;color:var(--muted);border-bottom:1px solid var(--rule)}
+  .pop tr:last-child td{border-bottom:0}
+
+  /* ---- status bar ---- */
+  .status{
+    display:flex;justify-content:space-between;gap:16px;
+    font-family:var(--mono);font-size:11px;color:var(--muted);
+    padding:8px 14px;background:var(--chrome);border-top:1px solid var(--rule);
+  }
+  .status span{white-space:nowrap}
+  .status .k{color:var(--accent)}
+
+  /* ---- command palette ---- */
+  .scrim{
+    position:absolute;inset:0;background:rgba(19,26,25,.28);
+    display:none;justify-content:center;padding-top:52px;backdrop-filter:blur(1.5px);
+  }
+  .app.palette .scrim{display:flex}
+  .palette-box{
+    width:min(430px,86%);height:fit-content;background:var(--sheet);
+    border:1px solid var(--rule);border-radius:11px;
+    box-shadow:0 24px 60px -14px rgba(19,26,25,.5);overflow:hidden;
+  }
+  .palette-box .input{
+    display:flex;align-items:center;gap:9px;padding:13px 15px;border-bottom:1px solid var(--rule);
+    font-family:var(--mono);font-size:13.5px;
+  }
+  .palette-box .input .p{color:var(--accent)}
+  .palette-box .input .q{color:var(--ink)}
+  .cmds{padding:5px}
+  .cmd{
+    display:flex;align-items:center;justify-content:space-between;gap:12px;
+    padding:8px 11px;border-radius:7px;font-size:13px;
+  }
+  .cmd.on{background:var(--tint)}
+  .cmd kbd{
+    font-family:var(--mono);font-size:10.5px;color:var(--muted);
+    border:1px solid var(--rule);border-radius:4px;padding:2px 5px;background:var(--chrome);
+  }
+
+  /* ---- notes ---- */
+  .notes{
+    list-style:none;padding:0;margin:26px 0 0;
+    display:grid;grid-template-columns:repeat(auto-fit,minmax(215px,1fr));gap:1px;
+    background:var(--rule);border:1px solid var(--rule);border-radius:9px;overflow:hidden;
+  }
+  .notes li{background:var(--page);padding:15px 16px}
+  .notes h3{
+    font-size:11px;letter-spacing:.11em;text-transform:uppercase;
+    margin:0 0 6px;color:var(--accent);font-weight:600;
+  }
+  .notes p{margin:0;font-size:13px;line-height:1.55;color:#4C5654}
+
+  @media (max-width:720px){
+    body{padding:28px 14px 60px}
+    .doc{padding:20px;font-size:12.5px}
+    .pop{display:none}
+    .title{position:static;transform:none}
+  }
+</style>
+</head>
+<body>
+<div class="stage">
+
+  <header class="brief">
+    <p class="meta">Mockup · shiphrahx/MarkPad</p>
+    <h1><span class="hash">#</span>MarkPad</h1>
+    <p>A Markdown editor that stays out of the way, on Windows and macOS. Plain text in, plain text out — no vault, no sync, no account. Native window chrome on both platforms from one binary.</p>
+  </header>
+
+  <div class="controls">
+    <div class="seg" role="group" aria-label="Platform">
+      <button data-os="mac" aria-pressed="true">macOS</button>
+      <button data-os="win" aria-pressed="false">Windows</button>
+    </div>
+    <div class="seg" role="group" aria-label="Appearance">
+      <button data-theme="light" aria-pressed="true">Light</button>
+      <button data-theme="dark" aria-pressed="false">Dark</button>
+    </div>
+    <div class="seg" role="group" aria-label="Command palette">
+      <button id="pal" aria-pressed="false">Command palette</button>
+    </div>
+  </div>
+
+  <div class="app" id="app" data-os="mac" data-theme="light">
+
+    <div class="titlebar">
+      <div class="lights"><i></i><i></i><i></i></div>
+      <span class="winicon">M</span>
+      <span class="title">release-notes.md</span>
+      <div class="wincaps"><span>—</span><span>▢</span><span>✕</span></div>
+    </div>
+
+    <div class="tabs">
+      <div class="tab on">release-notes.md <span class="dot" title="Unsaved changes"></span></div>
+      <div class="tab">spec.md</div>
+      <div class="tab">todo.md</div>
+      <div class="tab new">+</div>
+    </div>
+
+    <div class="body">
+      <nav class="spine" aria-label="Document outline">
+        <b class="h1 here" title="MarkPad 0.1"></b>
+        <b class="h2" title="What it is"></b>
+        <b class="h3" title="Editing"></b>
+        <b class="h3" title="Files"></b>
+        <b class="h2" title="Size budget"></b>
+        <b class="h2" title="Not shipping"></b>
+      </nav>
+
+      <div class="doc">
+        <span class="row"><span class="m"># </span><span class="h1">MarkPad 0.1</span></span>
+        <span class="row"><span class="lead">A Markdown editor for people who already know Markdown.</span><span class="caret"></span></span>
+        <span class="row">&nbsp;</span>
+        <span class="row"><span class="m">## </span><span class="h2">What it is</span></span>
+        <span class="row"><span class="m">- </span>Opens a <span class="b">10 MB</span> file <span class="m">**</span>instantly<span class="m">**</span>, on either OS</span>
+        <span class="row"><span class="m">- </span>Strict GFM. No invented syntax, no <code>::: blocks :::</code></span>
+        <span class="row"><span class="m">- </span>Everything reachable from <code>Ctrl/⌘K</code> — no menu hunting</span>
+        <span class="row"><span class="m">- </span>Read the <span class="m">[</span><span class="link">spec</span><span class="m">](./spec.md)</span> before filing anything</span>
+        <span class="row">&nbsp;</span>
+        <span class="row"><span class="m">| </span>Platform <span class="m">| </span>Shell <span class="m">| </span>Installer <span class="m">|</span></span>
+        <span class="row"><span class="m">|----------|-------|-----------|</span></span>
+        <span class="row"><span class="m">| </span><span class="sel">Windows 10+</span> <span class="m">| </span>WebView2 <span class="m">| </span>5.9 MB <span class="m">|</span></span>
+        <span class="row"><span class="m">| </span>macOS 13+ <span class="m">| </span>WKWebView <span class="m">| </span>4.6 MB <span class="m">|</span></span>
+        <span class="row">&nbsp;</span>
+        <span class="row"><span class="quote"><span class="m">&gt; </span>Your files are files. Delete MarkPad tomorrow and nothing breaks.</span></span>
+      </div>
+
+      <div class="pop">
+        <div class="cap">Table preview</div>
+        <table>
+          <tr><th>Platform</th><th>Shell</th><th>Installer</th></tr>
+          <tr><td>Windows 10+</td><td>WebView2</td><td>5.9 MB</td></tr>
+          <tr><td>macOS 13+</td><td>WKWebView</td><td>4.6 MB</td></tr>
+        </table>
+      </div>
+
+      <div class="scrim">
+        <div class="palette-box">
+          <div class="input"><span class="p">›</span><span class="q">exp</span><span class="caret"></span></div>
+          <div class="cmds">
+            <div class="cmd on"><span>Export to HTML…</span><kbd>⇧⌘E</kbd></div>
+            <div class="cmd"><span>Export to PDF…</span><kbd></kbd></div>
+            <div class="cmd"><span>Expand all folded sections</span><kbd>⌥⌘0</kbd></div>
+            <div class="cmd"><span>Toggle preview pane</span><kbd>⌘P</kbd></div>
+            <div class="cmd"><span>Reveal in Finder</span><kbd></kbd></div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <div class="status">
+      <span>GFM · 412 words · 2,318 chars</span>
+      <span>Ln 12, Col 34 · UTF-8 · <span class="k">LF</span> · 8 KB</span>
+    </div>
+  </div>
+
+  <ul class="notes">
+    <li>
+      <h3>One binary, two chromes</h3>
+      <p>Traffic lights on macOS, caption buttons on Windows. Same Rust shell underneath — flip the toggle above to compare.</p>
+    </li>
+    <li>
+      <h3>Command palette</h3>
+      <p>Every command has one home. Windows users get parity without a Mac menu bar.</p>
+    </li>
+    <li>
+      <h3>Outline spine</h3>
+      <p>Heading ticks in a 26px rail. You get structure without giving up a sidebar.</p>
+    </li>
+    <li>
+      <h3>Preview on demand</h3>
+      <p>Popovers for tables, LaTeX and Mermaid. A full pane exists, but it's off by default.</p>
+    </li>
+    <li>
+      <h3>Honest status bar</h3>
+      <p>Words, position, encoding, line endings. CRLF vs LF matters the moment Windows joins.</p>
+    </li>
+    <li>
+      <h3>Export built in</h3>
+      <p>HTML and PDF ship in the box, via the system print engine. No Pandoc install required.</p>
+    </li>
+  </ul>
+</div>
+
+<script>
+  var app = document.getElementById('app');
+
+  function setGroup(attr, value, btn) {
+    app.setAttribute('data-' + attr, value);
+    var group = btn.parentElement.querySelectorAll('button');
+    for (var i = 0; i < group.length; i++) {
+      group[i].setAttribute('aria-pressed', String(group[i] === btn));
+    }
+  }
+
+  document.querySelectorAll('.seg button[data-os]').forEach(function (b) {
+    b.addEventListener('click', function () { setGroup('os', b.dataset.os, b); });
+  });
+  document.querySelectorAll('.seg button[data-theme]').forEach(function (b) {
+    b.addEventListener('click', function () { setGroup('theme', b.dataset.theme, b); });
+  });
+
+  var pal = document.getElementById('pal');
+  function togglePalette(force) {
+    var on = force !== undefined ? force : !app.classList.contains('palette');
+    app.classList.toggle('palette', on);
+    pal.setAttribute('aria-pressed', String(on));
+  }
+  pal.addEventListener('click', function () { togglePalette(); });
+
+  document.addEventListener('keydown', function (e) {
+    if ((e.metaKey || e.ctrlKey) && e.key.toLowerCase() === 'k') {
+      e.preventDefault();
+      togglePalette();
+    }
+    if (e.key === 'Escape') togglePalette(false);
+  });
+
+  document.querySelector('.scrim').addEventListener('click', function (e) {
+    if (e.target === this) togglePalette(false);
+  });
+</script>
+</body>
+</html>
