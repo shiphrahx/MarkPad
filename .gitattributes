@@ -1,0 +1,15 @@
+# Normalise line endings in the repo, check out LF everywhere.
+# MarkPad preserves whatever line endings a file already had, so git must not
+# be the thing that quietly rewrites them.
+* text=auto eol=lf
+
+# Fixtures encode line endings and byte order marks on purpose. Git must leave
+# every byte of these alone or the line-ending and encoding tests are testing
+# git's normalisation instead of ours.
+tests/fixtures/** -text
+src-tauri/tests/fixtures/** -text
+
+*.png binary
+*.ico binary
+*.icns binary
+*.pdf binary
