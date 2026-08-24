@@ -56,30 +56,66 @@ export function formatShortcut(shortcut: string, platform: Platform): string {
   return parts.map((part) => WINDOWS_NAMES[part] ?? capitalise(part)).join('+')
 }
 
-/** Does this keyboard event match the shortcut? */
+/**
+ * A shortcut, taken apart once.
+ *
+ * The keyboard handler runs on every keystroke against every command, so
+ * splitting strings in there would mean a few dozen allocations per letter
+ * typed. The typing budget says a 5 MB file should feel like an empty one, and
+ * that is not the place to be casual about constant work.
+ */
+export interface ParsedShortcut {
+  readonly key: string
+  readonly mod: boolean
+  readonly shift: boolean
+  readonly alt: boolean
+  readonly otherMod: boolean
+}
+
+export function parseShortcut(shortcut: string): ParsedShortcut | null {
+  const parts = shortcut.split('+').map((part) => part.trim().toLowerCase())
+  const key = parts[parts.length - 1]
+  if (key === undefined) return null
+
+  const wanted = new Set(parts.slice(0, -1))
+
+  return {
+    key,
+    mod: wanted.has('mod'),
+    shift: wanted.has('shift'),
+    alt: wanted.has('alt'),
+    // Ctrl on macOS, or the Windows key on Windows: the modifier Mod did not
+    // claim. Named once here so the matcher does not have to think about it.
+    otherMod: wanted.has('ctrl') || wanted.has('cmd'),
+  }
+}
+
+export function matchesParsed(
+  event: KeyboardEvent,
+  shortcut: ParsedShortcut,
+  platform: Platform,
+): boolean {
+  const modPressed = platform === 'macos' ? event.metaKey : event.ctrlKey
+  // The modifier Mod did not claim must be up, or Ctrl+K on a Mac would fire a
+  // command that asked for Command+K.
+  const otherPressed = platform === 'macos' ? event.ctrlKey : event.metaKey
+
+  if (shortcut.mod !== modPressed) return false
+  if (shortcut.otherMod !== otherPressed) return false
+  if (shortcut.shift !== event.shiftKey) return false
+  if (shortcut.alt !== event.altKey) return false
+
+  return event.key.toLowerCase() === shortcut.key
+}
+
+/** Does this keyboard event match the shortcut? Parses as it goes. */
 export function matchesShortcut(
   event: KeyboardEvent,
   shortcut: string,
   platform: Platform,
 ): boolean {
-  const parts = shortcut.split('+').map((part) => part.trim().toLowerCase())
-  const key = parts[parts.length - 1]
-  if (key === undefined) return false
-
-  const wanted = new Set(parts.slice(0, -1))
-  const wantsMod = wanted.has('mod')
-
-  const modPressed = platform === 'macos' ? event.metaKey : event.ctrlKey
-  // The modifier that Mod did not claim must be up, or Ctrl+K on a Mac would
-  // fire a command that asked for Command+K.
-  const otherMod = platform === 'macos' ? event.ctrlKey : event.metaKey
-
-  if (wantsMod !== modPressed) return false
-  if (!wanted.has(platform === 'macos' ? 'ctrl' : 'cmd') && otherMod) return false
-  if (wanted.has('shift') !== event.shiftKey) return false
-  if (wanted.has('alt') !== event.altKey) return false
-
-  return event.key.toLowerCase() === key
+  const parsed = parseShortcut(shortcut)
+  return parsed !== null && matchesParsed(event, parsed, platform)
 }
 
 function capitalise(text: string): string {

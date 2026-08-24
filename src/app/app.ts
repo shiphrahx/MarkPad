@@ -10,7 +10,7 @@ import { OutlineRail } from '../ui/outline-rail.js'
 import { CommandPalette } from '../ui/palette.js'
 import { PreviewPane } from '../ui/preview-pane.js'
 import { askAboutUnsavedChanges } from '../ui/unsaved-dialog.js'
-import { matchesShortcut } from '../commands/keys.js'
+import { matchesParsed, parseShortcut, type ParsedShortcut } from '../commands/keys.js'
 import { shortcutFor, type Command } from '../commands/types.js'
 import { isDirty, title as titleOf, type Buffer } from './buffer.js'
 import { extractHeadings } from './outline.js'
@@ -41,6 +41,8 @@ export class App {
    */
   private readonly states = new Map<string, EditorState>()
   private currentId: string | null = null
+  /** Shortcuts taken apart once, rather than on every keystroke. */
+  private readonly bindings: Array<{ command: Command; shortcut: ParsedShortcut }> = []
   private applyingExternally = false
 
   constructor(
@@ -82,6 +84,12 @@ export class App {
     })
 
     this.commands = buildCommands(this)
+
+    for (const command of this.commands) {
+      const shortcut = shortcutFor(command, host.platform)
+      const parsed = shortcut === null ? null : parseShortcut(shortcut)
+      if (parsed) this.bindings.push({ command, shortcut: parsed })
+    }
 
     this.workspace.subscribe(() => this.render())
     document.addEventListener('keydown', (event) => this.onKeyDown(event), true)
@@ -260,10 +268,8 @@ export class App {
   private onKeyDown(event: KeyboardEvent): void {
     if (this.palette.isOpen) return
 
-    for (const command of this.commands) {
-      const shortcut = shortcutFor(command, this.host.platform)
-      if (!shortcut) continue
-      if (!matchesShortcut(event, shortcut, this.host.platform)) continue
+    for (const { command, shortcut } of this.bindings) {
+      if (!matchesParsed(event, shortcut, this.host.platform)) continue
       if (command.enabled && !command.enabled()) return
 
       event.preventDefault()
