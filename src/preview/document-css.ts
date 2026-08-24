@@ -16,8 +16,9 @@ export const DOCUMENT_CSS = `
   --doc-code-bg: #f4f4f7;
 }
 
+/* Guarded so an explicit choice beats the operating system, both ways. */
 @media (prefers-color-scheme: dark) {
-  :root {
+  :root:not([data-theme='light']) {
     --doc-bg: #1b1b1f;
     --doc-fg: #e6e6ea;
     --doc-muted: #9a9aa5;
@@ -25,6 +26,15 @@ export const DOCUMENT_CSS = `
     --doc-accent: #7aa7d9;
     --doc-code-bg: #26262c;
   }
+}
+
+:root[data-theme='dark'] {
+  --doc-bg: #1b1b1f;
+  --doc-fg: #e6e6ea;
+  --doc-muted: #9a9aa5;
+  --doc-rule: #2e2e35;
+  --doc-accent: #7aa7d9;
+  --doc-code-bg: #26262c;
 }
 
 .markpad-document {
