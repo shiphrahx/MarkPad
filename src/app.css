@@ -1,46 +1,14 @@
 /*
- * Themes follow the OS. There is no in-app theme switch in v0.1, so the only
- * thing that decides light or dark is prefers-color-scheme.
- */
-:root {
-  color-scheme: light dark;
-
-  --bg: #ffffff;
-  --fg: #1b1b1f;
-  --muted: #6b6b76;
-  --rule: #e4e4e9;
-  --accent: #3b6ea5;
-
-  /* Assume nothing is installed. The stack degrades to whatever the OS has. */
-  --font-mono: ui-monospace, "SF Mono", "Cascadia Mono", "Segoe UI Mono",
-    Menlo, Consolas, "Liberation Mono", monospace;
-  --font-ui: system-ui, -apple-system, "Segoe UI", Roboto, sans-serif;
-}
-
-/*
- * Dark twice, deliberately.
+ * The chrome.
  *
- * The media query is guarded so an explicit "light" beats the operating
- * system, and the attribute rule lets an explicit "dark" win on a machine set
- * to light. Without both, one of the two choices is unreachable.
+ * Every value here comes from ./ui/tokens.css, which was lifted off
+ * markpad-mockup.html. There are no colours in this file on purpose: a hex
+ * here would be a second opinion about what MarkPad looks like.
  */
-@media (prefers-color-scheme: dark) {
-  :root:not([data-theme='light']) {
-    --bg: #1b1b1f;
-    --fg: #e6e6ea;
-    --muted: #9a9aa5;
-    --rule: #2e2e35;
-    --accent: #7aa7d9;
-  }
-}
 
-:root[data-theme='dark'] {
-  --bg: #1b1b1f;
-  --fg: #e6e6ea;
-  --muted: #9a9aa5;
-  --rule: #2e2e35;
-  --accent: #7aa7d9;
-}
+@import './ui/tokens.css';
+
+@import './ui/fonts.css';
 
 * {
   box-sizing: border-box;
@@ -53,9 +21,11 @@ body {
 }
 
 body {
-  background: var(--bg);
-  color: var(--fg);
+  background: var(--sheet);
+  color: var(--ink);
   font-family: var(--font-ui);
+  font-size: var(--size-tab);
+  -webkit-font-smoothing: antialiased;
   overflow: hidden;
 }
 
@@ -65,42 +35,90 @@ body {
   height: 100%;
 }
 
-/* Chrome
+/* Scrollbars
+   ------------------------------------------------------------------------ */
+
+/*
+ * Thin and overlaid. The platform default is a wide opaque gutter that eats
+ * into the text column and, on Windows, arrives in a grey that belongs to no
+ * other part of this app.
+ */
+* {
+  scrollbar-width: thin;
+  scrollbar-color: var(--mark) transparent;
+}
+
+::-webkit-scrollbar {
+  width: var(--scrollbar);
+  height: var(--scrollbar);
+}
+
+::-webkit-scrollbar-track {
+  background: transparent;
+}
+
+::-webkit-scrollbar-thumb {
+  background: transparent;
+  border-radius: var(--scrollbar);
+  /* The border is the inset: it shrinks the visible thumb without shrinking
+     the area you can grab. */
+  border: 3px solid transparent;
+  background-clip: content-box;
+}
+
+:hover::-webkit-scrollbar-thumb {
+  background-color: var(--mark);
+  background-clip: content-box;
+}
+
+::-webkit-scrollbar-corner {
+  background: transparent;
+}
+
+/* Tabs
    ------------------------------------------------------------------------ */
 
 .tabs {
   display: flex;
-  align-items: stretch;
-  gap: 1px;
-  min-height: 34px;
-  background: var(--bg);
+  align-items: flex-end;
+  gap: var(--gap-tabs);
+  padding: var(--pad-tabs);
+  background: var(--chrome);
   border-bottom: 1px solid var(--rule);
   overflow-x: auto;
+  overflow-y: hidden;
   scrollbar-width: none;
   /* Room for the traffic lights, which sit over the window on macOS. */
-  padding-left: var(--chrome-inset, 0);
+  padding-left: var(--chrome-inset, 8px);
 }
 
-.tabs::-webkit-scrollbar { display: none; }
+.tabs::-webkit-scrollbar {
+  display: none;
+}
 
 .tab {
   display: flex;
   align-items: center;
-  gap: 0.35rem;
-  padding: 0 0.35rem 0 0.7rem;
-  max-width: 14rem;
-  font-size: 12px;
+  gap: var(--gap-tab);
+  padding: var(--pad-tab);
+  max-width: 15rem;
+  font-size: var(--size-tab);
   color: var(--muted);
   background: transparent;
-  border-right: 1px solid var(--rule);
+  border-radius: var(--radius-tab) var(--radius-tab) 0 0;
   white-space: nowrap;
   user-select: none;
 }
 
+/*
+ * The active tab wears the editor's own background, so the two read as one
+ * surface rather than as a strip sitting on top of a page.
+ */
 .tab-active {
-  color: var(--fg);
-  background: color-mix(in srgb, var(--fg) 5%, transparent);
-  box-shadow: inset 0 -2px 0 var(--accent);
+  background: var(--sheet);
+  color: var(--ink);
+  font-weight: 500;
+  box-shadow: 0 1px 0 var(--sheet);
 }
 
 .tab-label {
@@ -109,42 +127,96 @@ body {
   cursor: default;
 }
 
-.tab-close,
+/*
+ * One slot, two things in it. The dot says there is unsaved work; the cross
+ * takes its place on hover, so the tab never changes width and there is only
+ * ever one thing to aim at.
+ */
+.tab-close {
+  appearance: none;
+  border: 0;
+  background: none;
+  color: var(--mark);
+  font: inherit;
+  line-height: 1;
+  cursor: default;
+  border-radius: var(--radius-code);
+  width: 16px;
+  height: 16px;
+  display: grid;
+  place-items: center;
+  flex: none;
+  opacity: 0;
+}
+
+.tab-close::before {
+  content: '×';
+  font-size: 14px;
+}
+
+.tab:hover .tab-close,
+.tab-active .tab-close:focus-visible {
+  opacity: 1;
+}
+
+.tab-close:hover {
+  background: var(--hover);
+  color: var(--ink);
+}
+
+.tab-dot {
+  width: var(--dot);
+  height: var(--dot);
+  border-radius: 50%;
+  background: var(--accent);
+  flex: none;
+}
+
+/* The dot gives way to the cross rather than sitting beside it. */
+.tab:hover .tab-dot {
+  display: none;
+}
+
+.tab:not(.tab-dirty) .tab-dot {
+  display: none;
+}
+
+.tab-dirty:not(:hover) .tab-close {
+  display: none;
+}
+
 .tab-new {
   appearance: none;
   border: 0;
   background: none;
-  color: inherit;
-  font: inherit;
+  color: var(--mark);
+  font-family: var(--font-mono);
+  font-size: 14px;
   line-height: 1;
   cursor: default;
-  border-radius: 4px;
-  width: 18px;
-  height: 18px;
+  align-self: center;
+  margin: 0 4px 4px;
+  width: 22px;
+  height: 22px;
+  border-radius: var(--radius-code);
   display: grid;
   place-items: center;
   flex: none;
 }
 
-.tab-close::before { content: '×'; font-size: 14px; }
+.tab-new:hover {
+  background: var(--hover);
+  color: var(--ink);
+}
 
-/* A dirty tab shows a dot instead of the cross, and swaps back on hover, so
-   there is still exactly one thing to click. */
-.tab-dirty .tab-close::before { content: '•'; font-size: 16px; }
-.tab-dirty .tab-close:hover::before { content: '×'; font-size: 14px; }
-
-.tab-close:hover,
-.tab-new:hover { background: color-mix(in srgb, var(--fg) 12%, transparent); }
-
-.tab-new { margin: 0 0.4rem; align-self: center; font-size: 15px; }
-
-/* Middle
+/* Body
    ------------------------------------------------------------------------ */
 
 .middle {
   display: flex;
   flex: 1;
   min-height: 0;
+  background: var(--sheet);
 }
 
 .editor {
@@ -153,266 +225,168 @@ body {
   overflow: hidden;
 }
 
+.editor[hidden] {
+  display: none;
+}
+
+/* Outline spine
+   ------------------------------------------------------------------------ */
+
+/*
+ * A rail, not a sidebar: 26px, full height, one tick per heading.
+ *
+ * The ticks are positioned rather than stacked, because a tick is only useful
+ * if it sits level with the heading it stands for. The measuring happens in
+ * the app; this file only says what a tick looks like once it has been told
+ * where to go.
+ */
 .rail {
-  width: 14px;
+  position: relative;
+  width: var(--w-spine);
   flex: none;
-  padding: 1.6rem 0;
-  display: flex;
-  flex-direction: column;
-  gap: 5px;
-  align-items: flex-start;
-  border-right: 1px solid transparent;
+  border-right: 1px solid var(--rule);
+  background: var(--sheet);
   overflow: hidden;
 }
 
 .rail-tick {
+  position: absolute;
+  left: 50%;
+  transform: translate(-50%, -50%);
   appearance: none;
   border: 0;
   padding: 0;
-  height: 2px;
-  border-radius: 1px;
-  background: var(--rule);
+  height: var(--h-tick);
+  border-radius: var(--radius-tick);
+  background: var(--mark);
   cursor: default;
-  flex: none;
-  transition: background 120ms;
+  transition: background 0.15s, width 0.15s;
 }
 
-.rail-level-1 { width: 10px; margin-left: 2px; }
-.rail-level-2 { width: 8px; margin-left: 4px; }
-.rail-level-3 { width: 6px; margin-left: 6px; }
-.rail-level-4 { width: 4px; margin-left: 8px; }
-
-.rail-tick:hover { background: var(--fg); }
-.rail-tick-current { background: var(--accent); height: 3px; }
-
-/* Preview
-   ------------------------------------------------------------------------ */
-
-.preview {
-  flex: 1;
-  min-width: 0;
-  overflow-y: auto;
-  border-left: 1px solid var(--rule);
+.rail-level-1 {
+  width: var(--w-tick-h1);
 }
 
-.preview[hidden] { display: none; }
-
-/* Status bar
-   ------------------------------------------------------------------------ */
-
-.status {
-  display: flex;
-  align-items: center;
-  gap: 1rem;
-  padding: 0 0.9rem;
-  min-height: 24px;
-  font-size: 11px;
-  color: var(--muted);
-  border-top: 1px solid var(--rule);
-  user-select: none;
+.rail-level-2 {
+  width: var(--w-tick-h2);
 }
 
-.status-spacer { flex: 1; }
-
-.status-button {
-  appearance: none;
-  border: 0;
-  background: none;
-  color: inherit;
-  font: inherit;
-  padding: 2px 6px;
-  border-radius: 4px;
-  cursor: default;
+.rail-level-3,
+.rail-level-4 {
+  width: var(--w-tick-h3);
 }
 
-.status-button:hover {
-  background: color-mix(in srgb, var(--fg) 10%, transparent);
-  color: var(--fg);
+.rail-tick:hover {
+  background: var(--ink);
 }
 
-/* Command palette
-   ------------------------------------------------------------------------ */
-
-.palette-backdrop {
-  position: fixed;
-  inset: 0;
-  background: color-mix(in srgb, #000 32%, transparent);
-  display: flex;
-  justify-content: center;
-  padding-top: 12vh;
-  z-index: 20;
-}
-
-.palette-backdrop[hidden] { display: none; }
-
-.palette {
-  width: min(34rem, calc(100vw - 3rem));
-  max-height: 60vh;
-  display: flex;
-  flex-direction: column;
-  background: var(--bg);
-  border: 1px solid var(--rule);
-  border-radius: 10px;
-  box-shadow: 0 18px 48px rgb(0 0 0 / 0.28);
-  overflow: hidden;
-}
-
-.palette-input {
-  appearance: none;
-  border: 0;
-  border-bottom: 1px solid var(--rule);
-  background: none;
-  color: var(--fg);
-  font: inherit;
-  font-size: 14px;
-  padding: 0.75rem 0.9rem;
-}
-
-.palette-input:focus { outline: none; }
-
-.palette-list {
-  list-style: none;
-  margin: 0;
-  padding: 0.3rem;
-  overflow-y: auto;
-}
-
-.palette-row {
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-  gap: 1rem;
-  padding: 0.4rem 0.6rem;
-  border-radius: 6px;
-  font-size: 13px;
-  cursor: default;
-}
-
-.palette-row-selected { background: color-mix(in srgb, var(--accent) 20%, transparent); }
-.palette-row-disabled { color: var(--muted); }
-
-.palette-label mark {
-  background: none;
-  color: var(--accent);
-  font-weight: 600;
-}
-
-.palette-row-selected .palette-label mark { color: var(--fg); }
-
-.palette-shortcut {
-  font-family: var(--font-mono);
-  font-size: 11px;
-  color: var(--muted);
-  white-space: nowrap;
-}
-
-.palette-empty {
-  list-style: none;
-  padding: 0.6rem;
-  font-size: 13px;
-  color: var(--muted);
-}
-
-/* Dialog
-   ------------------------------------------------------------------------ */
-
-.dialog-backdrop {
-  position: fixed;
-  inset: 0;
-  background: color-mix(in srgb, #000 32%, transparent);
-  display: grid;
-  place-items: center;
-  z-index: 30;
-}
-
-.dialog {
-  width: min(24rem, calc(100vw - 3rem));
-  padding: 1.1rem 1.2rem 1rem;
-  background: var(--bg);
-  border: 1px solid var(--rule);
-  border-radius: 10px;
-  box-shadow: 0 18px 48px rgb(0 0 0 / 0.28);
-}
-
-.dialog-title { margin: 0 0 0.4rem; font-size: 14px; }
-.dialog-message { margin: 0 0 1rem; font-size: 13px; color: var(--muted); }
-
-.dialog-buttons { display: flex; justify-content: flex-end; gap: 0.5rem; }
-
-.dialog-button {
-  appearance: none;
-  font: inherit;
-  font-size: 13px;
-  padding: 0.35rem 0.8rem;
-  border-radius: 6px;
-  border: 1px solid var(--rule);
-  background: var(--bg);
-  color: var(--fg);
-  cursor: default;
-}
-
-.dialog-button:hover { background: color-mix(in srgb, var(--fg) 8%, transparent); }
-
-.dialog-primary {
+.rail-tick-current {
   background: var(--accent);
-  border-color: var(--accent);
-  color: #fff;
 }
 
-.dialog-primary:hover { filter: brightness(1.08); background: var(--accent); }
-
-.dialog-danger { color: #b3261e; }
-
-/* Popover
-   ------------------------------------------------------------------------ */
-
-.cm-tooltip.cm-tooltip-hover {
-  border: 1px solid var(--rule);
-  border-radius: 8px;
-  background: var(--bg);
-  box-shadow: 0 10px 30px rgb(0 0 0 / 0.22);
-  overflow: hidden;
-}
-
-.popover {
-  max-width: 34rem;
-  max-height: 22rem;
-  overflow: auto;
-  padding: 0.7rem 0.9rem;
-  font-size: 13px;
-}
-
-.popover.markpad-document { margin: 0; }
-
-/* Reader
+/* Editing surfaces
    ------------------------------------------------------------------------ */
 
 .reader {
   flex: 1;
   min-width: 0;
   overflow-y: auto;
-  /* Layout only. The document styles live on the .ProseMirror element inside,
-     so this stays full width and its scrollbar sits against the right edge of
-     the window where every other scrollbar is. */
+  background: var(--sheet);
 }
 
-.reader[hidden] { display: none; }
+.reader[hidden] {
+  display: none;
+}
 
-.reader .ProseMirror {
-  outline: none;
-  padding: 2.5rem 1.5rem 8rem;
+/*
+ * Mono, because this is a source editor. The rendered document styles are
+ * shared with the preview pane and the export, where a UI sans is right; here
+ * it is not.
+ */
+.reader .markpad-document {
+  font-family: var(--font-mono);
+  font-size: var(--size-doc);
+  line-height: var(--line-doc);
+  background: var(--sheet);
+  color: var(--ink);
+  max-width: 46rem;
+  margin: 0 auto;
+  padding: var(--pad-doc);
   min-height: 100%;
+  outline: none;
 }
 
-/* ProseMirror puts the cursor at a document edge here; without a visible
-   caret the gap looks like nothing happened. */
+.reader .markpad-document h1 {
+  font-size: 20px;
+  font-weight: 700;
+  letter-spacing: -0.01em;
+}
+
+.reader .markpad-document h2 {
+  font-size: 16px;
+  font-weight: 700;
+}
+
+.reader .markpad-document h3,
+.reader .markpad-document h4,
+.reader .markpad-document h5,
+.reader .markpad-document h6 {
+  font-size: var(--size-doc);
+  font-weight: 700;
+}
+
+.reader .markpad-document code {
+  background: var(--tint);
+  color: var(--accent);
+  padding: 2px 5px;
+  border-radius: var(--radius-code);
+  font-size: 12.5px;
+}
+
+.reader .markpad-document pre {
+  background: var(--tint);
+  border-radius: var(--radius-code);
+}
+
+.reader .markpad-document pre code {
+  background: none;
+  color: var(--ink);
+  padding: 0;
+}
+
+.reader .markpad-document blockquote {
+  border-left: 2px solid var(--rule);
+  padding-left: 14px;
+  color: var(--muted);
+  font-style: normal;
+}
+
+.reader .markpad-document a {
+  color: var(--accent);
+  text-decoration: none;
+}
+
+.reader .markpad-document th {
+  background: var(--tint);
+}
+
+.reader .markpad-document th,
+.reader .markpad-document td {
+  border-color: var(--rule);
+}
+
 .reader .ProseMirror-gapcursor:after {
-  border-top-color: var(--fg);
+  border-top-color: var(--ink);
 }
 
 .reader .ProseMirror-selectednode {
   outline: 2px solid var(--accent);
-  border-radius: 4px;
+  border-radius: var(--radius-code);
+}
+
+.reader .ProseMirror ::selection,
+.reader .ProseMirror::selection {
+  background: var(--tint);
 }
 
 /* Tasks
@@ -427,69 +401,241 @@ body {
 }
 
 .reader .pm-checkbox {
-  margin: 0.42em 0 0;
+  margin: 0.55em 0 0;
   flex: none;
   accent-color: var(--accent);
 }
 
-.reader .pm-item-content { flex: 1; min-width: 0; }
+.reader .pm-item-content {
+  flex: 1;
+  min-width: 0;
+}
 
-.reader li.pm-task[data-checked='true'] .pm-item-content { color: var(--muted); }
-
-/* Raw HTML, kept but not editable as rich text
-   ------------------------------------------------------------------------ */
-
-.pm-html-block {
-  border: 1px dashed var(--rule);
-  border-radius: 6px;
-  padding: 0.6rem 0.8rem;
-  font-family: var(--font-mono);
-  font-size: 0.85em;
+.reader li.pm-task[data-checked='true'] .pm-item-content {
   color: var(--muted);
+}
+
+/*
+ * Raw HTML, including comments.
+ *
+ * It used to sit in a bordered box, which made a one-line comment the loudest
+ * thing on the page. It is kept byte for byte and is not editable as rich
+ * text, and quiet dim type says both of those without shouting.
+ */
+.pm-html-block {
+  font-family: var(--font-mono);
+  font-size: 12.5px;
+  color: var(--mark);
   white-space: pre-wrap;
   overflow-x: auto;
 }
 
-/* Tables
+/* Empty document
    ------------------------------------------------------------------------ */
 
-.reader .tableWrapper { overflow-x: auto; }
-
-.reader table { table-layout: fixed; width: 100%; }
-
-.reader td, .reader th { position: relative; vertical-align: top; }
-
-.reader .selectedCell:after {
-  content: '';
+.reader .pm-placeholder::before {
+  content: attr(data-placeholder);
+  color: var(--mark);
+  pointer-events: none;
   position: absolute;
+  height: 0;
+}
+
+/* Preview pane
+   ------------------------------------------------------------------------ */
+
+.preview {
+  flex: 1;
+  min-width: 0;
+  overflow-y: auto;
+  border-left: 1px solid var(--rule);
+  background: var(--sheet);
+}
+
+.preview[hidden] {
+  display: none;
+}
+
+/* Status bar
+   ------------------------------------------------------------------------ */
+
+.status {
+  display: flex;
+  align-items: center;
+  gap: var(--gap-status);
+  padding: var(--pad-status);
+  font-family: var(--font-mono);
+  font-size: var(--size-status);
+  color: var(--muted);
+  background: var(--chrome);
+  border-top: 1px solid var(--rule);
+  user-select: none;
+}
+
+.status-spacer {
+  flex: 1;
+}
+
+.status-button {
+  appearance: none;
+  border: 0;
+  background: none;
+  color: inherit;
+  font: inherit;
+  padding: 2px 5px;
+  border-radius: var(--radius-code);
+  cursor: default;
+}
+
+.status-button:hover {
+  background: var(--hover);
+  color: var(--accent);
+}
+
+/* Command palette
+   ------------------------------------------------------------------------ */
+
+.palette-backdrop {
+  position: fixed;
   inset: 0;
-  background: color-mix(in srgb, var(--accent) 18%, transparent);
-  pointer-events: none;
+  background: var(--scrim);
+  backdrop-filter: blur(1.5px);
+  display: flex;
+  justify-content: center;
+  padding-top: 52px;
+  z-index: 20;
 }
 
-.reader .column-resize-handle {
-  position: absolute;
-  right: -2px;
-  top: 0;
-  bottom: 0;
-  width: 4px;
-  background: var(--accent);
-  pointer-events: none;
+.palette-backdrop[hidden] {
+  display: none;
 }
 
-.reader.resize-cursor { cursor: col-resize; }
+.palette {
+  width: min(430px, 86%);
+  max-height: 60vh;
+  display: flex;
+  flex-direction: column;
+  background: var(--sheet);
+  border: 1px solid var(--rule);
+  border-radius: var(--radius-window);
+  box-shadow: var(--shadow-palette);
+  overflow: hidden;
+}
+
+.palette-input {
+  appearance: none;
+  border: 0;
+  border-bottom: 1px solid var(--rule);
+  background: none;
+  color: var(--ink);
+  font-family: var(--font-mono);
+  font-size: var(--size-palette-input);
+  padding: 13px 15px;
+}
+
+.palette-input::placeholder {
+  color: var(--mark);
+}
+
+.palette-input:focus {
+  outline: none;
+}
+
+.palette-list {
+  list-style: none;
+  margin: 0;
+  padding: 5px;
+  overflow-y: auto;
+}
+
+.palette-row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  padding: 8px 11px;
+  border-radius: var(--radius-row);
+  font-size: var(--size-command);
+  cursor: default;
+}
+
+.palette-row-selected {
+  background: var(--tint);
+}
+
+.palette-row-disabled {
+  color: var(--mark);
+}
+
+.palette-label mark {
+  background: none;
+  color: var(--accent);
+  font-weight: 600;
+}
+
+.palette-shortcut {
+  font-family: var(--font-mono);
+  font-size: var(--size-kbd);
+  color: var(--muted);
+  border: 1px solid var(--rule);
+  border-radius: var(--radius-code);
+  padding: 2px 5px;
+  background: var(--chrome);
+  white-space: nowrap;
+}
+
+.palette-empty {
+  list-style: none;
+  padding: 8px 11px;
+  font-size: var(--size-command);
+  color: var(--muted);
+}
+
+/* Dialogs
+   ------------------------------------------------------------------------ */
+
+.dialog-backdrop {
+  position: fixed;
+  inset: 0;
+  background: var(--scrim);
+  display: grid;
+  place-items: center;
+  z-index: 30;
+}
+
+.dialog {
+  width: min(24rem, calc(100vw - 3rem));
+  padding: 15px 16px 14px;
+  background: var(--sheet);
+  border: 1px solid var(--rule);
+  border-radius: var(--radius-window);
+  box-shadow: var(--shadow-palette);
+}
+
+.dialog-title {
+  margin: 0 0 6px;
+  font-size: var(--size-command);
+  font-weight: 600;
+}
+
+.dialog-message {
+  display: block;
+  margin: 0 0 12px;
+  font-size: var(--size-tab);
+  color: var(--muted);
+}
 
 .dialog-input {
   width: 100%;
   appearance: none;
-  font: inherit;
-  font-size: 13px;
-  padding: 0.4rem 0.55rem;
-  margin-bottom: 1rem;
+  font-family: var(--font-mono);
+  font-size: var(--size-tab);
+  padding: 7px 9px;
+  margin-bottom: 12px;
   border: 1px solid var(--rule);
-  border-radius: 6px;
-  background: var(--bg);
-  color: var(--fg);
+  border-radius: var(--radius-code);
+  background: var(--sheet);
+  color: var(--ink);
 }
 
 .dialog-input:focus {
@@ -497,18 +643,41 @@ body {
   border-color: var(--accent);
 }
 
-/* Empty document
-   ------------------------------------------------------------------------ */
+.dialog-buttons {
+  display: flex;
+  justify-content: flex-end;
+  gap: 8px;
+}
 
-/* The text lives in an attribute so it is never part of the document and
-   cannot be selected, copied or saved. */
-.reader .pm-placeholder::before {
-  content: attr(data-placeholder);
-  color: var(--muted);
-  pointer-events: none;
-  position: absolute;
-  /* Out of flow, so an empty paragraph does not grow to fit a hint. */
-  height: 0;
+.dialog-button {
+  appearance: none;
+  font-family: var(--font-ui);
+  font-size: var(--size-tab);
+  padding: 6px 12px;
+  border-radius: var(--radius-code);
+  border: 1px solid var(--rule);
+  background: var(--sheet);
+  color: var(--ink);
+  cursor: default;
+}
+
+.dialog-button:hover {
+  background: var(--hover);
+}
+
+.dialog-primary {
+  background: var(--accent);
+  border-color: var(--accent);
+  color: var(--sheet);
+}
+
+.dialog-primary:hover {
+  background: var(--accent);
+  filter: brightness(1.08);
+}
+
+.dialog-danger {
+  color: var(--accent);
 }
 
 /* Selection toolbar
@@ -520,41 +689,58 @@ body {
   display: flex;
   gap: 2px;
   padding: 3px;
-  background: var(--bg);
+  background: var(--sheet);
   border: 1px solid var(--rule);
-  border-radius: 8px;
-  box-shadow: 0 6px 20px rgb(0 0 0 / 0.22);
+  border-radius: var(--radius-panel);
+  box-shadow: var(--shadow-popover);
 }
 
-.selection-toolbar[hidden] { display: none; }
+.selection-toolbar[hidden] {
+  display: none;
+}
 
 .selection-toolbar-button {
   appearance: none;
   border: 0;
   background: none;
-  color: var(--fg);
-  font: inherit;
+  color: var(--ink);
+  font-family: var(--font-ui);
   font-size: 12px;
   min-width: 26px;
   height: 26px;
   padding: 0 6px;
-  border-radius: 5px;
+  border-radius: var(--radius-code);
   cursor: default;
 }
 
 .selection-toolbar-button:hover:not(:disabled) {
-  background: color-mix(in srgb, var(--fg) 10%, transparent);
+  background: var(--hover);
 }
 
-.selection-toolbar-button.is-active { background: var(--accent); color: #fff; }
+.selection-toolbar-button.is-active {
+  background: var(--tint);
+  color: var(--accent);
+}
 
-.selection-toolbar-button:disabled { opacity: 0.35; }
+.selection-toolbar-button:disabled {
+  opacity: 0.35;
+}
 
-/* The letters carry the meaning, so they wear it. */
-.selection-toolbar-button:nth-child(1) { font-weight: 700; }
-.selection-toolbar-button:nth-child(2) { font-style: italic; }
-.selection-toolbar-button:nth-child(3) { text-decoration: line-through; }
-.selection-toolbar-button:nth-child(4) { font-family: var(--font-mono); }
+.selection-toolbar-button:nth-child(1) {
+  font-weight: 700;
+}
+
+.selection-toolbar-button:nth-child(2) {
+  font-style: italic;
+}
+
+.selection-toolbar-button:nth-child(3) {
+  text-decoration: line-through;
+}
+
+.selection-toolbar-button:nth-child(4) {
+  font-family: var(--font-mono);
+}
 
 /* Slash menu
    ------------------------------------------------------------------------ */
@@ -565,14 +751,16 @@ body {
   width: 15rem;
   max-height: 17rem;
   overflow-y: auto;
-  padding: 4px;
-  background: var(--bg);
+  padding: 5px;
+  background: var(--sheet);
   border: 1px solid var(--rule);
-  border-radius: 8px;
-  box-shadow: 0 10px 28px rgb(0 0 0 / 0.24);
+  border-radius: var(--radius-panel);
+  box-shadow: var(--shadow-popover);
 }
 
-.slash-menu[hidden] { display: none; }
+.slash-menu[hidden] {
+  display: none;
+}
 
 .slash-row {
   display: block;
@@ -581,93 +769,85 @@ body {
   appearance: none;
   border: 0;
   background: none;
-  color: var(--fg);
-  font: inherit;
-  font-size: 13px;
-  padding: 0.35rem 0.5rem;
-  border-radius: 5px;
+  color: var(--ink);
+  font-family: var(--font-ui);
+  font-size: var(--size-command);
+  padding: 7px 10px;
+  border-radius: var(--radius-row);
   cursor: default;
 }
 
-.slash-row-selected { background: color-mix(in srgb, var(--accent) 20%, transparent); }
+.slash-row-selected {
+  background: var(--tint);
+}
 
-.slash-row mark { background: none; color: var(--accent); font-weight: 600; }
+.slash-row mark {
+  background: none;
+  color: var(--accent);
+  font-weight: 600;
+}
+
+/* Popovers
+   ------------------------------------------------------------------------ */
+
+.cm-tooltip.cm-tooltip-hover {
+  border: 1px solid var(--rule);
+  border-radius: var(--radius-panel);
+  background: var(--sheet);
+  box-shadow: var(--shadow-popover);
+  overflow: hidden;
+}
+
+.popover {
+  max-width: 34rem;
+  max-height: 22rem;
+  overflow: auto;
+  padding: 12px 14px;
+  font-family: var(--font-ui);
+  font-size: 12px;
+}
+
+.popover.markpad-document {
+  margin: 0;
+}
 
 /* Code highlighting
    ------------------------------------------------------------------------ */
 
-/* Mapped from highlight.js class names onto the app's own palette, rather
-   than importing one of its themes. A theme would bring its own background
-   and its own idea of light and dark, and disagree with everything else. */
 .markpad-document .hljs-keyword,
 .markpad-document .hljs-selector-tag,
 .markpad-document .hljs-literal,
-.markpad-document .hljs-section { color: #a24a86; }
+.markpad-document .hljs-section {
+  color: var(--syntax-keyword);
+}
 
 .markpad-document .hljs-string,
 .markpad-document .hljs-attr,
 .markpad-document .hljs-regexp,
-.markpad-document .hljs-addition { color: #3f7f5f; }
+.markpad-document .hljs-addition {
+  color: var(--syntax-string);
+}
 
 .markpad-document .hljs-number,
 .markpad-document .hljs-built_in,
-.markpad-document .hljs-symbol { color: #b3651e; }
+.markpad-document .hljs-symbol {
+  color: var(--syntax-number);
+}
 
 .markpad-document .hljs-comment,
-.markpad-document .hljs-quote { color: var(--muted); font-style: italic; }
+.markpad-document .hljs-quote {
+  color: var(--mark);
+  font-style: italic;
+}
 
 .markpad-document .hljs-title,
 .markpad-document .hljs-name,
-.markpad-document .hljs-function { color: #3b6ea5; }
+.markpad-document .hljs-function {
+  color: var(--syntax-name);
+}
 
 .markpad-document .hljs-variable,
 .markpad-document .hljs-template-variable,
-.markpad-document .hljs-type { color: #7a5b9c; }
-
-.markpad-document .hljs-deletion { color: #b3261e; }
-
-@media (prefers-color-scheme: dark) {
-  :root:not([data-theme='light']) .markpad-document .hljs-keyword,
-  :root:not([data-theme='light']) .markpad-document .hljs-selector-tag,
-  :root:not([data-theme='light']) .markpad-document .hljs-literal,
-  :root:not([data-theme='light']) .markpad-document .hljs-section { color: #d79fc6; }
-
-  :root:not([data-theme='light']) .markpad-document .hljs-string,
-  :root:not([data-theme='light']) .markpad-document .hljs-attr,
-  :root:not([data-theme='light']) .markpad-document .hljs-regexp,
-  :root:not([data-theme='light']) .markpad-document .hljs-addition { color: #8ec99f; }
-
-  :root:not([data-theme='light']) .markpad-document .hljs-number,
-  :root:not([data-theme='light']) .markpad-document .hljs-built_in,
-  :root:not([data-theme='light']) .markpad-document .hljs-symbol { color: #e2a76a; }
-
-  :root:not([data-theme='light']) .markpad-document .hljs-title,
-  :root:not([data-theme='light']) .markpad-document .hljs-name,
-  :root:not([data-theme='light']) .markpad-document .hljs-function { color: #7aa7d9; }
-
-  :root:not([data-theme='light']) .markpad-document .hljs-variable,
-  :root:not([data-theme='light']) .markpad-document .hljs-template-variable,
-  :root:not([data-theme='light']) .markpad-document .hljs-type { color: #b9a3dd; }
+.markpad-document .hljs-type {
+  color: var(--syntax-type);
 }
-
-:root[data-theme='dark'] .markpad-document .hljs-keyword,
-:root[data-theme='dark'] .markpad-document .hljs-selector-tag,
-:root[data-theme='dark'] .markpad-document .hljs-literal,
-:root[data-theme='dark'] .markpad-document .hljs-section { color: #d79fc6; }
-
-:root[data-theme='dark'] .markpad-document .hljs-string,
-:root[data-theme='dark'] .markpad-document .hljs-attr,
-:root[data-theme='dark'] .markpad-document .hljs-regexp,
-:root[data-theme='dark'] .markpad-document .hljs-addition { color: #8ec99f; }
-
-:root[data-theme='dark'] .markpad-document .hljs-number,
-:root[data-theme='dark'] .markpad-document .hljs-built_in,
-:root[data-theme='dark'] .markpad-document .hljs-symbol { color: #e2a76a; }
-
-:root[data-theme='dark'] .markpad-document .hljs-title,
-:root[data-theme='dark'] .markpad-document .hljs-name,
-:root[data-theme='dark'] .markpad-document .hljs-function { color: #7aa7d9; }
-
-:root[data-theme='dark'] .markpad-document .hljs-variable,
-:root[data-theme='dark'] .markpad-document .hljs-template-variable,
-:root[data-theme='dark'] .markpad-document .hljs-type { color: #b9a3dd; }

@@ -10,34 +10,34 @@ import { tags } from '@lezer/highlight'
 export const markpadTheme = EditorView.theme({
   '&': {
     height: '100%',
-    backgroundColor: 'var(--bg)',
-    color: 'var(--fg)',
+    backgroundColor: 'var(--sheet)',
+    color: 'var(--ink)',
     fontFamily: 'var(--font-mono)',
-    fontSize: '14px',
+    fontSize: 'var(--size-doc)',
   },
   '.cm-scroller': {
     fontFamily: 'inherit',
-    lineHeight: '1.6',
-    padding: '1.5rem 0',
+    lineHeight: 'var(--line-doc)',
+    padding: '26px 0',
   },
   '.cm-content': {
-    caretColor: 'var(--fg)',
+    caretColor: 'var(--ink)',
     maxWidth: '46rem',
     margin: '0 auto',
-    padding: '0 1.5rem',
+    padding: '0 40px',
   },
   '&.cm-focused': {
     outline: 'none',
   },
   '.cm-cursor, .cm-dropCursor': {
-    borderLeftColor: 'var(--fg)',
+    borderLeftColor: 'var(--ink)',
     borderLeftWidth: '2px',
   },
   '.cm-selectionBackground, &.cm-focused .cm-selectionBackground, ::selection': {
     backgroundColor: 'color-mix(in srgb, var(--accent) 28%, transparent)',
   },
   '.cm-activeLine': {
-    backgroundColor: 'color-mix(in srgb, var(--fg) 4%, transparent)',
+    backgroundColor: 'color-mix(in srgb, var(--ink) 4%, transparent)',
   },
   '.cm-foldPlaceholder': {
     backgroundColor: 'transparent',
@@ -55,7 +55,7 @@ export const markpadTheme = EditorView.theme({
  */
 export const markpadHighlighting = syntaxHighlighting(
   HighlightStyle.define([
-    { tag: tags.heading, color: 'var(--fg)', fontWeight: '600' },
+    { tag: tags.heading, color: 'var(--ink)', fontWeight: '600' },
     { tag: tags.strong, fontWeight: '600' },
     { tag: tags.emphasis, fontStyle: 'italic' },
     { tag: tags.strikethrough, textDecoration: 'line-through' },
