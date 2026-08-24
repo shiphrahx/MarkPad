@@ -3,10 +3,15 @@ import { App } from './app/app.js'
 import { TauriHost } from './host/tauri.js'
 import { installMenus } from './ui/menus.js'
 import { resetDiagramTheme } from './preview/draw.js'
+import { apply as applyTheme, onThemeChange, watchSystemTheme } from './ui/theme.js'
 import { DOCUMENT_CSS } from './preview/document-css.js'
 
 const root = document.querySelector<HTMLDivElement>('#app')
 if (!root) throw new Error('MarkPad could not find its root element.')
+
+// Before anything is drawn, so the window never flashes the wrong colours on
+// the way to the right ones.
+applyTheme()
 
 // The preview pane and the popovers both render Markdown, so the document
 // styles have to exist in the app as well as inside an exported file.
@@ -66,11 +71,10 @@ function looksLikeText(path: string): boolean {
 }
 
 /**
- * Mermaid picks its colours when it first initialises, so diagrams drawn
- * before the OS switched to dark would stay light.
+ * Mermaid picks its colours when it first initialises, so a diagram drawn
+ * before the theme changed would keep the old ones.
  */
 function followSystemTheme(): void {
-  matchMedia('(prefers-color-scheme: dark)').addEventListener('change', () => {
-    resetDiagramTheme()
-  })
+  watchSystemTheme()
+  onThemeChange(() => resetDiagramTheme())
 }

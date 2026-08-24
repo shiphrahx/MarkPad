@@ -1,6 +1,7 @@
 import type { App } from '../app/app.js'
 import { isDirty } from '../app/buffer.js'
 import { exportHtml, exportPdf } from '../export/export.js'
+import { currentTheme, setTheme, THEMES, themeLabel } from '../ui/theme.js'
 import type { Command } from './types.js'
 
 /**
@@ -132,6 +133,16 @@ export function buildCommands(app: App): Command[] {
       enabled: hasFile,
       run: () => app.togglePreview(),
     },
+    // One command per theme rather than one that cycles. A cycle makes you
+    // press it twice to find out where you are; these say what they do and the
+    // palette greys out the one you are already on.
+    ...THEMES.map((theme) => ({
+      id: `view.theme.${theme}`,
+      title: `Theme: ${themeLabel(theme)}`,
+      category: 'View' as const,
+      enabled: () => currentTheme() !== theme,
+      run: () => setTheme(theme),
+    })),
     {
       id: 'go.nextTab',
       title: 'Next tab',

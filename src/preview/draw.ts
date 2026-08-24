@@ -1,4 +1,5 @@
 import { escapeHtml } from './render.js'
+import { isDark } from '../ui/theme.js'
 
 /**
  * Drawing the two things Markdown cannot draw on its own: maths and diagrams.
@@ -66,7 +67,7 @@ export async function drawDiagram(id: string, source: string): Promise<string> {
       renderer.initialize({
         startOnLoad: false,
         securityLevel: 'strict',
-        theme: prefersDark() ? 'dark' : 'default',
+        theme: isDark() ? 'dark' : 'default',
         fontFamily: 'system-ui, -apple-system, "Segoe UI", Roboto, sans-serif',
       })
       mermaidReady = true
@@ -85,12 +86,6 @@ export async function drawDiagram(id: string, source: string): Promise<string> {
  */
 export function resetDiagramTheme(): void {
   mermaidReady = false
-}
-
-function prefersDark(): boolean {
-  return (
-    typeof matchMedia === 'function' && matchMedia('(prefers-color-scheme: dark)').matches
-  )
 }
 
 function errorHtml(headline: string, error: unknown): string {
