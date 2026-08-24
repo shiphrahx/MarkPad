@@ -12,7 +12,9 @@ export default defineConfig({
   // ship transpiled output for browsers nobody will run this in.
   build: {
     target: process.platform === 'darwin' ? 'safari15' : 'chrome110',
-    sourcemap: true,
+    // Sourcemaps are 2 MB against an 8 MB installer budget, so they only
+    // ship in debug builds. Tauri sets TAURI_ENV_DEBUG for those.
+    sourcemap: process.env.TAURI_ENV_DEBUG === 'true',
   },
   envPrefix: ['VITE_', 'TAURI_'],
 })
