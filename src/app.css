@@ -1,0 +1,51 @@
+/*
+ * Themes follow the OS. There is no in-app theme switch in v0.1, so the only
+ * thing that decides light or dark is prefers-color-scheme.
+ */
+:root {
+  color-scheme: light dark;
+
+  --bg: #ffffff;
+  --fg: #1b1b1f;
+  --muted: #6b6b76;
+  --rule: #e4e4e9;
+  --accent: #3b6ea5;
+
+  /* Assume nothing is installed. The stack degrades to whatever the OS has. */
+  --font-mono: ui-monospace, "SF Mono", "Cascadia Mono", "Segoe UI Mono",
+    Menlo, Consolas, "Liberation Mono", monospace;
+  --font-ui: system-ui, -apple-system, "Segoe UI", Roboto, sans-serif;
+}
+
+@media (prefers-color-scheme: dark) {
+  :root {
+    --bg: #1b1b1f;
+    --fg: #e6e6ea;
+    --muted: #9a9aa5;
+    --rule: #2e2e35;
+    --accent: #7aa7d9;
+  }
+}
+
+* {
+  box-sizing: border-box;
+}
+
+html,
+body {
+  height: 100%;
+  margin: 0;
+}
+
+body {
+  background: var(--bg);
+  color: var(--fg);
+  font-family: var(--font-ui);
+  overflow: hidden;
+}
+
+#app {
+  display: flex;
+  flex-direction: column;
+  height: 100%;
+}
