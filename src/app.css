@@ -510,3 +510,48 @@ body {
   /* Out of flow, so an empty paragraph does not grow to fit a hint. */
   height: 0;
 }
+
+/* Selection toolbar
+   ------------------------------------------------------------------------ */
+
+.selection-toolbar {
+  position: fixed;
+  z-index: 25;
+  display: flex;
+  gap: 2px;
+  padding: 3px;
+  background: var(--bg);
+  border: 1px solid var(--rule);
+  border-radius: 8px;
+  box-shadow: 0 6px 20px rgb(0 0 0 / 0.22);
+}
+
+.selection-toolbar[hidden] { display: none; }
+
+.selection-toolbar-button {
+  appearance: none;
+  border: 0;
+  background: none;
+  color: var(--fg);
+  font: inherit;
+  font-size: 12px;
+  min-width: 26px;
+  height: 26px;
+  padding: 0 6px;
+  border-radius: 5px;
+  cursor: default;
+}
+
+.selection-toolbar-button:hover:not(:disabled) {
+  background: color-mix(in srgb, var(--fg) 10%, transparent);
+}
+
+.selection-toolbar-button.is-active { background: var(--accent); color: #fff; }
+
+.selection-toolbar-button:disabled { opacity: 0.35; }
+
+/* The letters carry the meaning, so they wear it. */
+.selection-toolbar-button:nth-child(1) { font-weight: 700; }
+.selection-toolbar-button:nth-child(2) { font-style: italic; }
+.selection-toolbar-button:nth-child(3) { text-decoration: line-through; }
+.selection-toolbar-button:nth-child(4) { font-family: var(--font-mono); }
