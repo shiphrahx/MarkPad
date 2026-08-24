@@ -10,9 +10,12 @@ export interface TabStripHandlers {
 /**
  * The row of open files.
  *
- * A dirty tab shows a dot where its close button goes, swapping back on hover
- * so there is still one place to click. Losing the close button entirely while
- * a file is unsaved would be worse than the small amount of movement.
+ * Sized to the label rather than stretched, rounded at the top, and the active
+ * one wears the editor's own background so the two read as a single surface.
+ *
+ * The dot and the cross share one slot: the dot says there is unsaved work,
+ * the cross replaces it on hover. The tab never changes width and there is
+ * only ever one thing to aim at.
  */
 export class TabStrip {
   readonly element = el('div', { class: 'tabs', role: 'tablist' })
@@ -58,6 +61,12 @@ export class TabStrip {
     const label = el('span', { class: 'tab-label' }, titleOf(buffer))
     label.addEventListener('click', () => this.handlers.onFocus(buffer.id))
 
+    const dot = el('span', {
+      class: 'tab-dot',
+      title: 'Unsaved changes',
+      'aria-hidden': 'true',
+    })
+
     const close = el('button', {
       class: 'tab-close',
       type: 'button',
@@ -68,7 +77,7 @@ export class TabStrip {
       this.handlers.onClose(buffer.id)
     })
 
-    tab.append(label, close)
+    tab.append(label, dot, close)
     return tab
   }
 }
