@@ -1,0 +1,148 @@
+/*
+ * Every colour, radius, size and font in the chrome.
+ *
+ * Taken from markpad-mockup.html, which is the visual spec. Nothing outside
+ * this file writes a colour: if a hex appears anywhere else in the chrome, it
+ * is a bug, because it means two places now disagree about what MarkPad looks
+ * like.
+ *
+ * The mockup loads its two typefaces from Google Fonts. This app cannot: the
+ * window runs under a content security policy that blocks external requests,
+ * and the rules allow exactly one network call at runtime, which the update
+ * check has. So the same typefaces are bundled instead.
+ */
+
+:root {
+  /* Surfaces */
+  --page: #eff1ef;
+  --chrome: #e8ebe9;
+  --sheet: #ffffff;
+
+  /* Text */
+  --ink: #131a19;
+  --muted: #6e7a78;
+  /* Markdown syntax, outline ticks, anything structural rather than written. */
+  --mark: #a9b3b0;
+
+  --rule: #e1e6e3;
+  --accent: #0e7c66;
+  --tint: rgba(14, 124, 102, 0.09);
+
+  --shadow: 0 1px 2px rgba(19, 26, 25, 0.06), 0 18px 50px -12px rgba(19, 26, 25, 0.22);
+  --shadow-popover: 0 12px 34px -8px rgba(19, 26, 25, 0.3);
+  --shadow-palette: 0 24px 60px -14px rgba(19, 26, 25, 0.5);
+  --scrim: rgba(19, 26, 25, 0.28);
+  --hover: rgba(19, 26, 25, 0.06);
+
+  --font-ui: 'Instrument Sans Variable', 'Instrument Sans', system-ui, -apple-system,
+    'Segoe UI', Roboto, sans-serif;
+  --font-mono: 'JetBrains Mono Variable', 'JetBrains Mono', ui-monospace, 'SF Mono',
+    'Cascadia Mono', Menlo, Consolas, monospace;
+
+  /* Type */
+  --size-title: 13px;
+  --size-tab: 12.5px;
+  --size-doc: 13.5px;
+  --size-status: 11px;
+  --size-palette-input: 13.5px;
+  --size-command: 13px;
+  --size-kbd: 10.5px;
+  --size-caption: 10px;
+  --line-doc: 2.05;
+
+  /* Chrome metrics */
+  --h-titlebar: 40px;
+  --w-spine: 26px;
+  --w-tick-h1: 13px;
+  --w-tick-h2: 9px;
+  --w-tick-h3: 6px;
+  --h-tick: 2px;
+  --dot: 6px;
+
+  --pad-tabs: 0 8px;
+  --gap-tabs: 2px;
+  --pad-tab: 9px 14px;
+  --gap-tab: 7px;
+  --pad-doc: 26px 40px;
+  --pad-spine: 22px 0;
+  --gap-spine: 7px;
+  --pad-status: 8px 14px;
+  --gap-status: 16px;
+
+  --radius-window: 11px;
+  --radius-tab: 7px;
+  --radius-panel: 9px;
+  --radius-row: 7px;
+  --radius-code: 4px;
+  --radius-tick: 1px;
+
+  --scrollbar: 9px;
+
+  /*
+   * Code highlighting. The mockup has no syntax palette, so these are the
+   * smallest set of hues that keep tokens apart while staying inside its
+   * range: the accent for keywords, the muted grey for comments, and three
+   * that sit alongside them without shouting.
+   */
+  --syntax-keyword: #a2456f;
+  --syntax-string: #2f7a53;
+  --syntax-number: #9a5b1f;
+  --syntax-name: #2b6ca3;
+  --syntax-type: #6b53a0;
+}
+
+/*
+ * Dark twice on purpose: the media query is guarded so an explicit "light"
+ * beats the operating system, and the attribute rule lets an explicit "dark"
+ * win on a machine set to light. With only one of them, one of the two
+ * choices is unreachable.
+ *
+ * The mockup does not define a dark --page, because in the mockup that is the
+ * colour of the web page behind the window. Here it is the window itself, so
+ * it takes the chrome colour rather than a new one invented for the purpose.
+ */
+@media (prefers-color-scheme: dark) {
+  :root:not([data-theme='light']) {
+    --page: #171c1b;
+    --chrome: #171c1b;
+    --sheet: #121716;
+    --ink: #e4eae8;
+    --muted: #87938f;
+    --mark: #4a5754;
+    --rule: #232a28;
+    --accent: #4fd1ae;
+    --tint: rgba(79, 209, 174, 0.1);
+    --shadow: 0 1px 2px rgba(0, 0, 0, 0.4), 0 18px 50px -12px rgba(0, 0, 0, 0.55);
+    --shadow-popover: 0 12px 34px -8px rgba(0, 0, 0, 0.5);
+    --shadow-palette: 0 24px 60px -14px rgba(0, 0, 0, 0.65);
+    --scrim: rgba(0, 0, 0, 0.45);
+    --hover: rgba(228, 234, 232, 0.08);
+    --syntax-keyword: #e2a0c0;
+    --syntax-string: #8ed2a6;
+    --syntax-number: #e0aa72;
+    --syntax-name: #86b8e0;
+    --syntax-type: #b6a6e6;
+  }
+}
+
+:root[data-theme='dark'] {
+  --page: #171c1b;
+  --chrome: #171c1b;
+  --sheet: #121716;
+  --ink: #e4eae8;
+  --muted: #87938f;
+  --mark: #4a5754;
+  --rule: #232a28;
+  --accent: #4fd1ae;
+  --tint: rgba(79, 209, 174, 0.1);
+  --shadow: 0 1px 2px rgba(0, 0, 0, 0.4), 0 18px 50px -12px rgba(0, 0, 0, 0.55);
+  --shadow-popover: 0 12px 34px -8px rgba(0, 0, 0, 0.5);
+  --shadow-palette: 0 24px 60px -14px rgba(0, 0, 0, 0.65);
+  --scrim: rgba(0, 0, 0, 0.45);
+  --hover: rgba(228, 234, 232, 0.08);
+  --syntax-keyword: #e2a0c0;
+  --syntax-string: #8ed2a6;
+  --syntax-number: #e0aa72;
+  --syntax-name: #86b8e0;
+  --syntax-type: #b6a6e6;
+}
