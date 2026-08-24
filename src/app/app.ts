@@ -21,6 +21,8 @@ import { isDirty, title as titleOf, type Buffer } from './buffer.js'
 import { extractHeadings, type Heading } from './outline.js'
 import { Workspace } from './workspace.js'
 import { buildCommands } from '../commands/build.js'
+import { ReaderEditor } from '../wysiwyg/editor.js'
+import type { EditorState as ProseState } from 'prosemirror-state'
 
 /**
  * How long the editor may run ahead of the rest of the app.
@@ -38,6 +40,15 @@ import { buildCommands } from '../commands/build.js'
 const IDLE_MS = 100
 
 /**
+ * Which surface is showing.
+ *
+ * Reader is the default: a file opens rendered and you type into it. Source is
+ * the same document as Markdown, and it exists because an app that generates
+ * Markdown you cannot inspect is worse than one that does not generate it.
+ */
+export type Mode = 'reader' | 'source'
+
+/**
  * The app: the workspace, the editor and the chrome, wired together.
  *
  * Everything interesting happens somewhere else. This file is the part that
@@ -47,7 +58,11 @@ export class App {
   readonly workspace: Workspace
   readonly commands: readonly Command[]
 
+  /** The rendered surface, which is what a file opens into. */
+  private readonly reader: ReaderEditor
+  /** The Markdown source, one command away. */
   private readonly view: EditorView
+  private mode: Mode = 'reader'
   private readonly tabs: TabStrip
   private readonly status: StatusBar
   private readonly rail: OutlineRail
@@ -60,12 +75,14 @@ export class App {
    * would quietly throw all three away every time you changed tab.
    */
   private readonly states = new Map<string, EditorState>()
+  private readonly readerStates = new Map<string, ProseState>()
   private currentId: string | null = null
   private applyingExternally = false
 
   /** Shortcuts taken apart once, rather than on every keystroke. */
   private readonly bindings: Array<{ command: Command; shortcut: ParsedShortcut }> = []
 
+  private readonly sourceHolder: HTMLElement
   private idleTimer: ReturnType<typeof setTimeout> | null = null
   private unsyncedEdits = false
   /** Derived from the document, recomputed when typing stops. */
@@ -104,20 +121,26 @@ export class App {
       },
     })
 
-    this.rail = new OutlineRail((offset) => this.goTo(offset))
+    this.rail = new OutlineRail((heading, index) => this.goToHeading(heading, index))
     this.palette = new CommandPalette(host.platform)
     this.preview = new PreviewPane()
 
-    const editorHolder = el('div', { class: 'editor' })
+    this.reader = new ReaderEditor({
+      platform: host.platform,
+      onChange: () => this.onSurfaceEdited(),
+    })
+
+    const sourceHolder = el('div', { class: 'editor', hidden: true })
     const middle = el('div', { class: 'middle' })
-    middle.append(this.rail.element, editorHolder, this.preview.element)
+    middle.append(this.rail.element, this.reader.element, sourceHolder, this.preview.element)
 
     root.append(this.tabs.element, middle, this.status.element, this.palette.element)
 
     this.view = new EditorView({
-      parent: editorHolder,
+      parent: sourceHolder,
       state: EditorState.create({ extensions: this.extensions() }),
     })
+    this.sourceHolder = sourceHolder
 
     this.commands = buildCommands(this)
 
@@ -146,16 +169,25 @@ export class App {
         if (this.applyingExternally) return
 
         if (update.docChanged) {
-          // Deliberately does not touch the document. Everything that has to
-          // read it waits for the pause.
-          this.unsyncedEdits = true
-          this.scheduleIdleWork()
-          this.renderCaretParts()
+          this.onSurfaceEdited()
         } else if (update.selectionSet) {
           this.renderCaretParts()
         }
       }),
     ]
+  }
+
+  /**
+   * Something was typed, in whichever surface is showing.
+   *
+   * Deliberately does not read the document. Pulling Markdown out of the
+   * rendered surface means serialising the whole thing, which is the one job
+   * that must not happen per keystroke.
+   */
+  private onSurfaceEdited(): void {
+    this.unsyncedEdits = true
+    this.scheduleIdleWork()
+    this.renderCaretParts()
   }
 
   // Keeping the workspace in step with the editor
@@ -179,7 +211,8 @@ export class App {
 
     this.unsyncedEdits = false
 
-    const text = this.view.state.doc.toString()
+    const text =
+      this.mode === 'reader' ? this.reader.getMarkdown() : this.view.state.doc.toString()
     this.syncedText = text
     this.recomputeDerived(text)
     // Triggers a render through the subscription, which is where the tab dot,
@@ -203,7 +236,9 @@ export class App {
     this.renderCaretParts()
 
     for (const id of [...this.states.keys()]) {
-      if (!this.workspace.tabs.some((buffer) => buffer.id === id)) this.states.delete(id)
+      if (this.workspace.tabs.some((buffer) => buffer.id === id)) continue
+      this.states.delete(id)
+      this.readerStates.delete(id)
     }
 
     document.title = active ? `${isDirty(active) ? '• ' : ''}${titleOf(active)}` : 'MarkPad'
@@ -224,15 +259,26 @@ export class App {
       return
     }
 
-    const head = this.view.state.selection.main.head
-    const line = this.view.state.doc.lineAt(head)
+    if (this.mode === 'source') {
+      const head = this.view.state.selection.main.head
+      const line = this.view.state.doc.lineAt(head)
 
-    this.status.render(
-      active,
-      { line: line.number, column: head - line.from + 1 },
-      this.words,
-    )
-    this.rail.render(this.headings, head)
+      this.status.render(
+        active,
+        { line: line.number, column: head - line.from + 1 },
+        this.words,
+      )
+      this.rail.render(this.headings, head)
+      return
+    }
+
+    // The rendered surface has no line and column to report: the document is
+    // not laid out as lines of Markdown, and inventing a number by counting
+    // the serialised text would be a lie that moved as you typed.
+    this.status.render(active, null, this.words)
+
+    const current = this.reader.currentHeadingIndex()
+    this.rail.render(this.headings, this.headings[current]?.offset ?? -1)
   }
 
   /**
@@ -248,28 +294,42 @@ export class App {
     }
 
     if (active.id !== this.currentId) {
-      if (this.currentId !== null) this.states.set(this.currentId, this.view.state)
+      this.rememberState()
 
-      const existing = this.states.get(active.id)
       this.applyingExternally = true
-      this.view.setState(
-        existing ?? EditorState.create({ doc: active.text, extensions: this.extensions() }),
-      )
+      if (this.mode === 'reader') {
+        const kept = this.readerStates.get(active.id)
+        if (kept) this.reader.restore(kept)
+        else this.reader.setMarkdown(active.text)
+      } else {
+        const kept = this.states.get(active.id)
+        this.view.setState(
+          kept ?? EditorState.create({ doc: active.text, extensions: this.extensions() }),
+        )
+      }
       this.applyingExternally = false
 
       this.currentId = active.id
       this.syncedText = active.text
       this.recomputeDerived(active.text)
-      this.view.focus()
+      this.focusEditor()
       this.preview.update(active.text, { immediately: true })
       return
     }
 
     if (active.text !== this.syncedText) {
       this.applyingExternally = true
-      this.view.dispatch({
-        changes: { from: 0, to: this.view.state.doc.length, insert: active.text },
-      })
+
+      if (this.mode === 'reader') {
+        // Reparsing throws away the undo history, which is why this only runs
+        // for text that arrived from outside the surface rather than from
+        // somebody typing in it.
+        this.reader.setMarkdown(active.text)
+      } else {
+        this.view.dispatch({
+          changes: { from: 0, to: this.view.state.doc.length, insert: active.text },
+        })
+      }
       this.applyingExternally = false
       this.syncedText = active.text
       this.recomputeDerived(active.text)
@@ -279,7 +339,15 @@ export class App {
   // Actions the commands call
 
   focusEditor(): void {
-    this.view.focus()
+    if (this.mode === 'reader') this.reader.focus()
+    else this.view.focus()
+  }
+
+  /** Keep the current tab's undo history before switching away from it. */
+  private rememberState(): void {
+    if (this.currentId === null) return
+    this.states.set(this.currentId, this.view.state)
+    this.readerStates.set(this.currentId, this.reader.state)
   }
 
   openPalette(): void {
@@ -307,11 +375,59 @@ export class App {
     this.workspace.focusRelative(offset)
   }
 
-  goTo(offset: number): void {
+  /**
+   * Jump to a heading from the outline rail.
+   *
+   * Source view has a character offset to scroll to. The rendered surface does
+   * not, so it counts headings instead and both ends agree on the ordinal.
+   */
+  goToHeading(heading: Heading, index: number): void {
+    if (this.mode === 'reader') {
+      this.reader.goToHeading(index)
+      return
+    }
+
     this.view.dispatch({
-      selection: EditorSelection.cursor(offset),
+      selection: EditorSelection.cursor(heading.offset),
       scrollIntoView: true,
     })
+    this.view.focus()
+  }
+
+  get currentMode(): Mode {
+    return this.mode
+  }
+
+  /**
+   * Swap between the rendered surface and the Markdown source.
+   *
+   * Flushes first, so whichever surface is about to appear gets the text as it
+   * stands rather than as it stood a tenth of a second ago.
+   */
+  toggleSource(): void {
+    this.flush()
+
+    const active = this.workspace.active
+    this.mode = this.mode === 'reader' ? 'source' : 'reader'
+
+    this.sourceHolder.hidden = this.mode !== 'source'
+    this.reader.element.hidden = this.mode !== 'reader'
+
+    if (active) this.loadIntoSurface(active.text)
+    this.renderCaretParts()
+  }
+
+  /** Put text into whichever surface is showing, and focus it. */
+  private loadIntoSurface(text: string): void {
+    if (this.mode === 'reader') {
+      this.reader.setMarkdown(text)
+      this.reader.focus()
+      return
+    }
+
+    this.applyingExternally = true
+    this.view.setState(EditorState.create({ doc: text, extensions: this.extensions() }))
+    this.applyingExternally = false
     this.view.focus()
   }
 

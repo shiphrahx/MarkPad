@@ -117,6 +117,14 @@ export function buildCommands(app: App): Command[] {
       run: () => app.openPalette(),
     },
     {
+      id: 'view.source',
+      title: 'Toggle Markdown source',
+      category: 'View',
+      key: 'Mod+Shift+M',
+      enabled: hasFile,
+      run: () => app.toggleSource(),
+    },
+    {
       id: 'view.preview',
       title: 'Toggle the preview pane',
       category: 'View',

@@ -226,13 +226,18 @@ describe('OutlineRail', () => {
     expect(rail.element.querySelectorAll('.rail-tick-current')).toHaveLength(0)
   })
 
-  it('reports the offset to scroll to when a tick is clicked', () => {
-    const gone: number[] = []
-    const rail = new OutlineRail((offset) => void gone.push(offset))
+  it('reports the heading and its index when a tick is clicked', () => {
+    const gone: Array<{ text: string; offset: number; index: number }> = []
+    const rail = new OutlineRail((heading, index) =>
+      void gone.push({ text: heading.text, offset: heading.offset, index }),
+    )
     const text = '# One\n\n## Two\n'
     rail.render(extractHeadings(text), 0)
 
     rail.element.querySelectorAll<HTMLElement>('.rail-tick')[1]!.click()
-    expect(gone).toEqual([text.indexOf('## Two')])
+
+    // Source view scrolls to the offset, the rendered surface counts headings,
+    // so the rail hands over both.
+    expect(gone).toEqual([{ text: 'Two', offset: text.indexOf('## Two'), index: 1 }])
   })
 })

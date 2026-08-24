@@ -12,7 +12,12 @@ import { el, replace } from './dom.js'
 export class OutlineRail {
   readonly element = el('nav', { class: 'rail', 'aria-label': 'Outline' })
 
-  constructor(private readonly onGo: (offset: number) => void) {}
+  /**
+   * The handler gets the heading and its index. The index matters because the
+   * rendered surface has no character offsets to scroll to, so it finds the
+   * nth heading in the document instead.
+   */
+  constructor(private readonly onGo: (heading: Heading, index: number) => void) {}
 
   render(headings: readonly Heading[], activeOffset: number): void {
     if (headings.length === 0) {
@@ -35,7 +40,7 @@ export class OutlineRail {
         title: heading.text || '(untitled heading)',
         'aria-label': `Go to ${heading.text || 'untitled heading'}`,
       })
-      tick.addEventListener('click', () => this.onGo(heading.offset))
+      tick.addEventListener('click', () => this.onGo(heading, index))
       return tick
     })
 
