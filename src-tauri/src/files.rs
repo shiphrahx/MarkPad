@@ -54,7 +54,9 @@ pub fn read_text(path: &Path) -> Result<String, FileError> {
         source,
     })?;
 
-    String::from_utf8(bytes).map_err(|_| FileError::NotUtf8 { path: display(path) })
+    String::from_utf8(bytes).map_err(|_| FileError::NotUtf8 {
+        path: display(path),
+    })
 }
 
 /// Write a file atomically: whole contents to a temporary file alongside the
@@ -103,7 +105,9 @@ pub fn write_text_atomic(path: &Path, contents: &str) -> Result<u64, FileError> 
     let _ = fs::remove_file(&temporary);
 
     match last {
-        Some(error) if is_locked(&error) => Err(FileError::Locked { path: display(path) }),
+        Some(error) if is_locked(&error) => Err(FileError::Locked {
+            path: display(path),
+        }),
         Some(error) => Err(FileError::Write {
             path: display(path),
             source: error,
