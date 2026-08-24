@@ -23,8 +23,23 @@ Reject these even if they seem like an easy win. Ask before adding anything not 
 - Any proprietary Markdown syntax beyond GFM
 - Accounts, cloud sync, analytics, crash reporting, update pings that carry an ID
 - A file tree / workspace sidebar (a single-folder mode may come later, behind a flag)
-- WYSIWYG. MarkPad edits Markdown **source** with syntax highlighting, not a rendered surface.
 - Electron, or any runtime the user has to install separately
+
+## The editing surface
+
+MarkPad opens a file in **reader mode**: a rendered surface you type directly
+into. The Markdown source is generated from what you edit and written on save.
+Source view still exists, one command away, for when you need to see the file
+as it really is.
+
+This reverses the original non-goal, which said MarkPad would edit Markdown
+source and never render it. `docs/decisions/0003-wysiwyg.md` records why, and
+what it costs.
+
+The cost is real and worth repeating here: the round trip is lossy in the ways
+every Markdown serialiser is lossy. Marker characters, emphasis delimiters,
+table padding and line wrapping come back in the serialiser's preferred form,
+including on lines nobody touched. Anything that reduces that is worth doing.
 
 ## Stack
 
