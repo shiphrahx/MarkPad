@@ -38,6 +38,9 @@
     "@codemirror/view": "^6.43.9",
     "@lezer/highlight": "^1.2.3",
     "@tauri-apps/api": "^2.11.1",
-    "@tauri-apps/plugin-dialog": "^2.7.2"
+    "@tauri-apps/plugin-dialog": "^2.7.2",
+    "katex": "^0.18.4",
+    "marked": "^18.0.10",
+    "mermaid": "^11.17.0"
   }
 }
