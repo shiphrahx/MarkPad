@@ -1,4 +1,6 @@
 mod files;
+#[cfg(windows)]
+mod webview2;
 
 use std::path::PathBuf;
 
@@ -20,11 +22,38 @@ fn write_text_file(path: String, contents: String) -> Result<u64, FileError> {
     files::write_text_atomic(&PathBuf::from(path), &contents)
 }
 
+/// Paths passed on the command line.
+///
+/// This is how "Open with MarkPad" and double-clicking a `.md` file arrive.
+/// Anything that is not a file that exists is dropped rather than opened as an
+/// empty buffer with a nonsense name.
+#[tauri::command]
+fn startup_files() -> Vec<String> {
+    std::env::args()
+        .skip(1)
+        .filter(|argument| !argument.starts_with('-'))
+        .filter(|argument| PathBuf::from(argument).is_file())
+        .collect()
+}
+
 #[cfg_attr(mobile, tauri::mobile_entry_point)]
 pub fn run() {
+    // Windows without WebView2 would otherwise open a window with nothing in
+    // it and no explanation. Checked before the window exists, so there is
+    // never a blank one on screen.
+    #[cfg(windows)]
+    if !webview2::is_available() {
+        webview2::offer_the_bootstrapper();
+        return;
+    }
+
     tauri::Builder::default()
         .plugin(tauri_plugin_dialog::init())
-        .invoke_handler(tauri::generate_handler![read_text_file, write_text_file])
+        .invoke_handler(tauri::generate_handler![
+            read_text_file,
+            write_text_file,
+            startup_files
+        ])
         .run(tauri::generate_context!())
         .expect("MarkPad could not start.");
 }

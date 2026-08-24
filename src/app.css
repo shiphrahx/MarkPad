@@ -49,3 +49,322 @@ body {
   flex-direction: column;
   height: 100%;
 }
+
+/* Chrome
+   ------------------------------------------------------------------------ */
+
+.tabs {
+  display: flex;
+  align-items: stretch;
+  gap: 1px;
+  min-height: 34px;
+  background: var(--bg);
+  border-bottom: 1px solid var(--rule);
+  overflow-x: auto;
+  scrollbar-width: none;
+  /* Room for the traffic lights, which sit over the window on macOS. */
+  padding-left: var(--chrome-inset, 0);
+}
+
+.tabs::-webkit-scrollbar { display: none; }
+
+.tab {
+  display: flex;
+  align-items: center;
+  gap: 0.35rem;
+  padding: 0 0.35rem 0 0.7rem;
+  max-width: 14rem;
+  font-size: 12px;
+  color: var(--muted);
+  background: transparent;
+  border-right: 1px solid var(--rule);
+  white-space: nowrap;
+  user-select: none;
+}
+
+.tab-active {
+  color: var(--fg);
+  background: color-mix(in srgb, var(--fg) 5%, transparent);
+  box-shadow: inset 0 -2px 0 var(--accent);
+}
+
+.tab-label {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  cursor: default;
+}
+
+.tab-close,
+.tab-new {
+  appearance: none;
+  border: 0;
+  background: none;
+  color: inherit;
+  font: inherit;
+  line-height: 1;
+  cursor: default;
+  border-radius: 4px;
+  width: 18px;
+  height: 18px;
+  display: grid;
+  place-items: center;
+  flex: none;
+}
+
+.tab-close::before { content: '×'; font-size: 14px; }
+
+/* A dirty tab shows a dot instead of the cross, and swaps back on hover, so
+   there is still exactly one thing to click. */
+.tab-dirty .tab-close::before { content: '•'; font-size: 16px; }
+.tab-dirty .tab-close:hover::before { content: '×'; font-size: 14px; }
+
+.tab-close:hover,
+.tab-new:hover { background: color-mix(in srgb, var(--fg) 12%, transparent); }
+
+.tab-new { margin: 0 0.4rem; align-self: center; font-size: 15px; }
+
+/* Middle
+   ------------------------------------------------------------------------ */
+
+.middle {
+  display: flex;
+  flex: 1;
+  min-height: 0;
+}
+
+.editor {
+  flex: 1;
+  min-width: 0;
+  overflow: hidden;
+}
+
+.rail {
+  width: 14px;
+  flex: none;
+  padding: 1.6rem 0;
+  display: flex;
+  flex-direction: column;
+  gap: 5px;
+  align-items: flex-start;
+  border-right: 1px solid transparent;
+  overflow: hidden;
+}
+
+.rail-tick {
+  appearance: none;
+  border: 0;
+  padding: 0;
+  height: 2px;
+  border-radius: 1px;
+  background: var(--rule);
+  cursor: default;
+  flex: none;
+  transition: background 120ms;
+}
+
+.rail-level-1 { width: 10px; margin-left: 2px; }
+.rail-level-2 { width: 8px; margin-left: 4px; }
+.rail-level-3 { width: 6px; margin-left: 6px; }
+.rail-level-4 { width: 4px; margin-left: 8px; }
+
+.rail-tick:hover { background: var(--fg); }
+.rail-tick-current { background: var(--accent); height: 3px; }
+
+/* Preview
+   ------------------------------------------------------------------------ */
+
+.preview {
+  flex: 1;
+  min-width: 0;
+  overflow-y: auto;
+  border-left: 1px solid var(--rule);
+}
+
+.preview[hidden] { display: none; }
+
+/* Status bar
+   ------------------------------------------------------------------------ */
+
+.status {
+  display: flex;
+  align-items: center;
+  gap: 1rem;
+  padding: 0 0.9rem;
+  min-height: 24px;
+  font-size: 11px;
+  color: var(--muted);
+  border-top: 1px solid var(--rule);
+  user-select: none;
+}
+
+.status-spacer { flex: 1; }
+
+.status-button {
+  appearance: none;
+  border: 0;
+  background: none;
+  color: inherit;
+  font: inherit;
+  padding: 2px 6px;
+  border-radius: 4px;
+  cursor: default;
+}
+
+.status-button:hover {
+  background: color-mix(in srgb, var(--fg) 10%, transparent);
+  color: var(--fg);
+}
+
+/* Command palette
+   ------------------------------------------------------------------------ */
+
+.palette-backdrop {
+  position: fixed;
+  inset: 0;
+  background: color-mix(in srgb, #000 32%, transparent);
+  display: flex;
+  justify-content: center;
+  padding-top: 12vh;
+  z-index: 20;
+}
+
+.palette-backdrop[hidden] { display: none; }
+
+.palette {
+  width: min(34rem, calc(100vw - 3rem));
+  max-height: 60vh;
+  display: flex;
+  flex-direction: column;
+  background: var(--bg);
+  border: 1px solid var(--rule);
+  border-radius: 10px;
+  box-shadow: 0 18px 48px rgb(0 0 0 / 0.28);
+  overflow: hidden;
+}
+
+.palette-input {
+  appearance: none;
+  border: 0;
+  border-bottom: 1px solid var(--rule);
+  background: none;
+  color: var(--fg);
+  font: inherit;
+  font-size: 14px;
+  padding: 0.75rem 0.9rem;
+}
+
+.palette-input:focus { outline: none; }
+
+.palette-list {
+  list-style: none;
+  margin: 0;
+  padding: 0.3rem;
+  overflow-y: auto;
+}
+
+.palette-row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 1rem;
+  padding: 0.4rem 0.6rem;
+  border-radius: 6px;
+  font-size: 13px;
+  cursor: default;
+}
+
+.palette-row-selected { background: color-mix(in srgb, var(--accent) 20%, transparent); }
+.palette-row-disabled { color: var(--muted); }
+
+.palette-label mark {
+  background: none;
+  color: var(--accent);
+  font-weight: 600;
+}
+
+.palette-row-selected .palette-label mark { color: var(--fg); }
+
+.palette-shortcut {
+  font-family: var(--font-mono);
+  font-size: 11px;
+  color: var(--muted);
+  white-space: nowrap;
+}
+
+.palette-empty {
+  list-style: none;
+  padding: 0.6rem;
+  font-size: 13px;
+  color: var(--muted);
+}
+
+/* Dialog
+   ------------------------------------------------------------------------ */
+
+.dialog-backdrop {
+  position: fixed;
+  inset: 0;
+  background: color-mix(in srgb, #000 32%, transparent);
+  display: grid;
+  place-items: center;
+  z-index: 30;
+}
+
+.dialog {
+  width: min(24rem, calc(100vw - 3rem));
+  padding: 1.1rem 1.2rem 1rem;
+  background: var(--bg);
+  border: 1px solid var(--rule);
+  border-radius: 10px;
+  box-shadow: 0 18px 48px rgb(0 0 0 / 0.28);
+}
+
+.dialog-title { margin: 0 0 0.4rem; font-size: 14px; }
+.dialog-message { margin: 0 0 1rem; font-size: 13px; color: var(--muted); }
+
+.dialog-buttons { display: flex; justify-content: flex-end; gap: 0.5rem; }
+
+.dialog-button {
+  appearance: none;
+  font: inherit;
+  font-size: 13px;
+  padding: 0.35rem 0.8rem;
+  border-radius: 6px;
+  border: 1px solid var(--rule);
+  background: var(--bg);
+  color: var(--fg);
+  cursor: default;
+}
+
+.dialog-button:hover { background: color-mix(in srgb, var(--fg) 8%, transparent); }
+
+.dialog-primary {
+  background: var(--accent);
+  border-color: var(--accent);
+  color: #fff;
+}
+
+.dialog-primary:hover { filter: brightness(1.08); background: var(--accent); }
+
+.dialog-danger { color: #b3261e; }
+
+/* Popover
+   ------------------------------------------------------------------------ */
+
+.cm-tooltip.cm-tooltip-hover {
+  border: 1px solid var(--rule);
+  border-radius: 8px;
+  background: var(--bg);
+  box-shadow: 0 10px 30px rgb(0 0 0 / 0.22);
+  overflow: hidden;
+}
+
+.popover {
+  max-width: 34rem;
+  max-height: 22rem;
+  overflow: auto;
+  padding: 0.7rem 0.9rem;
+  font-size: 13px;
+}
+
+.popover.markpad-document { margin: 0; }
