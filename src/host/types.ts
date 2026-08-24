@@ -57,19 +57,7 @@ export interface Host {
   pickFilesToOpen(): Promise<readonly string[]>
   /** Native save dialog. Null if the user cancelled. */
   pickPathToSave(suggestedName: string): Promise<string | null>
-  /**
-   * Ask a yes or no question. The label is the verb for the affirmative
-   * button, because "Close without saving" tells you what will happen and
-   * "OK" does not.
-   */
-  confirm(question: ConfirmRequest): Promise<boolean>
   /** Tell the user something went wrong. */
   report(message: string, title?: string): Promise<void>
 }
 
-export interface ConfirmRequest {
-  readonly message: string
-  readonly title: string
-  readonly okLabel: string
-  readonly cancelLabel: string
-}

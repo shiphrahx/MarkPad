@@ -1,6 +1,5 @@
 import { detectEncoding, detectLineEnding, toEditorText, toFileText } from './text.js'
 import type {
-  ConfirmRequest,
   Host,
   Platform,
   SaveRequest,
@@ -20,12 +19,9 @@ export class MemoryHost implements Host {
   private readonly files = new Map<string, string>()
   private nextPick: readonly string[] = []
   private nextSavePath: string | null = null
-  private nextConfirm = true
 
   /** Everything the app has told the user about. */
   readonly reported: string[] = []
-  /** Every question the app has asked. */
-  readonly asked: ConfirmRequest[] = []
   /** Every name the app has offered in a save dialog. */
   readonly suggestedNames: string[] = []
 
@@ -49,10 +45,6 @@ export class MemoryHost implements Host {
 
   queueSavePick(path: string | null): void {
     this.nextSavePath = path
-  }
-
-  queueConfirm(answer: boolean): void {
-    this.nextConfirm = answer
   }
 
   async readFile(path: string): Promise<TextDocument> {
@@ -80,11 +72,6 @@ export class MemoryHost implements Host {
   async pickPathToSave(suggestedName: string): Promise<string | null> {
     this.suggestedNames.push(suggestedName)
     return this.nextSavePath
-  }
-
-  async confirm(question: ConfirmRequest): Promise<boolean> {
-    this.asked.push(question)
-    return this.nextConfirm
   }
 
   async report(message: string): Promise<void> {
