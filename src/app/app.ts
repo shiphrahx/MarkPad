@@ -22,6 +22,9 @@ import { extractHeadings, type Heading } from './outline.js'
 import { Workspace } from './workspace.js'
 import { buildCommands } from '../commands/build.js'
 import { ReaderEditor } from '../wysiwyg/editor.js'
+import { markpadSchema } from '../wysiwyg/schema.js'
+import { askForText } from '../ui/prompt-dialog.js'
+import type { Command as ProseCommand } from 'prosemirror-state'
 import type { EditorState as ProseState } from 'prosemirror-state'
 
 /**
@@ -396,6 +399,77 @@ export class App {
 
   get currentMode(): Mode {
     return this.mode
+  }
+
+  /**
+   * Whether a formatting command would do anything.
+   *
+   * Formatting only applies to the rendered surface. In source view you type
+   * the Markdown, which is the whole reason source view exists, so the palette
+   * greys these out rather than pretending.
+   */
+  canFormat(command: ProseCommand): boolean {
+    return this.mode === 'reader' && this.reader.can(command)
+  }
+
+  format(command: ProseCommand): void {
+    if (this.mode !== 'reader') return
+    this.reader.run(command)
+  }
+
+  /**
+   * Turn the selection into a link, or change the address of one it is already
+   * inside.
+   */
+  async addLink(): Promise<void> {
+    if (this.mode !== 'reader') return
+
+    const existing = this.reader.linkAtSelection()
+    const href = await askForText({
+      title: existing === null ? 'Add a link' : 'Edit the link',
+      label: 'Address',
+      value: existing ?? '',
+      placeholder: 'https://example.com',
+      confirmLabel: existing === null ? 'Add link' : 'Update link',
+    })
+
+    if (href === null) {
+      this.focusEditor()
+      return
+    }
+
+    const mark = markpadSchema.marks.link!
+    if (href === '') {
+      this.reader.run((state, dispatch) => {
+        const { from, to } = state.selection
+        if (dispatch) dispatch(state.tr.removeMark(from, to, mark))
+        return true
+      })
+      return
+    }
+
+    this.reader.run((state, dispatch) => {
+      const { from, to, empty } = state.selection
+      // With nothing selected there is no text to make into a link, so the
+      // address becomes the text as well. That is what a person means when
+      // they paste a URL into an empty line.
+      if (empty) {
+        if (dispatch) {
+          dispatch(
+            state.tr.replaceSelectionWith(
+              state.schema.text(href, [mark.create({ href, title: null })]),
+              false,
+            ),
+          )
+        }
+        return true
+      }
+
+      if (dispatch) {
+        dispatch(state.tr.addMark(from, to, mark.create({ href, title: null })))
+      }
+      return true
+    })
   }
 
   /**

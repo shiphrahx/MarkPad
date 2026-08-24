@@ -2,6 +2,7 @@ import type { App } from '../app/app.js'
 import { isDirty } from '../app/buffer.js'
 import { exportHtml, exportPdf } from '../export/export.js'
 import { currentTheme, setTheme, THEMES, themeLabel } from '../ui/theme.js'
+import { FORMAT_ACTIONS } from '../wysiwyg/format.js'
 import type { Command } from './types.js'
 
 /**
@@ -116,6 +117,25 @@ export function buildCommands(app: App): Command[] {
       key: 'Mod+K',
       windowsKey: 'Mod+K',
       run: () => app.openPalette(),
+    },
+    // Formatting. These were reachable by shortcut and by typing Markdown
+    // long before they were reachable by looking, which is no use at all in a
+    // surface whose point is not having to know the Markdown.
+    ...FORMAT_ACTIONS.map((action) => ({
+      id: `format.${action.id}`,
+      title: action.title,
+      category: 'Format' as const,
+      ...(action.key === undefined ? {} : { key: action.key }),
+      enabled: () => app.canFormat(action.command),
+      run: () => app.format(action.command),
+    })),
+    {
+      id: 'format.link',
+      title: 'Link…',
+      category: 'Format',
+      key: 'Mod+Shift+K',
+      enabled: () => app.currentMode === 'reader' && hasFile(),
+      run: () => app.addLink(),
     },
     {
       id: 'view.source',
