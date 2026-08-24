@@ -1,0 +1,33 @@
+[package]
+name = "markpad"
+version = "0.1.0"
+description = "A Markdown editor for Windows and macOS."
+edition = "2021"
+rust-version = "1.77.2"
+license = "MIT"
+
+[lib]
+name = "markpad_lib"
+crate-type = ["lib", "cdylib", "staticlib"]
+
+[build-dependencies]
+tauri-build = { version = "2", features = [] }
+
+[dependencies]
+tauri = { version = "2", features = [] }
+tauri-plugin-dialog = "2"
+serde = { version = "1", features = ["derive"] }
+thiserror = "2"
+
+[dev-dependencies]
+tempfile = "3"
+
+[profile.release]
+# The installer budget is 8 MB. Optimising for size, throwing away panic
+# unwinding and letting LTO run across the whole crate graph is most of how a
+# Rust binary gets small.
+opt-level = "s"
+lto = true
+codegen-units = 1
+panic = "abort"
+strip = true
