@@ -58,7 +58,7 @@ body {
 }
 
 ::-webkit-scrollbar-thumb {
-  background: transparent;
+  background-color: var(--rule);
   border-radius: var(--scrollbar);
   /* The border is the inset: it shrinks the visible thumb without shrinking
      the area you can grab. */
@@ -66,6 +66,8 @@ body {
   background-clip: content-box;
 }
 
+/* Faint at rest rather than invisible: a scrollbar that only appears on hover
+   cannot tell you how far into a long document you are. */
 :hover::-webkit-scrollbar-thumb {
   background-color: var(--mark);
   background-clip: content-box;
@@ -73,6 +75,17 @@ body {
 
 ::-webkit-scrollbar-corner {
   background: transparent;
+}
+
+/*
+ * The stepper arrows. Chromium draws them by default and they are the reason
+ * the scrollbar still read as a Windows control: two grey chevrons in a
+ * gutter, at the one edge of the window that is otherwise nothing but text.
+ */
+::-webkit-scrollbar-button {
+  display: none;
+  width: 0;
+  height: 0;
 }
 
 /* Tabs
@@ -309,8 +322,10 @@ body {
   line-height: var(--line-doc);
   background: var(--sheet);
   color: var(--ink);
-  max-width: 46rem;
-  margin: 0 auto;
+  /* Left aligned, as the mockup has it. A measure cap keeps lines readable on
+     a wide window without pushing the text away from the rail. */
+  max-width: 68ch;
+  margin: 0;
   padding: var(--pad-doc);
   min-height: 100%;
   outline: none;
