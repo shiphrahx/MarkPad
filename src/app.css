@@ -368,3 +368,102 @@ body {
 }
 
 .popover.markpad-document { margin: 0; }
+
+/* Reader
+   ------------------------------------------------------------------------ */
+
+.reader {
+  flex: 1;
+  min-width: 0;
+  overflow-y: auto;
+  /* The document styles set a max width and centre it; the surface itself
+     needs to fill the pane so clicking beside the text still puts a cursor in
+     it. */
+  max-width: none;
+  padding: 0;
+}
+
+.reader[hidden] { display: none; }
+
+.reader .ProseMirror {
+  outline: none;
+  max-width: 42rem;
+  margin: 0 auto;
+  padding: 2.5rem 1.5rem 8rem;
+  min-height: 100%;
+}
+
+/* ProseMirror puts the cursor at a document edge here; without a visible
+   caret the gap looks like nothing happened. */
+.reader .ProseMirror-gapcursor:after {
+  border-top-color: var(--fg);
+}
+
+.reader .ProseMirror-selectednode {
+  outline: 2px solid var(--accent);
+  border-radius: 4px;
+}
+
+/* Tasks
+   ------------------------------------------------------------------------ */
+
+.reader li.pm-task {
+  list-style: none;
+  display: flex;
+  align-items: flex-start;
+  gap: 0.5rem;
+  margin-left: -1.4rem;
+}
+
+.reader .pm-checkbox {
+  margin: 0.42em 0 0;
+  flex: none;
+  accent-color: var(--accent);
+}
+
+.reader .pm-item-content { flex: 1; min-width: 0; }
+
+.reader li.pm-task[data-checked='true'] .pm-item-content { color: var(--muted); }
+
+/* Raw HTML, kept but not editable as rich text
+   ------------------------------------------------------------------------ */
+
+.pm-html-block {
+  border: 1px dashed var(--rule);
+  border-radius: 6px;
+  padding: 0.6rem 0.8rem;
+  font-family: var(--font-mono);
+  font-size: 0.85em;
+  color: var(--muted);
+  white-space: pre-wrap;
+  overflow-x: auto;
+}
+
+/* Tables
+   ------------------------------------------------------------------------ */
+
+.reader .tableWrapper { overflow-x: auto; }
+
+.reader table { table-layout: fixed; width: 100%; }
+
+.reader td, .reader th { position: relative; vertical-align: top; }
+
+.reader .selectedCell:after {
+  content: '';
+  position: absolute;
+  inset: 0;
+  background: color-mix(in srgb, var(--accent) 18%, transparent);
+  pointer-events: none;
+}
+
+.reader .column-resize-handle {
+  position: absolute;
+  right: -2px;
+  top: 0;
+  bottom: 0;
+  width: 4px;
+  background: var(--accent);
+  pointer-events: none;
+}
+
+.reader.resize-cursor { cursor: col-resize; }
