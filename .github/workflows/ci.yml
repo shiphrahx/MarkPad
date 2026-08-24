@@ -1,0 +1,86 @@
+name: CI
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+
+concurrency:
+  group: ${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  checks:
+    name: Types and tests
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: pnpm/action-setup@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: pnpm
+      - run: pnpm install --frozen-lockfile
+      - run: pnpm typecheck
+      - run: pnpm test
+
+  rust:
+    name: Rust
+    runs-on: ${{ matrix.os }}
+    strategy:
+      fail-fast: false
+      matrix:
+        # The file writing code is the part that behaves differently per
+        # platform, so its tests run on both rather than on whichever runner
+        # was cheapest.
+        os: [windows-latest, macos-latest]
+    steps:
+      - uses: actions/checkout@v4
+      - uses: dtolnay/rust-toolchain@stable
+      - uses: Swatinem/rust-cache@v2
+        with:
+          workspaces: src-tauri
+      - run: cargo fmt --all --check
+        working-directory: src-tauri
+      - run: cargo clippy --all-targets -- -D warnings
+        working-directory: src-tauri
+      - run: cargo test
+        working-directory: src-tauri
+
+  budgets:
+    name: Installer size
+    runs-on: ${{ matrix.os }}
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - os: windows-latest
+            bundle: nsis
+            pattern: src-tauri/target/release/bundle/nsis/*-setup.exe
+          - os: macos-latest
+            bundle: dmg
+            pattern: src-tauri/target/release/bundle/dmg/*.dmg
+    steps:
+      - uses: actions/checkout@v4
+      - uses: pnpm/action-setup@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: pnpm
+      - uses: dtolnay/rust-toolchain@stable
+      - uses: Swatinem/rust-cache@v2
+        with:
+          workspaces: src-tauri
+      - run: pnpm install --frozen-lockfile
+      - run: pnpm icons
+      - run: pnpm tauri build --bundles ${{ matrix.bundle }}
+
+      # The budget is pass/fail. If a change breaks it, the change is wrong.
+      - name: Check the installer against the 8 MB budget
+        shell: bash
+        run: node scripts/check-budget.mjs "${{ matrix.pattern }}"
+
+      - uses: actions/upload-artifact@v4
+        with:
+          name: installer-${{ matrix.os }}
+          path: ${{ matrix.pattern }}
