@@ -496,3 +496,17 @@ body {
   outline: none;
   border-color: var(--accent);
 }
+
+/* Empty document
+   ------------------------------------------------------------------------ */
+
+/* The text lives in an attribute so it is never part of the document and
+   cannot be selected, copied or saved. */
+.reader .pm-placeholder::before {
+  content: attr(data-placeholder);
+  color: var(--muted);
+  pointer-events: none;
+  position: absolute;
+  /* Out of flow, so an empty paragraph does not grow to fit a hint. */
+  height: 0;
+}
