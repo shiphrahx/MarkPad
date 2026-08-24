@@ -20,6 +20,7 @@ import { countWords } from './stats.js'
 import { isDirty, title as titleOf, type Buffer } from './buffer.js'
 import { extractHeadings, type Heading } from './outline.js'
 import { Workspace } from './workspace.js'
+import { loadSession, saveSession, signatureOf, type Session } from './session.js'
 import { buildCommands } from '../commands/build.js'
 import { ReaderEditor } from '../wysiwyg/editor.js'
 import { markpadSchema } from '../wysiwyg/schema.js'
@@ -100,6 +101,8 @@ export class App {
    * whole file exists to avoid.
    */
   private syncedText: string | null = null
+  /** Last session written to storage, so an unchanged one is not rewritten. */
+  private sessionSignature = ''
 
   constructor(
     readonly host: Host,
@@ -153,15 +156,76 @@ export class App {
       if (parsed) this.bindings.push({ command, shortcut: parsed })
     }
 
-    this.workspace.subscribe(() => this.render())
+    this.workspace.subscribe(() => {
+      this.render()
+      this.rememberSession()
+    })
     document.addEventListener('keydown', (event) => this.onKeyDown(event), true)
 
     // Nothing in the editor is worth losing to a window closing, and the
     // last tenth of a second of typing lives only in CodeMirror until this
     // runs.
     addEventListener('beforeunload', () => this.flush())
+  }
 
-    this.workspace.create()
+  /**
+   * Open whatever should be on screen: last time's tabs, then anything named
+   * on the command line, then a blank buffer if that came to nothing.
+   *
+   * Kept out of the constructor because it reads the disk, and a constructor
+   * that does IO is a constructor you cannot use in a test without a disk.
+   */
+  async start(commandLineFiles: readonly string[] = []): Promise<void> {
+    await this.restoreSession()
+    if (commandLineFiles.length > 0) await this.openFiles(commandLineFiles)
+    if (this.workspace.tabs.length === 0) this.workspace.create()
+  }
+
+  /**
+   * Reopen last time's files.
+   *
+   * One at a time, because a file that has been deleted or renamed since must
+   * not stop the rest from opening. A missing file is dropped quietly: you
+   * already know you deleted it, and a dialog at every launch until you
+   * happen to open something else would be its own kind of rude.
+   */
+  private async restoreSession(): Promise<void> {
+    const session = loadSession()
+    if (session.paths.length === 0) return
+
+    const opened: string[] = []
+    for (const path of session.paths) {
+      try {
+        await this.workspace.open([path])
+        opened.push(path)
+      } catch {
+        continue
+      }
+    }
+
+    const wanted = session.paths[session.active]
+    const target = this.workspace.tabs.find((buffer) => buffer.path === wanted)
+    if (target) this.workspace.focus(target.id)
+    else if (opened.length > 0) this.workspace.focus(this.workspace.tabs[0]!.id)
+  }
+
+  /** Remember the open files, if which files are open has actually changed. */
+  private rememberSession(): void {
+    const paths = this.workspace.tabs
+      .map((buffer) => buffer.path)
+      .filter((path): path is string => path !== null)
+
+    const activePath = this.workspace.active?.path ?? null
+    const session: Session = {
+      paths,
+      active: activePath === null ? 0 : Math.max(0, paths.indexOf(activePath)),
+    }
+
+    const signature = signatureOf(session)
+    if (signature === this.sessionSignature) return
+
+    this.sessionSignature = signature
+    saveSession(session)
   }
 
   private extensions() {

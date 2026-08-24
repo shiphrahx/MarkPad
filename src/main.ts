@@ -34,9 +34,21 @@ const app = new App(host, root)
 void start()
 
 async function start(): Promise<void> {
-  await Promise.allSettled([openFilesFromCommandLine(), installMenus(app.commands, host.platform)])
+  await Promise.allSettled([openStartupFiles(), installMenus(app.commands, host.platform)])
   listenForDroppedFiles()
   followSystemTheme()
+}
+
+/**
+ * Last time's tabs, plus whatever was double-clicked to get here.
+ *
+ * Both, rather than one or the other: opening a file should add to what you
+ * had, not replace it.
+ */
+async function openStartupFiles(): Promise<void> {
+  const { invoke } = await import('@tauri-apps/api/core')
+  const paths = await invoke<string[]>('startup_files')
+  await app.start(paths)
 }
 
 /**
@@ -54,16 +66,6 @@ function listenForDroppedFiles(): void {
       if (markdown.length > 0) void app.openFiles(markdown)
     })
   })
-}
-
-/**
- * Files passed on the command line, which is how "Open with MarkPad" and
- * double-clicking a .md file arrive.
- */
-async function openFilesFromCommandLine(): Promise<void> {
-  const { invoke } = await import('@tauri-apps/api/core')
-  const paths = await invoke<string[]>('startup_files')
-  if (paths.length > 0) await app.openFiles(paths)
 }
 
 function looksLikeText(path: string): boolean {
