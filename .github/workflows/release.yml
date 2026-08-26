@@ -1,0 +1,74 @@
+name: Release
+
+# Builds the actual installers and attaches them to the tag's release.
+# Without this, a release only carries GitHub's source archives, which nobody
+# can install from.
+
+on:
+  push:
+    tags: ['v*']
+  # So an existing tag can be filled in after the fact, or a failed upload retried.
+  workflow_dispatch:
+    inputs:
+      tag:
+        description: 'Tag to build and upload to, e.g. v0.1.0'
+        required: true
+
+permissions:
+  contents: write
+
+jobs:
+  installers:
+    name: ${{ matrix.name }}
+    runs-on: ${{ matrix.os }}
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - os: macos-latest
+            name: macOS (universal)
+            # One download that runs on both Apple silicon and Intel.
+            args: --target universal-apple-darwin
+            rust-targets: aarch64-apple-darwin,x86_64-apple-darwin
+            pattern: src-tauri/target/universal-apple-darwin/release/bundle/dmg/*.dmg
+          - os: windows-latest
+            name: Windows (x64)
+            args: ''
+            rust-targets: ''
+            pattern: src-tauri/target/release/bundle/nsis/*-setup.exe
+
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: ${{ inputs.tag || github.ref }}
+
+      - uses: pnpm/action-setup@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: pnpm
+
+      - uses: dtolnay/rust-toolchain@stable
+        with:
+          targets: ${{ matrix.rust-targets }}
+      - uses: Swatinem/rust-cache@v2
+        with:
+          workspaces: src-tauri
+
+      - run: pnpm install --frozen-lockfile
+      - run: pnpm icons
+
+      - run: pnpm tauri build ${{ matrix.args }}
+
+      # The size budget applies to what people actually download, not only to
+      # the CI build, so it is checked here too.
+      - name: Check the installer against the 8 MB budget
+        shell: bash
+        run: node scripts/check-budget.mjs "${{ matrix.pattern }}"
+
+      - name: Attach the installer to the release
+        shell: bash
+        env:
+          GH_TOKEN: ${{ github.token }}
+          TAG: ${{ inputs.tag || github.ref_name }}
+        run: gh release upload "$TAG" ${{ matrix.pattern }} --clobber
