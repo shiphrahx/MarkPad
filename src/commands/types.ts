@@ -20,6 +20,15 @@ export interface Command {
    */
   readonly key?: string
   readonly windowsKey?: string
+  /**
+   * Shortcuts that also fire the command but are never drawn.
+   *
+   * One key produces different characters depending on what else is held, and
+   * people press whichever of them means the thing they want. Ctrl+= and
+   * Ctrl+Shift+= are the same gesture to anyone zooming in, so both fire, and
+   * the palette shows the one worth teaching.
+   */
+  readonly extraKeys?: readonly string[]
   /** Whether the command can run right now. Absent means always. */
   readonly enabled?: () => boolean
   readonly run: () => void | Promise<void>

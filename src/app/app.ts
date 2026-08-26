@@ -153,8 +153,10 @@ export class App {
 
     for (const command of this.commands) {
       const shortcut = shortcutFor(command, host.platform)
-      const parsed = shortcut === null ? null : parseShortcut(shortcut)
-      if (parsed) this.bindings.push({ command, shortcut: parsed })
+      for (const raw of [shortcut, ...(command.extraKeys ?? [])]) {
+        const parsed = raw === null ? null : parseShortcut(raw)
+        if (parsed) this.bindings.push({ command, shortcut: parsed })
+      }
     }
 
     // Scrolling changes nothing about the document, but it changes where the
