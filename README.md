@@ -12,6 +12,8 @@
 [![Installer size](https://img.shields.io/badge/installer-~3.3%20MB-6E7A78)](#it-doesnt-run-in-your-browser)
 [![Built with Tauri](https://img.shields.io/badge/built%20with-Tauri%20v2-6E7A78)](https://tauri.app)
 
+<img src="./docs/logo.png" alt="MarkPad" width="440">
+
 **[Download for macOS or Windows](https://github.com/shiphrahx/MarkPad/releases/latest)**
 
 </div>
