@@ -23,6 +23,26 @@
 You double-click a `.md` file, it opens, and it looks like a document rather than
 raw syntax. You type. It saves.
 
+## Installing
+
+Grab the file for your machine from
+[the latest release](https://github.com/shiphrahx/MarkPad/releases/latest).
+
+**macOS** — download the `.dmg`, open it, and drag MarkPad into Applications.
+It's a universal build, so the same file works on Apple silicon and Intel.
+
+**Windows** — download the `-setup.exe` and run it. It installs for the current
+user, so there's no admin prompt.
+
+Both builds are unsigned, because code-signing certificates cost money per year
+and this is free. So the first launch has an extra step:
+
+- On macOS, right-click the app and choose **Open**, then **Open** again in the
+  dialog. macOS remembers after that. Double-clicking the first time gives you a
+  dead end rather than that dialog.
+- On Windows, SmartScreen will flag an unrecognised publisher. Click **More info**,
+  then **Run anyway**.
+
 ## Why it exists
 
 I wanted a way to read and edit Markdown that was just a small app on my desktop.
