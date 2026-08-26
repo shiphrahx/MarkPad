@@ -20,6 +20,11 @@ describe('formatShortcut', () => {
   it('leaves a plain function key alone', () => {
     expect(formatShortcut('F2', 'windows')).toBe('F2')
   })
+
+  it('draws a spelled key as the character on the keyboard', () => {
+    expect(formatShortcut('Mod+Minus', 'windows')).toBe('Ctrl+-')
+    expect(formatShortcut('Mod+Plus', 'macos')).toBe('⌘+')
+  })
 })
 
 function press(key: string, modifiers: Partial<KeyboardEvent> = {}): KeyboardEvent {
@@ -58,6 +63,20 @@ describe('matchesShortcut', () => {
 
   it('ignores the case of the key that was pressed', () => {
     expect(matchesShortcut(press('K', { ctrlKey: true }), 'Mod+k', 'windows')).toBe(true)
+  })
+
+  it('understands a key that had to be spelled out', () => {
+    expect(matchesShortcut(press('+', { ctrlKey: true }), 'Mod+Plus', 'windows')).toBe(true)
+    expect(matchesShortcut(press('-', { ctrlKey: true }), 'Mod+Minus', 'windows')).toBe(true)
+    expect(matchesShortcut(press('=', { ctrlKey: true }), 'Mod+Equals', 'windows')).toBe(true)
+  })
+
+  it('tells the two ways of asking for a bigger font apart', () => {
+    // Shift turns the same physical key from = into +, so the shortcut that
+    // wants shift has to be written against the character shift produces.
+    const shifted = press('+', { ctrlKey: true, shiftKey: true })
+    expect(matchesShortcut(shifted, 'Mod+Shift+Plus', 'windows')).toBe(true)
+    expect(matchesShortcut(shifted, 'Mod+=', 'windows')).toBe(false)
   })
 
   it('matches a bare key with no modifiers', () => {

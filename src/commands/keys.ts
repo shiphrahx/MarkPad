@@ -50,10 +50,24 @@ export function formatShortcut(shortcut: string, platform: Platform): string {
   const parts = shortcut.split('+').map((part) => part.trim().toLowerCase())
 
   if (platform === 'macos') {
-    return parts.map((part) => MAC_SYMBOLS[part] ?? capitalise(part)).join('')
+    return parts.map((part) => MAC_SYMBOLS[part] ?? draw(part)).join('')
   }
 
-  return parts.map((part) => WINDOWS_NAMES[part] ?? capitalise(part)).join('+')
+  return parts.map((part) => WINDOWS_NAMES[part] ?? draw(part)).join('+')
+}
+
+/**
+ * Keys that cannot be written as themselves.
+ *
+ * A shortcut is split on `+`, so a shortcut whose key *is* `+` has to be
+ * spelled. The rest are here for company, because `Mod+Minus` reads better
+ * than `Mod+-` in a list of commands.
+ */
+const KEY_ALIASES: Record<string, string> = {
+  plus: '+',
+  minus: '-',
+  equals: '=',
+  space: ' ',
 }
 
 /**
@@ -74,8 +88,9 @@ export interface ParsedShortcut {
 
 export function parseShortcut(shortcut: string): ParsedShortcut | null {
   const parts = shortcut.split('+').map((part) => part.trim().toLowerCase())
-  const key = parts[parts.length - 1]
-  if (key === undefined) return null
+  const last = parts[parts.length - 1]
+  if (last === undefined) return null
+  const key = KEY_ALIASES[last] ?? last
 
   const wanted = new Set(parts.slice(0, -1))
 
@@ -116,6 +131,11 @@ export function matchesShortcut(
 ): boolean {
   const parsed = parseShortcut(shortcut)
   return parsed !== null && matchesParsed(event, parsed, platform)
+}
+
+/** A key as the user sees it printed on the keyboard. */
+function draw(part: string): string {
+  return KEY_ALIASES[part] ?? capitalise(part)
 }
 
 function capitalise(text: string): string {
