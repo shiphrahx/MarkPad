@@ -30,7 +30,7 @@
     color-scheme:light;
   }
   @media (prefers-color-scheme:dark){
-    :root{
+    :root:not([data-theme="light"]){
       color-scheme:dark;
       --page:#0D1211;
       --raise:#131817;
@@ -47,29 +47,22 @@
     }
   }
 
-  /* The window mock carries its own palette, so the toggle can show a dark app
-     sitting on a light page the way the mockup did. */
-  .app[data-theme="light"]{
-    --chrome:#E8EBE9;
-    --sheet:#FFFFFF;
-    --ink:#131A19;
-    --muted:#6E7A78;
-    --mark:#A9B3B0;
-    --rule:#E1E6E3;
-    --accent:#0E7C66;
-    --tint:rgba(14,124,102,.09);
-    --shadow:0 1px 2px rgba(19,26,25,.06),0 18px 50px -12px rgba(19,26,25,.22);
-  }
-  .app[data-theme="dark"]{
-    --chrome:#171C1B;
-    --sheet:#121716;
-    --ink:#E4EAE8;
-    --muted:#87938F;
-    --mark:#4A5754;
-    --rule:#232A28;
-    --accent:#4FD1AE;
-    --tint:rgba(79,209,174,.10);
-    --shadow:0 1px 2px rgba(0,0,0,.4),0 18px 50px -12px rgba(0,0,0,.55);
+  /* Picking a theme from the control sets data-theme on the root, so it has to
+     win over the media query above whichever way the OS is set. */
+  :root[data-theme="dark"]{
+    color-scheme:dark;
+      --page:#0D1211;
+      --raise:#131817;
+      --chrome:#171C1B;
+      --sheet:#121716;
+      --ink:#E4EAE8;
+      --muted:#87938F;
+      --mark:#4A5754;
+      --rule:#232A28;
+      --accent:#4FD1AE;
+      --accent-ink:#08201B;
+      --tint:rgba(79,209,174,.10);
+      --shadow:0 1px 2px rgba(0,0,0,.4),0 18px 50px -12px rgba(0,0,0,.55);
   }
 
   *{box-sizing:border-box}
@@ -350,7 +343,7 @@
       </div>
     </div>
 
-    <div class="app" id="app" data-os="mac" data-theme="light">
+    <div class="app" id="app" data-os="mac">
       <div class="titlebar">
         <div class="lights"><i></i><i></i><i></i></div>
         <span class="winicon">M</span>
@@ -543,20 +536,27 @@
 
 <script>
   var app = document.getElementById('app');
+  var root = document.documentElement;
 
-  function setGroup(attr, value, btn) {
-    app.setAttribute('data-' + attr, value);
+  function press(btn) {
     var group = btn.parentElement.querySelectorAll('button');
     for (var i = 0; i < group.length; i++) {
       group[i].setAttribute('aria-pressed', String(group[i] === btn));
     }
   }
 
+  // Platform is a property of the mockup. Appearance is a property of the page.
   document.querySelectorAll('.seg button[data-os]').forEach(function (b) {
-    b.addEventListener('click', function () { setGroup('os', b.dataset.os, b); });
+    b.addEventListener('click', function () {
+      app.setAttribute('data-os', b.dataset.os);
+      press(b);
+    });
   });
   document.querySelectorAll('.seg button[data-theme]').forEach(function (b) {
-    b.addEventListener('click', function () { setGroup('theme', b.dataset.theme, b); });
+    b.addEventListener('click', function () {
+      root.setAttribute('data-theme', b.dataset.theme);
+      press(b);
+    });
   });
 
   // Open the mock on the chrome the visitor already knows, and lead with the
@@ -572,10 +572,12 @@
     });
   }
 
-  // And follow the OS for the mock's theme, same as the app does.
+  // With nothing picked the page follows the OS, so the control starts out
+  // showing what's actually on screen. Deliberately not clicking it: that would
+  // pin the choice and stop the page tracking a system theme change.
   if (window.matchMedia && window.matchMedia('(prefers-color-scheme: dark)').matches) {
     var dark = document.querySelector('.seg button[data-theme="dark"]');
-    if (dark) dark.click();
+    if (dark) press(dark);
   }
 </script>
 </body>
