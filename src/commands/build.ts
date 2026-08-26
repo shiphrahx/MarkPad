@@ -2,6 +2,16 @@ import type { App } from '../app/app.js'
 import { isDirty } from '../app/buffer.js'
 import { exportHtml, exportPdf } from '../export/export.js'
 import { currentTheme, setTheme, THEMES, themeLabel } from '../ui/theme.js'
+import {
+  canZoomIn,
+  canZoomOut,
+  currentZoom,
+  DEFAULT_ZOOM,
+  resetZoom,
+  zoomIn,
+  zoomLabel,
+  zoomOut,
+} from '../ui/zoom.js'
 import { FORMAT_ACTIONS } from '../wysiwyg/format.js'
 import type { Command } from './types.js'
 
@@ -152,6 +162,37 @@ export function buildCommands(app: App): Command[] {
       key: 'Mod+Shift+V',
       enabled: hasFile,
       run: () => app.togglePreview(),
+    },
+    // Bigger and smaller text, which is what zoom means here: the chrome is
+    // drawn at native metrics and stays there. Ctrl+= is the shortcut anyone
+    // reaches for, and Ctrl+Shift+= and the numpad key are the same gesture,
+    // so they fire it too without cluttering the palette.
+    {
+      id: 'view.zoomIn',
+      title: 'Zoom in',
+      category: 'View',
+      key: 'Mod+=',
+      extraKeys: ['Mod+Shift+Plus', 'Mod+Plus'],
+      enabled: canZoomIn,
+      run: () => zoomIn(),
+    },
+    {
+      id: 'view.zoomOut',
+      title: 'Zoom out',
+      category: 'View',
+      key: 'Mod+Minus',
+      enabled: canZoomOut,
+      run: () => zoomOut(),
+    },
+    {
+      id: 'view.zoomReset',
+      // Says where it puts you, and the palette greys it out when you are
+      // already there, so the level is discoverable without a readout.
+      title: `Actual size (${zoomLabel(DEFAULT_ZOOM)})`,
+      category: 'View',
+      key: 'Mod+0',
+      enabled: () => currentZoom() !== DEFAULT_ZOOM,
+      run: () => resetZoom(),
     },
     // One command per theme rather than one that cycles. A cycle makes you
     // press it twice to find out where you are; these say what they do and the

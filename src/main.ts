@@ -3,6 +3,7 @@ import { App } from './app/app.js'
 import { TauriHost } from './host/tauri.js'
 import { resetDiagramTheme } from './preview/draw.js'
 import { apply as applyTheme, onThemeChange, watchSystemTheme } from './ui/theme.js'
+import { applyZoom } from './ui/zoom.js'
 import { applyNativeChrome } from './ui/native-chrome.js'
 import { DOCUMENT_CSS } from './preview/document-css.js'
 
@@ -10,8 +11,9 @@ const root = document.querySelector<HTMLDivElement>('#app')
 if (!root) throw new Error('MarkPad could not find its root element.')
 
 // Before anything is drawn, so the window never flashes the wrong colours on
-// the way to the right ones.
+// the way to the right ones, or the wrong size on the way to the right one.
 applyTheme()
+applyZoom()
 
 // The preview pane and the popovers both render Markdown, so the document
 // styles have to exist in the app as well as inside an exported file.
