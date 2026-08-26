@@ -9,7 +9,7 @@
 [![Licence](https://img.shields.io/badge/licence-MIT-0E7C66)](./LICENSE)
 
 [![Platforms](https://img.shields.io/badge/platforms-Windows%2010%2B%20%C2%B7%20macOS%2013%2B-6E7A78)](https://github.com/shiphrahx/MarkPad/releases/latest)
-[![Installer size](https://img.shields.io/badge/installer-~3.3%20MB-6E7A78)](#it-doesnt-run-in-your-browser)
+[![Installer size](https://img.shields.io/badge/installer-3.3%20MB%20Win%20%C2%B7%207.2%20MB%20Mac-6E7A78)](#it-doesnt-run-in-your-browser)
 [![Built with Tauri](https://img.shields.io/badge/built%20with-Tauri%20v2-6E7A78)](https://tauri.app)
 
 <img src="./docs/logo.png" alt="MarkPad" width="440">
@@ -54,7 +54,8 @@ first. That's what this is.
 MarkPad is a real desktop app, not a web page in a tab.
 
 It uses the WebView already on your computer (WebView2 on Windows, WKWebView on macOS)
-rather than shipping its own copy of Chromium. That's why the download is around 3 MB.
+rather than shipping its own copy of Chromium. That's why the Windows installer is 3.3 MB
+and the universal Mac one 7.2 MB, carrying a build for each chip.
 It starts quickly, it stays small in memory, and when you close it, it's closed.
 
 ## What it does
