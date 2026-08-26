@@ -333,13 +333,13 @@ body {
 }
 
 .reader .markpad-document h1 {
-  font-size: 20px;
+  font-size: calc(20px * var(--zoom));
   font-weight: 700;
   letter-spacing: -0.01em;
 }
 
 .reader .markpad-document h2 {
-  font-size: 16px;
+  font-size: calc(16px * var(--zoom));
   font-weight: 700;
 }
 
@@ -356,7 +356,7 @@ body {
   color: var(--accent);
   padding: 2px 5px;
   border-radius: var(--radius-code);
-  font-size: 12.5px;
+  font-size: calc(12.5px * var(--zoom));
 }
 
 .reader .markpad-document pre {

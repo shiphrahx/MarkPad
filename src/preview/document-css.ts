@@ -41,7 +41,10 @@ export const DOCUMENT_CSS = `
   background: var(--doc-bg);
   color: var(--doc-fg);
   font-family: system-ui, -apple-system, "Segoe UI", Roboto, sans-serif;
-  font-size: 16px;
+  /* These styles are also the ones an exported file carries, where nothing
+     sets --zoom and the fallback is what applies. Inside the app the preview
+     pane and the popovers follow the zoom level like everything else. */
+  font-size: calc(16px * var(--zoom, 1));
   line-height: 1.65;
   max-width: 42rem;
   margin: 0 auto;

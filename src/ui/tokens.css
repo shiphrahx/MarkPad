@@ -39,10 +39,17 @@
   --font-mono: 'JetBrains Mono Variable', 'JetBrains Mono', ui-monospace, 'SF Mono',
     'Cascadia Mono', Menlo, Consolas, monospace;
 
+  /*
+   * How much bigger or smaller the document text is than it was drawn.
+   * Only document sizes multiply by it: the chrome keeps native metrics.
+   * src/ui/zoom.ts owns the value.
+   */
+  --zoom: 1;
+
   /* Type */
   --size-title: 13px;
   --size-tab: 12.5px;
-  --size-doc: 13.5px;
+  --size-doc: calc(13.5px * var(--zoom));
   --size-status: 11px;
   --size-palette-input: 13.5px;
   --size-command: 13px;
