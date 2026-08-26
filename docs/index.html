@@ -315,22 +315,27 @@
     no sync, and no browser tab quietly eating a gigabyte in the background.</p>
 
     <div class="get">
-      <a class="btn primary" href="https://github.com/shiphrahx/MarkPad/releases/latest">
+      <a class="btn primary" data-plat="mac" href="https://github.com/shiphrahx/MarkPad/releases/latest">
         <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M16.4 12.7c0-2.3 1.9-3.4 2-3.5-1.1-1.6-2.8-1.8-3.4-1.8-1.4-.1-2.8.9-3.5.9s-1.8-.9-3-.8c-1.5 0-2.9.9-3.7 2.2-1.6 2.8-.4 6.9 1.1 9.2.8 1.1 1.7 2.3 2.9 2.3 1.2 0 1.6-.7 3-.7s1.8.7 3 .7c1.3 0 2.1-1.1 2.8-2.2.9-1.3 1.3-2.5 1.3-2.6 0 0-2.5-1-2.5-3.7zM14.2 5.5c.6-.8 1.1-1.9 1-3-.9 0-2.1.6-2.8 1.4-.6.7-1.2 1.8-1 2.9 1 .1 2.1-.5 2.8-1.3z"/></svg>
-        Download for macOS
-        <span class="size">7.2 MB, universal</span>
+        Mac, Apple silicon
+        <span class="size">3.6 MB</span>
       </a>
-      <a class="btn ghost" href="https://github.com/shiphrahx/MarkPad/releases/latest">
+      <a class="btn ghost" data-plat="mac" href="https://github.com/shiphrahx/MarkPad/releases/latest">
+        <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M16.4 12.7c0-2.3 1.9-3.4 2-3.5-1.1-1.6-2.8-1.8-3.4-1.8-1.4-.1-2.8.9-3.5.9s-1.8-.9-3-.8c-1.5 0-2.9.9-3.7 2.2-1.6 2.8-.4 6.9 1.1 9.2.8 1.1 1.7 2.3 2.9 2.3 1.2 0 1.6-.7 3-.7s1.8.7 3 .7c1.3 0 2.1-1.1 2.8-2.2.9-1.3 1.3-2.5 1.3-2.6 0 0-2.5-1-2.5-3.7zM14.2 5.5c.6-.8 1.1-1.9 1-3-.9 0-2.1.6-2.8 1.4-.6.7-1.2 1.8-1 2.9 1 .1 2.1-.5 2.8-1.3z"/></svg>
+        Mac, Intel
+        <span class="size">3.7 MB</span>
+      </a>
+      <a class="btn ghost" data-plat="win" href="https://github.com/shiphrahx/MarkPad/releases/latest">
         <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M3 5.6l7.5-1v7.1H3V5.6zm0 12.8l7.5 1v-7H3v6zm8.5 1.2L21 21V12.7h-9.5v6.9zm0-15.2v7.3H21V3l-9.5 1.4z"/></svg>
-        Download for Windows
+        Windows
         <span class="size">3.3 MB</span>
       </a>
     </div>
-    <p class="fineprint">Windows 10 and later, macOS 13 and later. The Mac build is universal,
-    so one file covers Apple silicon and Intel.</p>
-    <p class="fineprint" style="margin-top:8px">Both builds are unsigned, so the first launch
-    needs one extra step: on macOS right-click the app and choose Open, on Windows click
-    More info then Run anyway.</p>
+    <p class="fineprint">Windows 10 and later, macOS 13 and later. Not sure which Mac you have?
+    Apple menu, then About This Mac. Anything from 2020 on is almost certainly Apple silicon.</p>
+    <p class="fineprint" style="margin-top:8px">Nothing is signed, so the first launch needs one
+    extra step: on macOS right-click the app and choose Open, on Windows click More info then
+    Run anyway.</p>
   </div>
 
   <section class="shot" aria-label="What MarkPad looks like">
@@ -383,7 +388,7 @@
           <span class="row"><span class="m">| </span>Platform <span class="m">| </span>Shell <span class="m">| </span>Installer <span class="m">|</span></span>
           <span class="row"><span class="m">|----------|-------|-----------|</span></span>
           <span class="row"><span class="m">| </span><span class="sel">Windows 10+</span> <span class="m">| </span>WebView2 <span class="m">| </span>3.3 MB <span class="m">|</span></span>
-          <span class="row"><span class="m">| </span>macOS 13+ <span class="m">| </span>WKWebView <span class="m">| </span>7.2 MB <span class="m">|</span></span>
+          <span class="row"><span class="m">| </span>macOS 13+ <span class="m">| </span>WKWebView <span class="m">| </span>3.6 MB <span class="m">|</span></span>
           <span class="row">&nbsp;</span>
           <span class="row"><span class="quote"><span class="m">&gt; </span>Your files are files. Delete MarkPad tomorrow and nothing breaks.</span></span>
         </div>
@@ -393,7 +398,7 @@
           <table>
             <tr><th>Platform</th><th>Shell</th><th>Installer</th></tr>
             <tr><td>Windows 10+</td><td>WebView2</td><td>3.3 MB</td></tr>
-            <tr><td>macOS 13+</td><td>WKWebView</td><td>7.2 MB</td></tr>
+            <tr><td>macOS 13+</td><td>WKWebView</td><td>3.6 MB</td></tr>
           </table>
         </div>
       </div>
@@ -410,9 +415,8 @@
       <div>
         <span class="num">3.3 MB</span>
         <h3>Small enough not to think about</h3>
-        <p>That is the whole Windows installer, and the universal Mac one is 7.2 MB because it
-        carries both chips. It uses the WebView already on your machine instead of shipping a
-        second copy of Chromium.</p>
+        <p>That is the whole installer, on either platform. It uses the WebView already sitting
+        on your machine instead of shipping a second copy of Chromium.</p>
       </div>
       <div>
         <span class="num">Native</span>
@@ -555,10 +559,17 @@
     b.addEventListener('click', function () { setGroup('theme', b.dataset.theme, b); });
   });
 
-  // Open the mock on the chrome the visitor already knows.
+  // Open the mock on the chrome the visitor already knows, and lead with the
+  // download they're most likely to want.
   if (/Win/i.test(navigator.userAgent)) {
     var win = document.querySelector('.seg button[data-os="win"]');
     if (win) win.click();
+
+    document.querySelectorAll('.hero .btn').forEach(function (b) {
+      var isWin = b.dataset.plat === 'win';
+      b.classList.toggle('primary', isWin);
+      b.classList.toggle('ghost', !isWin);
+    });
   }
 
   // And follow the OS for the mock's theme, same as the app does.
