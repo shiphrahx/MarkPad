@@ -25,12 +25,19 @@ jobs:
       fail-fast: false
       matrix:
         include:
+          # One dmg per chip rather than a universal build. The universal one
+          # worked, but it carries both binaries and ate 7.15 of the 8 MB
+          # budget, which left nothing for the app to grow into.
           - os: macos-latest
-            name: macOS (universal)
-            # One download that runs on both Apple silicon and Intel.
-            args: --target universal-apple-darwin
-            rust-targets: aarch64-apple-darwin,x86_64-apple-darwin
-            pattern: src-tauri/target/universal-apple-darwin/release/bundle/dmg/*.dmg
+            name: macOS (Apple silicon)
+            args: --target aarch64-apple-darwin
+            rust-targets: aarch64-apple-darwin
+            pattern: src-tauri/target/aarch64-apple-darwin/release/bundle/dmg/*.dmg
+          - os: macos-latest
+            name: macOS (Intel)
+            args: --target x86_64-apple-darwin
+            rust-targets: x86_64-apple-darwin
+            pattern: src-tauri/target/x86_64-apple-darwin/release/bundle/dmg/*.dmg
           - os: windows-latest
             name: Windows (x64)
             args: ''
@@ -54,6 +61,7 @@ jobs:
       - uses: Swatinem/rust-cache@v2
         with:
           workspaces: src-tauri
+          key: ${{ matrix.rust-targets }}
 
       - run: pnpm install --frozen-lockfile
       - run: pnpm icons
