@@ -6,7 +6,7 @@
 
 [![CI](https://github.com/shiphrahx/MarkPad/actions/workflows/ci.yml/badge.svg)](https://github.com/shiphrahx/MarkPad/actions/workflows/ci.yml)
 [![Latest release](https://img.shields.io/github/v/release/shiphrahx/MarkPad?display_name=tag&sort=semver&color=0E7C66)](https://github.com/shiphrahx/MarkPad/releases/latest)
-[![Licence](https://img.shields.io/badge/licence-MIT-0E7C66)](#licence)
+[![Licence](https://img.shields.io/badge/licence-MIT-0E7C66)](./LICENSE)
 
 [![Platforms](https://img.shields.io/badge/platforms-Windows%2010%2B%20%C2%B7%20macOS%2013%2B-6E7A78)](https://github.com/shiphrahx/MarkPad/releases/latest)
 [![Installer size](https://img.shields.io/badge/installer-~3.3%20MB-6E7A78)](#it-doesnt-run-in-your-browser)
@@ -96,4 +96,4 @@ and macOS only. This is the cross-platform take on the same idea.
 
 ## Licence
 
-MIT.
+MIT. See [`LICENSE`](./LICENSE).
