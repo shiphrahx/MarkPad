@@ -36,10 +36,21 @@ jobs:
         os: [windows-latest, macos-latest]
     steps:
       - uses: actions/checkout@v4
+      - uses: pnpm/action-setup@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: pnpm
       - uses: dtolnay/rust-toolchain@stable
       - uses: Swatinem/rust-cache@v2
         with:
           workspaces: src-tauri
+
+      # The icons aren't committed, and tauri-build reads them at compile time,
+      # so anything that compiles the crate has to generate them first.
+      - run: pnpm install --frozen-lockfile
+      - run: pnpm icons
+
       - run: cargo fmt --all --check
         working-directory: src-tauri
       - run: cargo clippy --all-targets -- -D warnings
