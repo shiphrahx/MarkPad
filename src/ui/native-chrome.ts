@@ -1,14 +1,17 @@
-import { onThemeChange } from './theme.js'
+import { currentTheme, onThemeChange } from './theme.js'
 
 /**
- * Tell the window what colour to paint its own title bar.
+ * Keep the parts of the window we do not draw in step with the parts we do.
  *
- * The design tokens are the only place that knows what the chrome grey is, so
- * the values are read back off the stylesheet rather than written down a
- * second time here. Change tokens.css and the caption follows.
+ * Two separate things, and they were not both being done. The caption colours
+ * are ours to pick and come from the tokens. The window's theme is the
+ * operating system's business, and it is what everything native reads: the
+ * menu bar, the scrollbars, the context menus, the system dialogs. Setting
+ * only the first is how you end up with a light app wearing a dark menu bar.
  *
- * Windows only in effect. macOS already tracks the system appearance, which is
- * what the mockup shows there, and the command is a no-op on that side.
+ * The design tokens stay the only place that knows what the chrome grey is,
+ * so the caption values are read back off the stylesheet rather than written
+ * down a second time here.
  */
 export function applyNativeChrome(): void {
   void push()
@@ -16,6 +19,31 @@ export function applyNativeChrome(): void {
 }
 
 async function push(): Promise<void> {
+  // Theme first. It repaints the caption to the system's idea of light or
+  // dark, so our own colours have to go on top of it rather than under it.
+  await pushWindowTheme()
+  await pushCaptionColours()
+}
+
+/**
+ * What the native furniture follows.
+ *
+ * `system` is the absence of a preference rather than a third value, so it
+ * goes over as null and the window tracks the OS on its own.
+ */
+async function pushWindowTheme(): Promise<void> {
+  try {
+    const { getCurrentWindow } = await import('@tauri-apps/api/window')
+
+    const theme = currentTheme()
+    await getCurrentWindow().setTheme(theme === 'system' ? null : theme)
+  } catch {
+    // Same reasoning as the colours below: worth trying, not worth failing
+    // a launch over.
+  }
+}
+
+async function pushCaptionColours(): Promise<void> {
   try {
     const { invoke } = await import('@tauri-apps/api/core')
 
