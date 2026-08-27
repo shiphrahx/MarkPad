@@ -62,6 +62,14 @@ export class App {
   readonly workspace: Workspace
   readonly commands: readonly Command[]
 
+  /**
+   * Anything that draws itself from what a command can do right now.
+   *
+   * The palette works out `enabled` every time it opens, so it never needed
+   * telling. A native menu bar is built once and then sits there, so it does.
+   */
+  private readonly stateListeners = new Set<() => void>()
+
   /** The rendered surface, which is what a file opens into. */
   private readonly reader: ReaderEditor
   /** The Markdown source, one command away. */
@@ -336,6 +344,10 @@ export class App {
    * rather than being recomputed here.
    */
   private renderCaretParts(): void {
+    // Every redraw goes through here, including the ones that only moved the
+    // caret, so it is the one place that knows the answers may have changed.
+    this.notifyState()
+
     const active = this.workspace.active
     if (!active) {
       this.status.render(null, null, 0)
@@ -589,6 +601,21 @@ export class App {
 
     if (active) this.loadIntoSurface(active.text)
     this.renderCaretParts()
+  }
+
+  /**
+   * Called when a command's `enabled` might have changed its mind.
+   *
+   * Returns the unsubscribe function, though nothing needs it yet: the menu
+   * bar lives as long as the window does.
+   */
+  onStateChange(listener: () => void): () => void {
+    this.stateListeners.add(listener)
+    return () => void this.stateListeners.delete(listener)
+  }
+
+  private notifyState(): void {
+    for (const listener of this.stateListeners) listener()
   }
 
   /** Put text into whichever surface is showing, and focus it. */
