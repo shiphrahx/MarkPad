@@ -3,7 +3,7 @@ import { App } from './app/app.js'
 import { TauriHost } from './host/tauri.js'
 import { resetDiagramTheme } from './preview/draw.js'
 import { apply as applyTheme, onThemeChange, watchSystemTheme } from './ui/theme.js'
-import { applyZoom } from './ui/zoom.js'
+import { applyZoom, onZoomChange } from './ui/zoom.js'
 import { installMenus } from './ui/menus.js'
 import { applyNativeChrome } from './ui/native-chrome.js'
 import { DOCUMENT_CSS } from './preview/document-css.js'
@@ -38,9 +38,26 @@ void start()
 
 async function start(): Promise<void> {
   applyNativeChrome()
-  await Promise.allSettled([openStartupFiles(), installMenus(app.commands, host.platform)])
+  await Promise.allSettled([openStartupFiles(), followCommandState()])
   listenForDroppedFiles()
   followSystemTheme()
+}
+
+/**
+ * The menu bar, and the wiring that stops it going stale.
+ *
+ * Half the commands can only run some of the time, and the bar is built once
+ * where the palette is rebuilt on every open. Without these three the menu
+ * shows whatever was true a moment after launch for the rest of the session:
+ * Save greyed out on a file you have since opened, Theme: Light greyed out
+ * after you switched to dark.
+ */
+async function followCommandState(): Promise<void> {
+  const refresh = await installMenus(app.commands, host.platform)
+
+  app.onStateChange(refresh)
+  onThemeChange(refresh)
+  onZoomChange(refresh)
 }
 
 /**
