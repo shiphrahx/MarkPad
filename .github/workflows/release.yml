@@ -18,8 +18,34 @@ permissions:
   contents: write
 
 jobs:
+  # Pushing a tag creates a tag. It does not create a release, and there is
+  # nothing for the installers to attach themselves to until one exists. Its
+  # own job rather than a step in each matrix leg, so three runners don't race
+  # each other to create the same thing.
+  entry:
+    name: Release entry
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: ${{ inputs.tag || github.ref }}
+
+      - name: Make sure the release exists
+        shell: bash
+        env:
+          GH_TOKEN: ${{ github.token }}
+          TAG: ${{ inputs.tag || github.ref_name }}
+          REPO: ${{ github.repository }}
+        run: |
+          if gh release view "$TAG" --repo "$REPO" >/dev/null 2>&1; then
+            echo "$TAG already has a release, leaving its notes alone."
+          else
+            gh release create "$TAG" --repo "$REPO"               --title "MarkPad ${TAG#v}" --generate-notes
+          fi
+
   installers:
     name: ${{ matrix.name }}
+    needs: entry
     runs-on: ${{ matrix.os }}
     strategy:
       fail-fast: false
@@ -95,4 +121,5 @@ jobs:
         env:
           GH_TOKEN: ${{ github.token }}
           TAG: ${{ inputs.tag || github.ref_name }}
-        run: gh release upload "$TAG" ${{ matrix.pattern }} --clobber
+          REPO: ${{ github.repository }}
+        run: gh release upload "$TAG" ${{ matrix.pattern }} --clobber --repo "$REPO"
