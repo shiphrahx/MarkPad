@@ -63,6 +63,22 @@ jobs:
           workspaces: src-tauri
           key: ${{ matrix.rust-targets }}
 
+      # Tagging doesn't touch tauri.conf.json, so it's entirely possible to tag
+      # v0.1.2 and ship three files called MarkPad_0.1.1. Cheaper to stop here
+      # than to work out later which build a bug report is actually about.
+      - name: Check the tag against the declared version
+        shell: bash
+        env:
+          TAG: ${{ inputs.tag || github.ref_name }}
+        run: |
+          declared=$(node -p "require('./src-tauri/tauri.conf.json').version")
+          if [ "$TAG" != "v$declared" ]; then
+            echo "Tag $TAG does not match tauri.conf.json, which says $declared."
+            echo "Bump the version and move the tag, or tag v$declared."
+            exit 1
+          fi
+          echo "$TAG matches the declared version."
+
       - run: pnpm install --frozen-lockfile
       - run: pnpm icons
 
