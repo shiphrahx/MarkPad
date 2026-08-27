@@ -4,6 +4,7 @@ import { TauriHost } from './host/tauri.js'
 import { resetDiagramTheme } from './preview/draw.js'
 import { apply as applyTheme, onThemeChange, watchSystemTheme } from './ui/theme.js'
 import { applyZoom } from './ui/zoom.js'
+import { installMenus } from './ui/menus.js'
 import { applyNativeChrome } from './ui/native-chrome.js'
 import { DOCUMENT_CSS } from './preview/document-css.js'
 
@@ -37,7 +38,7 @@ void start()
 
 async function start(): Promise<void> {
   applyNativeChrome()
-  await openStartupFiles()
+  await Promise.allSettled([openStartupFiles(), installMenus(app.commands, host.platform)])
   listenForDroppedFiles()
   followSystemTheme()
 }
