@@ -57,12 +57,18 @@ export async function installMenus(
   // Without this there is no Quit, no Hide and no About, and the app looks
   // broken in a way that is entirely about the menu bar.
   if (platform === 'macos') {
+    // Asked for rather than written down. There are already four files that
+    // have to agree on the version number and this does not need to be a
+    // fifth, quietly telling people they are on an older build than they are.
+    const { getVersion } = await import('@tauri-apps/api/app')
+    const version = await getVersion()
+
     submenus.unshift(
       await Submenu.new({
         text: 'MarkPad',
         items: [
           await PredefinedMenuItem.new({
-            item: { About: { name: 'MarkPad', version: '0.1.0' } },
+            item: { About: { name: 'MarkPad', version } },
           }),
           await PredefinedMenuItem.new({ item: 'Separator' }),
           await PredefinedMenuItem.new({ item: 'Services' }),
