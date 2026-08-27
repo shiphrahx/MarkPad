@@ -25,6 +25,10 @@ export const DEFAULT_ZOOM = 1
 
 const STORAGE_KEY = 'markpad.zoom'
 
+type Listener = (level: number) => void
+
+const listeners = new Set<Listener>()
+
 let current: number = load()
 
 function load(): number {
@@ -96,6 +100,19 @@ export function setZoom(level: number): void {
   }
 
   applyZoom()
+  for (const listener of listeners) listener(current)
+}
+
+/**
+ * Called when the level changes.
+ *
+ * Same shape as `onThemeChange`, and for the same reason: anything drawn from
+ * the level has to be told, and the menu bar's Zoom In and Zoom Out grey out
+ * at the ends of the ladder.
+ */
+export function onZoomChange(listener: Listener): () => void {
+  listeners.add(listener)
+  return () => void listeners.delete(listener)
 }
 
 /** Put the level where the stylesheets read it. Call once at startup. */
