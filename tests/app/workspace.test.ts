@@ -18,6 +18,22 @@ describe('Workspace', () => {
     expect(workspace.active).toBeNull()
   })
 
+  it('opens a named buffer that already holds something', () => {
+    const buffer = workspace.create({ text: '# Welcome\n', name: 'Welcome' })
+
+    expect(title(buffer)).toBe('Welcome')
+    expect(buffer.text).toBe('# Welcome\n')
+    expect(isDirty(buffer)).toBe(false)
+  })
+
+  it('offers the buffer name in the save dialog', async () => {
+    const buffer = workspace.create({ text: '# Welcome\n', name: 'Welcome' })
+    host.queueSavePick(null)
+    await workspace.save(buffer.id)
+
+    expect(host.suggestedNames).toEqual(['Welcome.md'])
+  })
+
   it('opens a file and focuses it', async () => {
     host.seed('C:/notes.md', '# Notes\n')
     await workspace.open(['C:/notes.md'])

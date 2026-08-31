@@ -5,6 +5,7 @@ import {
   isDirty,
   newBuffer,
   type Buffer,
+  type Contents,
 } from './buffer.js'
 
 export type WorkspaceListener = (workspace: Workspace) => void
@@ -40,9 +41,9 @@ export class Workspace {
     return this.buffers.some(isDirty)
   }
 
-  /** Open a blank buffer and focus it. */
-  create(): Buffer {
-    const buffer = newBuffer(this.host.platform)
+  /** Open a buffer and focus it. Blank, unless it is given something to hold. */
+  create(contents?: Contents): Buffer {
+    const buffer = newBuffer(this.host.platform, contents)
     this.buffers = [...this.buffers, buffer]
     this.activeId = buffer.id
     this.emit()
@@ -186,5 +187,6 @@ export class Workspace {
 }
 
 function suggestedName(buffer: Buffer): string {
-  return buffer.path === null ? 'Untitled.md' : fileName(buffer.path)
+  if (buffer.path !== null) return fileName(buffer.path)
+  return buffer.name === null ? 'Untitled.md' : buffer.name + '.md'
 }
