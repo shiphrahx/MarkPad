@@ -1,6 +1,6 @@
 {
   "name": "markpad",
-  "version": "0.1.2",
+  "version": "0.1.3",
   "private": true,
   "type": "module",
   "description": "A Markdown editor for Windows and macOS. Plain text in, plain text out.",
