@@ -3,7 +3,13 @@ import { beforeEach, describe, expect, it } from 'vitest'
 import { App } from '../../src/app/app.js'
 import { MemoryHost } from '../../src/host/memory.js'
 import { resetBufferIds } from '../../src/app/buffer.js'
-import { loadSession, saveSession, signatureOf } from '../../src/app/session.js'
+import {
+  isFirstLaunch,
+  loadSession,
+  rememberLaunch,
+  saveSession,
+  signatureOf,
+} from '../../src/app/session.js'
 
 function build(): { app: App; host: MemoryHost } {
   const host = new MemoryHost('windows')
@@ -168,5 +174,25 @@ describe('restoring the session', () => {
     app.newFile()
 
     expect(loadSession().paths).toEqual(['C:/a.md'])
+  })
+})
+
+describe('first launch', () => {
+  beforeEach(() => localStorage.clear())
+
+  it('is true with nothing in storage', () => {
+    expect(isFirstLaunch()).toBe(true)
+  })
+
+  it('is false once the launch has been remembered', () => {
+    rememberLaunch()
+    expect(isFirstLaunch()).toBe(false)
+  })
+
+  it('does not depend on whether any tabs were remembered', () => {
+    rememberLaunch()
+    saveSession({ paths: [], active: 0 })
+
+    expect(isFirstLaunch()).toBe(false)
   })
 })
