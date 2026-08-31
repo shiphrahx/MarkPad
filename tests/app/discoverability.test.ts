@@ -2,7 +2,8 @@
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 import { App } from '../../src/app/app.js'
 import { MemoryHost } from '../../src/host/memory.js'
-import { resetBufferIds } from '../../src/app/buffer.js'
+import { isDirty, resetBufferIds, title } from '../../src/app/buffer.js'
+import { rememberLaunch } from '../../src/app/session.js'
 
 function build(): { app: App; host: MemoryHost } {
   const host = new MemoryHost('windows')
@@ -26,6 +27,8 @@ describe('empty document', () => {
   beforeEach(() => {
     resetBufferIds()
     localStorage.clear()
+    // Not a first launch, so no welcome document in the way.
+    rememberLaunch()
     document.body.replaceChildren()
   })
 
@@ -65,6 +68,8 @@ describe('selection toolbar', () => {
   beforeEach(() => {
     resetBufferIds()
     localStorage.clear()
+    // Not a first launch, so no welcome document in the way.
+    rememberLaunch()
     document.body.replaceChildren()
   })
 
@@ -90,6 +95,8 @@ describe('slash menu', () => {
   beforeEach(() => {
     resetBufferIds()
     localStorage.clear()
+    // Not a first launch, so no welcome document in the way.
+    rememberLaunch()
     document.body.replaceChildren()
   })
 
@@ -106,6 +113,8 @@ describe('code blocks', () => {
   beforeEach(() => {
     resetBufferIds()
     localStorage.clear()
+    // Not a first launch, so no welcome document in the way.
+    rememberLaunch()
     document.body.replaceChildren()
   })
 
@@ -148,5 +157,49 @@ describe('code blocks', () => {
     app.flush()
 
     expect(app.workspace.active?.text).toBe(source)
+  })
+})
+
+describe('first launch', () => {
+  beforeEach(() => {
+    resetBufferIds()
+    localStorage.clear()
+    document.body.replaceChildren()
+  })
+
+  it('opens the welcome document instead of a blank tab', async () => {
+    const { app } = build()
+    await app.start()
+
+    expect(title(app.workspace.active!)).toBe('Welcome')
+    expect(app.workspace.active?.text).toContain('# Welcome to MarkPad')
+  })
+
+  it('leaves the welcome document unsaved and clean', async () => {
+    const { app } = build()
+    await app.start()
+
+    expect(app.workspace.active?.path).toBeNull()
+    expect(isDirty(app.workspace.active!)).toBe(false)
+  })
+
+  it('does not show it again on the next launch', async () => {
+    const first = build()
+    await first.app.start()
+
+    const second = build()
+    await second.app.start()
+
+    expect(title(second.app.workspace.active!)).toBe('Untitled 2')
+    expect(second.app.workspace.active?.text).toBe('')
+  })
+
+  it('stays out of the way when a file was opened from the command line', async () => {
+    const { app, host } = build()
+    host.seed('C:/notes.md', '# Notes\n')
+    await app.start(['C:/notes.md'])
+
+    expect(app.workspace.tabs).toHaveLength(1)
+    expect(app.workspace.active?.path).toBe('C:/notes.md')
   })
 })

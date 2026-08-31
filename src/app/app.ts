@@ -20,7 +20,15 @@ import { countWords } from './stats.js'
 import { isDirty, title as titleOf, type Buffer } from './buffer.js'
 import { extractHeadings, type Heading } from './outline.js'
 import { Workspace } from './workspace.js'
-import { loadSession, saveSession, signatureOf, type Session } from './session.js'
+import {
+  isFirstLaunch,
+  loadSession,
+  rememberLaunch,
+  saveSession,
+  signatureOf,
+  type Session,
+} from './session.js'
+import WELCOME from '../welcome.md?raw'
 import { buildCommands } from '../commands/build.js'
 import { ReaderEditor } from '../wysiwyg/editor.js'
 import { markpadSchema } from '../wysiwyg/schema.js'
@@ -197,13 +205,25 @@ export class App {
    * Open whatever should be on screen: last time's tabs, then anything named
    * on the command line, then a blank buffer if that came to nothing.
    *
+   * On the very first launch that blank buffer is the welcome document
+   * instead. Nothing else in the app demonstrates what it can render, and an
+   * empty surface with a one-line placeholder is a poor answer to what does
+   * this do. It is an ordinary unsaved buffer: close it and it is gone, with
+   * nothing written anywhere.
+   *
    * Kept out of the constructor because it reads the disk, and a constructor
    * that does IO is a constructor you cannot use in a test without a disk.
    */
   async start(commandLineFiles: readonly string[] = []): Promise<void> {
+    const first = isFirstLaunch()
+    rememberLaunch()
+
     await this.restoreSession()
     if (commandLineFiles.length > 0) await this.openFiles(commandLineFiles)
-    if (this.workspace.tabs.length === 0) this.workspace.create()
+    if (this.workspace.tabs.length > 0) return
+
+    if (first) this.workspace.create({ text: WELCOME, name: 'Welcome' })
+    else this.workspace.create()
   }
 
   /**
