@@ -54,10 +54,16 @@ describe('renderForExport', () => {
     expect(html).toContain('<table>')
   })
 
+  /**
+   * Thirty seconds because this is the test that pays for Mermaid. It is
+   * imported on demand, this is the first thing in the suite to ask for it,
+   * and on a cold module cache loading and initialising it takes a good deal
+   * longer than the five second default. Warm, it runs in milliseconds.
+   */
   it('says so in the document when a diagram cannot be drawn', async () => {
     const html = await renderForExport(buffer('```mermaid\nnot a diagram\n```\n'))
     expect(html).toContain('mp-block-error')
-  })
+  }, 30_000)
 })
 
 describe('exportHtml', () => {

@@ -32,6 +32,13 @@ export interface ReaderOptions {
   readonly onChange: () => void
   /** Opens the link dialog, which lives in the app because it draws one. */
   readonly onLink: () => void
+  /**
+   * A Markdown image source, turned into something the window can load, or
+   * null when there is nothing to load. Given rather than worked out here,
+   * because the answer depends on where the open file lives and this class
+   * deliberately knows nothing about files.
+   */
+  readonly imageUrl: (src: string) => string | null
 }
 
 /**
@@ -60,6 +67,7 @@ export class ReaderEditor {
       dispatchTransaction: (transaction) => this.apply(transaction),
       nodeViews: {
         list_item: (node, view, getPos) => new TaskItemView(node, view, getPos),
+        image: (node) => new ImageView(node, this.options.imageUrl),
       },
       attributes: {
         class: 'markpad-document',
@@ -216,6 +224,56 @@ export class ReaderEditor {
 
   destroy(): void {
     this.view.destroy()
+  }
+}
+
+/**
+ * An image, pointed at the file it actually means.
+ *
+ * The `src` in a Markdown file is written relative to the file, and the window
+ * cannot load a bare path. The node keeps what the file said, which is what
+ * gets written back on save; only what the browser is asked to fetch changes.
+ *
+ * An image that cannot be resolved, which today means one on the web, keeps its
+ * alt text and says so in the DOM rather than turning into a broken icon.
+ */
+class ImageView implements NodeView {
+  readonly dom: HTMLImageElement
+
+  constructor(
+    private node: ProseNode,
+    private readonly resolve: (src: string) => string | null,
+  ) {
+    this.dom = document.createElement('img')
+    this.draw()
+  }
+
+  private draw(): void {
+    const src = String(this.node.attrs.src ?? '')
+    const title = this.node.attrs.title
+
+    this.dom.alt = String(this.node.attrs.alt ?? '')
+    this.dom.dataset.src = src
+
+    if (title === null || title === undefined) this.dom.removeAttribute('title')
+    else this.dom.title = String(title)
+
+    const resolved = this.resolve(src)
+    if (resolved === null) {
+      this.dom.removeAttribute('src')
+      this.dom.dataset.unresolved = 'true'
+    } else {
+      this.dom.src = resolved
+      delete this.dom.dataset.unresolved
+    }
+  }
+
+  update(node: ProseNode): boolean {
+    if (node.type !== this.node.type) return false
+
+    this.node = node
+    this.draw()
+    return true
   }
 }
 

@@ -122,6 +122,23 @@ export const DOCUMENT_CSS = `
 
 .markpad-document img { max-width: 100%; height: auto; }
 
+/*
+ * A picture MarkPad will not fetch, which today means one on the web: the app
+ * makes a single network request and it is the update check. Drawn as a quiet
+ * outlined box showing the alt text, so it reads as a decision rather than as
+ * a broken image.
+ */
+.markpad-document img[data-unresolved] {
+  display: inline-block;
+  min-width: 8em;
+  padding: 10px 14px;
+  border: 1px dashed var(--rule, #e1e6e3);
+  border-radius: 6px;
+  color: var(--muted, #6e7a78);
+  font-size: 12.5px;
+  font-style: italic;
+}
+
 .markpad-document hr {
   border: none;
   border-top: 1px solid var(--doc-rule);

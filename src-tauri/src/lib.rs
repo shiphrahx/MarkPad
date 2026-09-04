@@ -47,6 +47,24 @@ fn files_from_arguments<I: IntoIterator<Item = String>>(arguments: I) -> Vec<Str
         .collect()
 }
 
+/// Let the webview load images out of one folder.
+///
+/// The asset protocol starts with nothing allowed at all. Opening a file widens
+/// it to that file's own folder, so a note can show the picture sitting next to
+/// it and cannot reach anything the user has not opened. Not recursive, for the
+/// same reason.
+///
+/// Without this, every image in every Markdown file is a broken image, which is
+/// a strange thing for a Markdown editor to be.
+#[tauri::command]
+fn allow_images_in(app: tauri::AppHandle, directory: String) -> Result<(), String> {
+    use tauri::Manager;
+
+    app.asset_protocol_scope()
+        .allow_directory(PathBuf::from(directory), false)
+        .map_err(|error| error.to_string())
+}
+
 #[cfg_attr(mobile, tauri::mobile_entry_point)]
 pub fn run() {
     // Windows without WebView2 would otherwise open a window with nothing in
@@ -64,6 +82,7 @@ pub fn run() {
             read_text_file,
             write_text_file,
             startup_files,
+            allow_images_in,
             chrome::set_caption_colors
         ])
         .run(tauri::generate_context!())

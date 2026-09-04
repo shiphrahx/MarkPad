@@ -45,7 +45,6 @@
     "katex": "^0.18.4",
     "lowlight": "^3.3.0",
     "markdown-it": "^14.3.0",
-    "marked": "^18.0.10",
     "mermaid": "^11.17.0",
     "prosemirror-commands": "^1.7.2",
     "prosemirror-dropcursor": "^1.8.3",

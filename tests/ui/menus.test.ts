@@ -125,7 +125,7 @@ describe('installMenus', () => {
     expect(submenu('MarkPad').items).toBeUndefined()
 
     await installMenus([command({ id: 'file.new', title: 'New file', category: 'File' })], 'macos')
-    expect(predefinedIn('MarkPad')).toEqual(expect.arrayContaining(['Quit', 'Hide']))
+    expect(predefinedIn('MarkPad')).toEqual(expect.arrayContaining(['About', 'Hide']))
   })
 
   it('still builds an Edit menu when no command lives in it', async () => {
@@ -223,5 +223,56 @@ describe('menu accelerators', () => {
     await installMenus([about], 'windows')
 
     expect(acceleratorFor('Help', 'About MarkPad')).toBeNull()
+  })
+})
+
+/**
+ * Quit is a File command everywhere except macOS, where it belongs in the
+ * application menu instead. It is also the one command that is deliberately
+ * not the predefined item of the same name: the predefined Quit quits, and
+ * this app has unsaved work to ask about first.
+ */
+describe('where Quit lives', () => {
+  beforeEach(() => native.reset())
+
+  const quit = command({
+    id: 'file.quit',
+    title: 'Quit MarkPad',
+    category: 'File',
+    key: 'Mod+Q',
+  })
+  const newFile = command({
+    id: 'file.new',
+    title: 'New file',
+    category: 'File',
+    key: 'Mod+N',
+  })
+
+  it('sits in the File menu on Windows and Linux', async () => {
+    await installMenus([newFile, quit], 'windows')
+    expect(labelsIn('File')).toEqual(['New file', 'Quit MarkPad'])
+
+    await installMenus([newFile, quit], 'linux')
+    expect(labelsIn('File')).toEqual(['New file', 'Quit MarkPad'])
+  })
+
+  it('moves to the application menu on macOS, and only appears once', async () => {
+    await installMenus([newFile, quit], 'macos')
+
+    expect(labelsIn('MarkPad')).toEqual(['Quit MarkPad'])
+    expect(labelsIn('File')).toEqual(['New file'])
+  })
+
+  it('is never the predefined Quit, which would not ask about unsaved work', async () => {
+    await installMenus([newFile, quit], 'macos')
+    expect(predefinedIn('MarkPad')).not.toContain('Quit')
+
+    await installMenus([newFile, quit], 'windows')
+    expect(predefinedIn('File')).not.toContain('Quit')
+  })
+
+  it('keeps its shortcut when it moves', async () => {
+    await installMenus([newFile, quit], 'macos')
+    expect(acceleratorFor('MarkPad', 'Quit MarkPad')).toBe('CmdOrCtrl+Q')
   })
 })

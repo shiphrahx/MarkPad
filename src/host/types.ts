@@ -59,5 +59,23 @@ export interface Host {
   pickPathToSave(suggestedName: string): Promise<string | null>
   /** Tell the user something went wrong. */
   report(message: string, title?: string): Promise<void>
+  /**
+   * Ask the window to close.
+   *
+   * Asking rather than closing. The unsaved check lives on the way out, so
+   * everything that ends the session goes through the same door: the close
+   * button, Quit, and the menu item that calls this.
+   */
+  requestClose(): Promise<void>
+  /**
+   * Let the window load images out of one folder.
+   *
+   * Called with the folder a file was opened from, and nothing else. The
+   * window starts able to read no pictures at all, and a document can only
+   * ever show the ones sitting beside it.
+   */
+  allowImagesIn(directory: string): Promise<void>
+  /** A path on disk, written as something the window can actually load. */
+  assetUrl(path: string): string
 }
 
