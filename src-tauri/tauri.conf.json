@@ -36,7 +36,7 @@
       "icons/icon.ico",
       "icons/icon.icns"
     ],
-    "shortDescription": "A Markdown editor for Windows and macOS.",
+    "shortDescription": "A Markdown editor for Windows, macOS and Linux.",
     "longDescription": "MarkPad edits Markdown source. Plain text in, plain text out. No vault, no database, no account, no sync, no telemetry.",
     "windows": {
       "nsis": {

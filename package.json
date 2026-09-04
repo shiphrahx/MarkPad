@@ -3,7 +3,7 @@
   "version": "0.1.3",
   "private": true,
   "type": "module",
-  "description": "A Markdown editor for Windows and macOS. Plain text in, plain text out.",
+  "description": "A Markdown editor for Windows, macOS and Linux. Plain text in, plain text out.",
   "license": "MIT",
   "packageManager": "pnpm@11.23.0",
   "engines": {
