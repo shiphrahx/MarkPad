@@ -34,10 +34,17 @@
   --scrim: rgba(19, 26, 25, 0.28);
   --hover: rgba(19, 26, 25, 0.06);
 
+  /*
+   * Both typefaces are bundled, so the fallbacks are for the moment before the
+   * woff2 lands and for a webview that refuses to load it at all. Named faces
+   * for all three platforms: Segoe and Cascadia on Windows, the -apple-system
+   * and SF pair on macOS, Cantarell and the Noto and DejaVu families on Linux,
+   * which is as close to a safe bet as Linux has.
+   */
   --font-ui: 'Instrument Sans Variable', 'Instrument Sans', system-ui, -apple-system,
-    'Segoe UI', Roboto, sans-serif;
+    'Segoe UI', Cantarell, 'Noto Sans', 'DejaVu Sans', Roboto, sans-serif;
   --font-mono: 'JetBrains Mono Variable', 'JetBrains Mono', ui-monospace, 'SF Mono',
-    'Cascadia Mono', Menlo, Consolas, monospace;
+    'Cascadia Mono', Menlo, Consolas, 'Noto Sans Mono', 'DejaVu Sans Mono', monospace;
 
   /*
    * How much bigger or smaller the document text is than it was drawn.

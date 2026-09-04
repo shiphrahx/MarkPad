@@ -1,0 +1,11 @@
+[Desktop Entry]
+Type=Application
+Name={{name}}
+{{#if comment}}Comment={{comment}}{{/if}}
+Categories=Office;TextEditor;Utility;
+Exec={{exec}} %F
+Icon={{icon}}
+Terminal=false
+StartupNotify=true
+StartupWMClass=markpad
+MimeType=text/markdown;text/x-markdown;text/plain;

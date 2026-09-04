@@ -15,5 +15,9 @@ Thumbs.db
 
 # Icons are generated from scripts/make-icon.mjs, not committed. The repo rules
 # say no binaries, and `pnpm icons` rebuilds them from source in one step.
-build/
+#
+# Anchored. Unanchored it matched any directory called build anywhere in the
+# tree, which quietly swallowed a tests/build folder that had nothing to do
+# with icons.
+/build/
 src-tauri/icons/

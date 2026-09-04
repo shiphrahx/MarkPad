@@ -60,3 +60,34 @@ fn ask(message: &str, title: &str) -> bool {
 fn wide(text: &str) -> Vec<u16> {
     text.encode_utf16().chain(std::iter::once(0)).collect()
 }
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    /// `wide` feeds an unsafe MessageBoxW call, which reads until it finds a
+    /// zero. If this ever stops appending one, the message box reads whatever
+    /// happens to sit after the buffer.
+    #[test]
+    fn null_terminates_what_it_encodes() {
+        let encoded = wide("MarkPad");
+
+        assert_eq!(encoded.last(), Some(&0));
+        assert_eq!(encoded.len(), "MarkPad".len() + 1);
+    }
+
+    #[test]
+    fn encodes_an_empty_string_as_a_lone_terminator() {
+        assert_eq!(wide(""), vec![0]);
+    }
+
+    #[test]
+    fn encodes_outside_the_basic_plane_as_a_surrogate_pair() {
+        // Nothing in the message needs this today, but the function takes a
+        // &str and UTF-16 is not one unit per character.
+        let encoded = wide("\u{1F600}");
+
+        assert_eq!(encoded.len(), 3);
+        assert_eq!(encoded.last(), Some(&0));
+    }
+}

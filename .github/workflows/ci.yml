@@ -31,11 +31,18 @@ jobs:
       fail-fast: false
       matrix:
         # The file writing code is the part that behaves differently per
-        # platform, so its tests run on both rather than on whichever runner
-        # was cheapest.
-        os: [windows-latest, macos-latest]
+        # platform, so its tests run on all three rather than on whichever
+        # runner was cheapest. The permissions and symlink tests only exist on
+        # the Unix legs; the locking retry only means anything on Windows.
+        #
+        # 22.04 rather than latest, to match the runner the release builds on.
+        # The binary links against the build machine's glibc, so testing on a
+        # newer one would be testing something nobody can install.
+        os: [windows-latest, macos-latest, ubuntu-22.04]
     steps:
       - uses: actions/checkout@v4
+      - uses: ./.github/actions/linux-webview
+
       - uses: pnpm/action-setup@v4
       - uses: actions/setup-node@v4
         with:
@@ -71,8 +78,18 @@ jobs:
           - os: macos-latest
             bundle: dmg
             pattern: src-tauri/target/release/bundle/dmg/*.dmg
+          # Two legs rather than one building both, so every entry in this
+          # matrix stays one bundle and one glob. The second compile is almost
+          # entirely cache.
+          - os: ubuntu-22.04
+            bundle: deb
+            pattern: src-tauri/target/release/bundle/deb/*.deb
+          - os: ubuntu-22.04
+            bundle: rpm
+            pattern: src-tauri/target/release/bundle/rpm/*.rpm
     steps:
       - uses: actions/checkout@v4
+      - uses: ./.github/actions/linux-webview
       - uses: pnpm/action-setup@v4
       - uses: actions/setup-node@v4
         with:
@@ -95,3 +112,48 @@ jobs:
         with:
           name: installer-${{ matrix.os }}
           path: ${{ matrix.pattern }}
+
+  # The one job that presses keys.
+  #
+  # Cut, copy and paste go through the GTK menu rather than through the webview,
+  # and PDF export is window.print() in an iframe. Neither can be checked by a
+  # unit test, and neither has a fallback if it turns out not to work, so this
+  # launches a real window on a real X server and drives it with xdotool.
+  smoke:
+    name: Linux smoke test
+    runs-on: ubuntu-22.04
+    steps:
+      - uses: actions/checkout@v4
+      - uses: ./.github/actions/linux-webview
+        with:
+          extra: xvfb xdotool xclip openbox imagemagick
+
+      - uses: pnpm/action-setup@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: pnpm
+      - uses: dtolnay/rust-toolchain@stable
+      - uses: Swatinem/rust-cache@v2
+        with:
+          workspaces: src-tauri
+
+      - run: pnpm install --frozen-lockfile
+      - run: pnpm icons
+
+      # Debug and unbundled. Nothing here cares how big the binary is or how
+      # fast it runs, and a debug build compiles in a fraction of the time.
+      - run: pnpm tauri build --debug --no-bundle
+
+      - name: Type into a real window
+        run: scripts/linux-smoke.sh
+
+      # The script screenshots the display itself, on the way out and before
+      # its own trap tears the X server down. A blank window and a window that
+      # ignored a keystroke look identical in a log.
+      - uses: actions/upload-artifact@v4
+        if: failure()
+        with:
+          name: smoke-failure
+          path: smoke-failure.png
+          if-no-files-found: ignore

@@ -29,6 +29,18 @@ describe('newBuffer', () => {
     expect(isDirty({ ...buffer, text: '# Hello there\n' })).toBe(true)
   })
 
+  /**
+   * A new buffer has no file to inherit an ending from, so it takes the
+   * platform's habit. Windows is the only one of the three that writes CRLF,
+   * and getting this wrong means every file MarkPad creates on Linux shows up
+   * in a diff as a whole-file change.
+   */
+  it('starts a new file with the ending the platform writes', () => {
+    expect(newBuffer('windows').lineEnding).toBe('crlf')
+    expect(newBuffer('macos').lineEnding).toBe('lf')
+    expect(newBuffer('linux').lineEnding).toBe('lf')
+  })
+
   it('measures the starting content in bytes, not characters', () => {
     const buffer = newBuffer('macos', { text: '£10\n', name: 'Welcome' })
 

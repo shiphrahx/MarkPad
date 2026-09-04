@@ -1,6 +1,6 @@
 # MarkPad
 
-A Markdown editor for Windows and macOS. Like MarkEdit, but cross-platform.
+A Markdown editor for Windows, macOS and Linux. Like MarkEdit, but cross-platform.
 
 Plain text in, plain text out. No vault, no database, no account, no sync, no telemetry.
 Files created in MarkPad are ordinary `.md` files. Delete the app and nothing breaks.
@@ -43,7 +43,8 @@ including on lines nobody touched. Anything that reduces that is worth doing.
 
 ## Stack
 
-- **Shell:** Tauri v2 (Rust). WebView2 on Windows, WKWebView on macOS. No bundled Chromium.
+- **Shell:** Tauri v2 (Rust). WebView2 on Windows, WKWebView on macOS, WebKitGTK on
+  Linux. No bundled Chromium.
 - **Editor:** CodeMirror 6 + TypeScript. `@codemirror/lang-markdown` with GFM extensions.
 - **Build:** Vite, pnpm.
 - **Tests:** Vitest for editor logic, `cargo test` for the Rust side.
@@ -87,11 +88,16 @@ MarkEdit could assume macOS. We cannot. Get these right or the app feels foreign
   antivirus scan delays — retry, then report a real error, never lose the buffer.
 - **Window chrome.** Traffic lights on macOS, caption buttons on Windows. Native positions,
   native hit targets, native maximise/snap behaviour. No custom chrome that fakes either.
-- **Keybindings.** Per-platform defaults. `Cmd` on macOS maps to `Ctrl` on Windows, except
-  where Windows has its own convention (`F2`, `Ctrl+Shift+P`-adjacent habits).
+  On Linux the decorations belong to the window manager and we do not touch them at all.
+- **Keybindings.** Per-platform defaults. `Cmd` on macOS maps to `Ctrl` on Windows and
+  Linux, except where those two have their own convention (`F2`, `Ctrl+Shift+P`-adjacent
+  habits). Linux follows the Windows habits rather than getting a third set.
 - **Fonts.** Ship a fallback stack; do not assume SF Mono or Cascadia Code exists.
 - **WebView2.** Some Windows installs lack it. Detect at launch and offer the bootstrapper
   with a clear message. Do not crash into a blank window.
+- **Packaging.** `.deb` and `.rpm` on Linux, never AppImage: it bundles WebKitGTK and blows
+  the installer budget ten times over. `docs/decisions/0004-shipping-on-linux.md` has the
+  working.
 
 ## Voice for anything the user reads
 
