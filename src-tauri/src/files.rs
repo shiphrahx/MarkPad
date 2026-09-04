@@ -1,4 +1,4 @@
-//! Reading and writing files, with the parts that only bite on Windows.
+//! Reading and writing files, and the parts of that which differ per platform.
 //!
 //! This module deals in whole strings and bytes. It does not know what a line
 //! ending is: detecting and preserving those belongs to the TypeScript side,
@@ -39,6 +39,9 @@ pub enum FileError {
 
     #[error("{path} is in use by another program, so the file was left unchanged.")]
     Locked { path: String },
+
+    #[error("MarkPad is not allowed to write to {path}. Check its permissions, or use Save as to put it somewhere else.")]
+    Denied { path: String },
 }
 
 impl serde::Serialize for FileError {
@@ -79,10 +82,7 @@ pub fn write_text_atomic(path: &Path, contents: &str) -> Result<u64, FileError> 
     let directory = target.parent().unwrap_or_else(|| Path::new("."));
     let temporary = temporary_path(target);
 
-    write_all(&temporary, contents.as_bytes()).map_err(|source| FileError::Write {
-        path: display(path),
-        source,
-    })?;
+    write_all(&temporary, contents.as_bytes()).map_err(|source| denied_or_write(path, source))?;
 
     carry_permissions(target, &temporary);
 
@@ -116,11 +116,23 @@ pub fn write_text_atomic(path: &Path, contents: &str) -> Result<u64, FileError> 
         Some(error) if is_locked(&error) => Err(FileError::Locked {
             path: display(path),
         }),
-        Some(error) => Err(FileError::Write {
+        Some(error) => Err(denied_or_write(path, error)),
+        None => unreachable!("the retry loop records an error before giving up"),
+    }
+}
+
+/// A permission problem gets its own message. Everything else carries the
+/// operating system's, which is usually specific enough to act on.
+fn denied_or_write(path: &Path, error: io::Error) -> FileError {
+    if error.kind() == io::ErrorKind::PermissionDenied {
+        FileError::Denied {
+            path: display(path),
+        }
+    } else {
+        FileError::Write {
             path: display(path),
             source: error,
-        }),
-        None => unreachable!("the retry loop records an error before giving up"),
+        }
     }
 }
 
@@ -191,11 +203,26 @@ fn temporary_path(path: &Path) -> PathBuf {
     directory.join(format!(".{name}.markpad-{}.tmp", std::process::id()))
 }
 
+/// Whether the rename failed because something else is holding the file.
+///
+/// A Windows question. Opening a file there can take an exclusive share, so a
+/// refused rename really does mean another program has it, and telling the
+/// user to close that program is the right advice.
+///
+/// Unix has no such thing. A refusal there is about permissions, and sending
+/// somebody looking for a program that is not holding anything wastes their
+/// time on a problem they could have fixed in one command.
+#[cfg(windows)]
 fn is_locked(error: &io::Error) -> bool {
     matches!(
         error.kind(),
         io::ErrorKind::PermissionDenied | io::ErrorKind::AlreadyExists
     )
+}
+
+#[cfg(not(windows))]
+fn is_locked(_error: &io::Error) -> bool {
+    false
 }
 
 fn display(path: &Path) -> String {
@@ -277,6 +304,36 @@ mod tests {
             .map(|entry| entry.unwrap().file_name().to_string_lossy().into_owned())
             .collect();
         assert_eq!(left, vec!["notes.md".to_owned()]);
+    }
+
+    #[cfg(unix)]
+    #[test]
+    fn blames_permissions_rather_than_another_program() {
+        use std::os::unix::fs::PermissionsExt;
+
+        let directory = tempfile::tempdir().unwrap();
+        let closed = directory.path().join("closed");
+        fs::create_dir(&closed).unwrap();
+
+        let path = closed.join("notes.md");
+        fs::write(&path, "old\n").unwrap();
+        fs::set_permissions(&closed, fs::Permissions::from_mode(0o500)).unwrap();
+
+        // Root ignores the mode, so on a root runner there is nothing here to
+        // assert. Put the directory back first or the tempdir cannot clean up.
+        if fs::write(closed.join("probe"), "").is_ok() {
+            fs::set_permissions(&closed, fs::Permissions::from_mode(0o700)).unwrap();
+            return;
+        }
+
+        let error = write_text_atomic(&path, "new\n").unwrap_err();
+        fs::set_permissions(&closed, fs::Permissions::from_mode(0o700)).unwrap();
+
+        assert!(
+            matches!(error, FileError::Denied { .. }),
+            "expected a permissions error, got {error}"
+        );
+        assert!(error.to_string().contains("notes.md"));
     }
 
     #[cfg(unix)]
