@@ -155,20 +155,30 @@ glibc 2.35, which rules out Debian 11 and anything older.
 `Cargo.toml` and `package.json` both describe MarkPad as being for Windows and
 macOS. So does CLAUDE.md, the README and the landing page.
 
-## Still unverified
-
-Two things could not be checked from a Windows machine and neither has a
-fallback, so both want a real Linux session before a tag goes out.
+## The two things a unit test cannot answer
 
 `window.print()` in WebKitGTK is how PDF export works. It should open the GTK
 print dialog, which has a Print to File option. If it does not, PDF export has
-no second route and the command should be hidden on Linux rather than left to
-do nothing.
+no second route on Linux and the command should be hidden there rather than
+left to do nothing.
 
 `setAsAppMenu()` draws the menu inside the window on Linux rather than at the
 top of the screen, and the predefined Cut, Copy and Paste items go through GTK
 rather than through the webview. The tests assert we ask for them. Only pressing
 the keys proves they arrive.
+
+Neither could be checked from a Windows machine, and both matter enough that
+"we will find out when somebody complains" is not good enough. So
+`scripts/linux-smoke.sh` launches the real binary under Xvfb, types into it with
+xdotool and reads the X clipboard back with xclip. It runs as its own CI job and
+it runs in WSL, which is the only way anybody developing this on Windows can
+check either of them.
+
+It is the one test in the repo that can fail for reasons that are nothing to do
+with the code: a missing window manager, a webview that painted nothing, a
+keystroke that arrived before the editor had focus. It screenshots the display
+on failure for that reason. If it turns flaky rather than failing honestly, the
+answer is to make it wait for the right thing rather than to delete it.
 
 ## Consequences
 
