@@ -40,7 +40,8 @@ export const DOCUMENT_CSS = `
 .markpad-document {
   background: var(--doc-bg);
   color: var(--doc-fg);
-  font-family: system-ui, -apple-system, "Segoe UI", Roboto, sans-serif;
+  font-family: system-ui, -apple-system, "Segoe UI", Cantarell, "Noto Sans",
+    "DejaVu Sans", Roboto, sans-serif;
   /* These styles are also the ones an exported file carries, where nothing
      sets --zoom and the fallback is what applies. Inside the app the preview
      pane and the popovers follow the zoom level like everything else. */
@@ -80,7 +81,8 @@ export const DOCUMENT_CSS = `
 }
 
 .markpad-document code {
-  font-family: ui-monospace, "SF Mono", "Cascadia Mono", Menlo, Consolas, monospace;
+  font-family: ui-monospace, "SF Mono", "Cascadia Mono", Menlo, Consolas,
+    "Noto Sans Mono", "DejaVu Sans Mono", monospace;
   font-size: 0.9em;
   background: var(--doc-code-bg);
   border-radius: 4px;
