@@ -45,6 +45,9 @@ including on lines nobody touched. Anything that reduces that is worth doing.
 
 - **Shell:** Tauri v2 (Rust). WebView2 on Windows, WKWebView on macOS. No bundled Chromium.
 - **Editor:** CodeMirror 6 + TypeScript. `@codemirror/lang-markdown` with GFM extensions.
+- **Markdown:** markdown-it, once. The editor, the preview and the exports all read a
+  file the same way. `docs/decisions/0005-one-markdown-parser.md` says why that had to
+  be spelled out.
 - **Build:** Vite, pnpm.
 - **Tests:** Vitest for editor logic, `cargo test` for the Rust side.
 
@@ -62,6 +65,12 @@ These are pass/fail, checked in CI:
 | Open a 10 MB `.md` file | < 1 s, no dropped frames while scrolling |
 | Typing latency in a 5 MB file | indistinguishable from an empty file |
 | Runtime network requests | one, the opt-out update check |
+
+Only the installer size is enforced by CI today. The other four are honoured by hand
+and by the code being shaped around them, which is a weaker thing and worth knowing.
+
+The network budget is the reason images on the web do not load: one request, and it is
+the update check. `docs/decisions/0006-images.md` has the rest.
 
 If a change breaks a budget, the change is wrong — not the budget.
 
@@ -85,6 +94,9 @@ MarkEdit could assume macOS. We cannot. Get these right or the app feels foreign
 - **Encoding.** Detect UTF-8 and UTF-8 BOM. Preserve the BOM if it was there.
 - **Saving.** Atomic write via temp file + rename. Handle Windows file locking and
   antivirus scan delays — retry, then report a real error, never lose the buffer.
+- **Closing.** Every route out of the app asks about unsaved work: the close button,
+  Quit, closing a tab. There is no autosave and no crash recovery, so that dialog is
+  the only thing between somebody and lost work. One implementation, not three.
 - **Window chrome.** Traffic lights on macOS, caption buttons on Windows. Native positions,
   native hit targets, native maximise/snap behaviour. No custom chrome that fakes either.
 - **Keybindings.** Per-platform defaults. `Cmd` on macOS maps to `Ctrl` on Windows, except
