@@ -152,10 +152,24 @@ fn resolve_symlink(path: &Path) -> Option<PathBuf> {
         return None;
     }
 
-    // A broken link has nothing to resolve to. Falling back to the link's own
-    // path writes the file the link was pointing at, which is what somebody
-    // saving over a dangling link means.
-    fs::canonicalize(path).ok()
+    if let Ok(real) = fs::canonicalize(path) {
+        return Some(real);
+    }
+
+    // Canonicalising fails on a link whose target has been deleted, and that
+    // one is worth following anyway. Saving over a dangling link should put
+    // the file back where the link says it lives, not turn the link into a
+    // regular file and leave it pointing at itself.
+    let pointed = fs::read_link(path).ok()?;
+    if pointed.is_absolute() {
+        Some(pointed)
+    } else {
+        Some(
+            path.parent()
+                .unwrap_or_else(|| Path::new("."))
+                .join(pointed),
+        )
+    }
 }
 
 /// Give the temporary file the permissions of the file it is about to replace.
@@ -354,6 +368,45 @@ mod tests {
                 .is_symlink(),
             "the link should still be a link"
         );
+        assert_eq!(fs::read_to_string(&real).unwrap(), "new\n");
+    }
+
+    #[cfg(unix)]
+    #[test]
+    fn recreates_the_target_of_a_dangling_symlink() {
+        let directory = tempfile::tempdir().unwrap();
+        let real = directory.path().join("real.md");
+        let link = directory.path().join("notes.md");
+        fs::write(&real, "old\n").unwrap();
+        std::os::unix::fs::symlink(&real, &link).unwrap();
+        fs::remove_file(&real).unwrap();
+
+        write_text_atomic(&link, "new\n").unwrap();
+
+        assert_eq!(fs::read_to_string(&real).unwrap(), "new\n");
+        assert!(
+            fs::symlink_metadata(&link)
+                .unwrap()
+                .file_type()
+                .is_symlink(),
+            "the link should still be a link"
+        );
+    }
+
+    #[cfg(unix)]
+    #[test]
+    fn follows_a_relative_symlink() {
+        let directory = tempfile::tempdir().unwrap();
+        let elsewhere = directory.path().join("elsewhere");
+        fs::create_dir(&elsewhere).unwrap();
+
+        let real = elsewhere.join("real.md");
+        let link = directory.path().join("notes.md");
+        fs::write(&real, "old\n").unwrap();
+        std::os::unix::fs::symlink("elsewhere/real.md", &link).unwrap();
+
+        write_text_atomic(&link, "new\n").unwrap();
+
         assert_eq!(fs::read_to_string(&real).unwrap(), "new\n");
     }
 
