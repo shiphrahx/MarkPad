@@ -27,9 +27,10 @@ const native = vi.hoisted(() => {
 
 vi.mock('@tauri-apps/api/menu', () => ({
   MenuItem: {
-    new: async (options: { text: string }) => ({
+    new: async (options: { text: string; accelerator?: string }) => ({
       kind: 'item',
       text: options.text,
+      accelerator: options.accelerator ?? null,
       setEnabled: async () => {},
     }),
   },
@@ -79,6 +80,15 @@ function predefinedIn(text: string): string[] {
   return items.filter((item) => item.kind === 'predefined').map((item) => item.predefined!)
 }
 
+function acceleratorFor(menu: string, label: string): string | null | undefined {
+  const items = (submenu(menu).items ?? []) as Array<{
+    kind?: string
+    text?: string
+    accelerator?: string | null
+  }>
+  return items.find((item) => item.text === label)?.accelerator
+}
+
 function labelsIn(text: string): string[] {
   const items = (submenu(text).items ?? []) as Array<{ kind?: string; text?: string }>
   return items.filter((item) => item.kind === 'item').map((item) => item.text!)
@@ -97,6 +107,25 @@ describe('installMenus', () => {
     await installMenus([command({ id: 'edit.lineEndings', title: 'Change line endings' })], 'macos')
 
     expect(predefinedIn('Edit')).toEqual(expect.arrayContaining(['Cut', 'Copy', 'Paste']))
+  })
+
+  it('gives the Edit menu the clipboard items on Linux', async () => {
+    await installMenus([command({ id: 'edit.lineEndings', title: 'Change line endings' })], 'linux')
+
+    expect(predefinedIn('Edit')).toEqual(expect.arrayContaining(['Cut', 'Copy', 'Paste']))
+  })
+
+  /**
+   * The application menu with About, Hide and Quit in it is a macOS shape.
+   * Linux and Windows put those elsewhere, and a menu called MarkPad sitting
+   * inside a MarkPad window is the sort of thing that reads as a port.
+   */
+  it('only gives macOS the application menu', async () => {
+    await installMenus([command({ id: 'file.new', title: 'New file', category: 'File' })], 'linux')
+    expect(submenu('MarkPad').items).toBeUndefined()
+
+    await installMenus([command({ id: 'file.new', title: 'New file', category: 'File' })], 'macos')
+    expect(predefinedIn('MarkPad')).toEqual(expect.arrayContaining(['Quit', 'Hide']))
   })
 
   it('still builds an Edit menu when no command lives in it', async () => {
@@ -127,5 +156,72 @@ describe('installMenus', () => {
 
     expect(predefinedIn('Edit')).not.toContain('Undo')
     expect(predefinedIn('Edit')).not.toContain('SelectAll')
+  })
+})
+
+/**
+ * Every keyboard shortcut the operating system registers goes through one
+ * translation from our notation into Tauri's, and nothing had ever checked it.
+ * An accelerator that does not parse is dropped, and the menu item quietly
+ * appears with no shortcut next to it on every platform at once.
+ */
+describe('menu accelerators', () => {
+  beforeEach(() => native.reset())
+
+  const save = command({
+    id: 'file.save',
+    title: 'Save',
+    category: 'File',
+    key: 'Mod+S',
+  })
+
+  it('turns Mod into the notation Tauri wants', async () => {
+    await installMenus([save], 'windows')
+    expect(acceleratorFor('File', 'Save')).toBe('CmdOrCtrl+S')
+
+    await installMenus([save], 'macos')
+    expect(acceleratorFor('File', 'Save')).toBe('CmdOrCtrl+S')
+
+    await installMenus([save], 'linux')
+    expect(acceleratorFor('File', 'Save')).toBe('CmdOrCtrl+S')
+  })
+
+  it('keeps the other modifiers where they were', async () => {
+    const saveAs = command({
+      id: 'file.saveAs',
+      title: 'Save as',
+      category: 'File',
+      key: 'Mod+Shift+S',
+    })
+
+    await installMenus([saveAs], 'windows')
+    expect(acceleratorFor('File', 'Save as')).toBe('CmdOrCtrl+Shift+S')
+  })
+
+  it('uses the override on Windows and Linux and the plain key on macOS', async () => {
+    const palette = command({
+      id: 'view.palette',
+      title: 'Show all commands',
+      category: 'View',
+      key: 'Mod+K',
+      windowsStyleKey: 'Mod+Shift+P',
+    })
+
+    await installMenus([palette], 'macos')
+    expect(acceleratorFor('View', 'Show all commands')).toBe('CmdOrCtrl+K')
+
+    await installMenus([palette], 'windows')
+    expect(acceleratorFor('View', 'Show all commands')).toBe('CmdOrCtrl+Shift+P')
+
+    await installMenus([palette], 'linux')
+    expect(acceleratorFor('View', 'Show all commands')).toBe('CmdOrCtrl+Shift+P')
+  })
+
+  it('gives a command with no shortcut no accelerator at all', async () => {
+    const about = command({ id: 'help.about', title: 'About MarkPad', category: 'Help' })
+
+    await installMenus([about], 'windows')
+
+    expect(acceleratorFor('Help', 'About MarkPad')).toBeNull()
   })
 })

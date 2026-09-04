@@ -33,14 +33,14 @@
   },
   "bundle": {
     "active": true,
-    "targets": ["nsis", "dmg"],
+    "targets": ["nsis", "dmg", "deb", "rpm"],
     "icon": [
       "icons/32x32.png",
       "icons/128x128.png",
       "icons/icon.ico",
       "icons/icon.icns"
     ],
-    "shortDescription": "A Markdown editor for Windows and macOS.",
+    "shortDescription": "A Markdown editor for Windows, macOS and Linux.",
     "longDescription": "MarkPad edits Markdown source. Plain text in, plain text out. No vault, no database, no account, no sync, no telemetry.",
     "windows": {
       "nsis": {
@@ -49,6 +49,16 @@
     },
     "macOS": {
       "minimumSystemVersion": "10.15"
+    },
+    "linux": {
+      "deb": {
+        "depends": ["libwebkit2gtk-4.1-0 (>= 2.40)", "libgtk-3-0"],
+        "desktopTemplate": "markpad.desktop",
+        "section": "editors"
+      },
+      "rpm": {
+        "depends": ["webkit2gtk4.1", "gtk3"]
+      }
     }
   }
 }

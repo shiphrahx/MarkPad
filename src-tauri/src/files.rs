@@ -1,4 +1,4 @@
-//! Reading and writing files, with the parts that only bite on Windows.
+//! Reading and writing files, and the parts of that which differ per platform.
 //!
 //! This module deals in whole strings and bytes. It does not know what a line
 //! ending is: detecting and preserving those belongs to the TypeScript side,
@@ -39,6 +39,9 @@ pub enum FileError {
 
     #[error("{path} is in use by another program, so the file was left unchanged.")]
     Locked { path: String },
+
+    #[error("MarkPad is not allowed to write to {path}. Check its permissions, or use Save as to put it somewhere else.")]
+    Denied { path: String },
 }
 
 impl serde::Serialize for FileError {
@@ -70,17 +73,22 @@ pub fn read_text(path: &Path) -> Result<String, FileError> {
 /// true for a few hundred milliseconds after the temporary file appears. So
 /// the rename gets retried with a short backoff before giving up.
 pub fn write_text_atomic(path: &Path, contents: &str) -> Result<u64, FileError> {
-    let directory = path.parent().unwrap_or_else(|| Path::new("."));
-    let temporary = temporary_path(path);
+    // A symlink is followed to the file it points at. `target` is what gets
+    // written; `path` stays what the user asked for, so that is what any error
+    // message names.
+    let resolved = resolve_symlink(path);
+    let target = resolved.as_deref().unwrap_or(path);
 
-    write_all(&temporary, contents.as_bytes()).map_err(|source| FileError::Write {
-        path: display(path),
-        source,
-    })?;
+    let directory = target.parent().unwrap_or_else(|| Path::new("."));
+    let temporary = temporary_path(target);
+
+    write_all(&temporary, contents.as_bytes()).map_err(|source| denied_or_write(path, source))?;
+
+    carry_permissions(target, &temporary);
 
     let mut last: Option<io::Error> = None;
     for attempt in 0..WRITE_ATTEMPTS {
-        match fs::rename(&temporary, path) {
+        match fs::rename(&temporary, target) {
             Ok(()) => {
                 // Ask the directory itself to reach the disk, so the rename
                 // survives a power cut and not only a crash. Unix only:
@@ -108,12 +116,87 @@ pub fn write_text_atomic(path: &Path, contents: &str) -> Result<u64, FileError> 
         Some(error) if is_locked(&error) => Err(FileError::Locked {
             path: display(path),
         }),
-        Some(error) => Err(FileError::Write {
-            path: display(path),
-            source: error,
-        }),
+        Some(error) => Err(denied_or_write(path, error)),
         None => unreachable!("the retry loop records an error before giving up"),
     }
+}
+
+/// A permission problem gets its own message. Everything else carries the
+/// operating system's, which is usually specific enough to act on.
+fn denied_or_write(path: &Path, error: io::Error) -> FileError {
+    if error.kind() == io::ErrorKind::PermissionDenied {
+        FileError::Denied {
+            path: display(path),
+        }
+    } else {
+        FileError::Write {
+            path: display(path),
+            source: error,
+        }
+    }
+}
+
+/// Where a symlink actually points, or `None` if this is an ordinary file.
+///
+/// `~/notes.md` pointing at `~/Dropbox/notes.md` is a normal thing to have.
+/// Renaming over the link would swap the link itself for a regular file and
+/// leave the real note as it was, which looks like a save that worked right up
+/// until you open the file somewhere else.
+///
+/// Only used when the path really is a link. Canonicalising unconditionally
+/// would rewrite paths that did not need it, and on Windows it hands back the
+/// `\\?\` form, which would end up in an error message somebody has to read.
+fn resolve_symlink(path: &Path) -> Option<PathBuf> {
+    let metadata = fs::symlink_metadata(path).ok()?;
+    if !metadata.file_type().is_symlink() {
+        return None;
+    }
+
+    if let Ok(real) = fs::canonicalize(path) {
+        return Some(real);
+    }
+
+    // Canonicalising fails on a link whose target has been deleted, and that
+    // one is worth following anyway. Saving over a dangling link should put
+    // the file back where the link says it lives, not turn the link into a
+    // regular file and leave it pointing at itself.
+    let pointed = fs::read_link(path).ok()?;
+    if pointed.is_absolute() {
+        Some(pointed)
+    } else {
+        Some(
+            path.parent()
+                .unwrap_or_else(|| Path::new("."))
+                .join(pointed),
+        )
+    }
+}
+
+/// Give the temporary file the permissions of the file it is about to replace.
+///
+/// Writing somewhere else and renaming means the file that ends up on disk was
+/// created a moment ago, so the umask decided who can read it. Without this,
+/// saving a note that was `chmod 600` hands it back world readable, and a
+/// group writable file in a shared directory quietly stops being group
+/// writable. Neither is something a text editor should do behind your back.
+///
+/// Best effort on purpose. A file being saved for the first time has nothing
+/// to copy from, and not every filesystem carries a Unix mode. Neither is a
+/// reason to fail a save that has otherwise worked.
+#[cfg(unix)]
+fn carry_permissions(from: &Path, to: &Path) {
+    if let Ok(metadata) = fs::metadata(from) {
+        let _ = fs::set_permissions(to, metadata.permissions());
+    }
+}
+
+/// Windows keeps its access control in an ACL rather than a mode, and the
+/// rename inherits the parent directory's, which is the right answer. The one
+/// thing `fs::Permissions` carries here is the read-only flag, and a read-only
+/// file is one the save should be refusing rather than recreating.
+#[cfg(not(unix))]
+fn carry_permissions(from: &Path, to: &Path) {
+    let _ = (from, to);
 }
 
 fn write_all(path: &Path, bytes: &[u8]) -> io::Result<()> {
@@ -134,11 +217,26 @@ fn temporary_path(path: &Path) -> PathBuf {
     directory.join(format!(".{name}.markpad-{}.tmp", std::process::id()))
 }
 
+/// Whether the rename failed because something else is holding the file.
+///
+/// A Windows question. Opening a file there can take an exclusive share, so a
+/// refused rename really does mean another program has it, and telling the
+/// user to close that program is the right advice.
+///
+/// Unix has no such thing. A refusal there is about permissions, and sending
+/// somebody looking for a program that is not holding anything wastes their
+/// time on a problem they could have fixed in one command.
+#[cfg(windows)]
 fn is_locked(error: &io::Error) -> bool {
     matches!(
         error.kind(),
         io::ErrorKind::PermissionDenied | io::ErrorKind::AlreadyExists
     )
+}
+
+#[cfg(not(windows))]
+fn is_locked(_error: &io::Error) -> bool {
+    false
 }
 
 fn display(path: &Path) -> String {
@@ -214,6 +312,227 @@ mod tests {
         let path = directory.path().join("notes.md");
 
         write_text_atomic(&path, "hello\n").unwrap();
+
+        let left: Vec<_> = fs::read_dir(directory.path())
+            .unwrap()
+            .map(|entry| entry.unwrap().file_name().to_string_lossy().into_owned())
+            .collect();
+        assert_eq!(left, vec!["notes.md".to_owned()]);
+    }
+
+    #[cfg(unix)]
+    #[test]
+    fn blames_permissions_rather_than_another_program() {
+        use std::os::unix::fs::PermissionsExt;
+
+        let directory = tempfile::tempdir().unwrap();
+        let closed = directory.path().join("closed");
+        fs::create_dir(&closed).unwrap();
+
+        let path = closed.join("notes.md");
+        fs::write(&path, "old\n").unwrap();
+        fs::set_permissions(&closed, fs::Permissions::from_mode(0o500)).unwrap();
+
+        // Root ignores the mode, so on a root runner there is nothing here to
+        // assert. Put the directory back first or the tempdir cannot clean up.
+        if fs::write(closed.join("probe"), "").is_ok() {
+            fs::set_permissions(&closed, fs::Permissions::from_mode(0o700)).unwrap();
+            return;
+        }
+
+        let error = write_text_atomic(&path, "new\n").unwrap_err();
+        fs::set_permissions(&closed, fs::Permissions::from_mode(0o700)).unwrap();
+
+        assert!(
+            matches!(error, FileError::Denied { .. }),
+            "expected a permissions error, got {error}"
+        );
+        assert!(error.to_string().contains("notes.md"));
+    }
+
+    #[cfg(unix)]
+    #[test]
+    fn saves_through_a_symlink_rather_than_replacing_it() {
+        let directory = tempfile::tempdir().unwrap();
+        let real = directory.path().join("real.md");
+        let link = directory.path().join("notes.md");
+        fs::write(&real, "old\n").unwrap();
+        std::os::unix::fs::symlink(&real, &link).unwrap();
+
+        write_text_atomic(&link, "new\n").unwrap();
+
+        assert!(
+            fs::symlink_metadata(&link)
+                .unwrap()
+                .file_type()
+                .is_symlink(),
+            "the link should still be a link"
+        );
+        assert_eq!(fs::read_to_string(&real).unwrap(), "new\n");
+    }
+
+    #[cfg(unix)]
+    #[test]
+    fn recreates_the_target_of_a_dangling_symlink() {
+        let directory = tempfile::tempdir().unwrap();
+        let real = directory.path().join("real.md");
+        let link = directory.path().join("notes.md");
+        fs::write(&real, "old\n").unwrap();
+        std::os::unix::fs::symlink(&real, &link).unwrap();
+        fs::remove_file(&real).unwrap();
+
+        write_text_atomic(&link, "new\n").unwrap();
+
+        assert_eq!(fs::read_to_string(&real).unwrap(), "new\n");
+        assert!(
+            fs::symlink_metadata(&link)
+                .unwrap()
+                .file_type()
+                .is_symlink(),
+            "the link should still be a link"
+        );
+    }
+
+    #[cfg(unix)]
+    #[test]
+    fn follows_a_relative_symlink() {
+        let directory = tempfile::tempdir().unwrap();
+        let elsewhere = directory.path().join("elsewhere");
+        fs::create_dir(&elsewhere).unwrap();
+
+        let real = elsewhere.join("real.md");
+        let link = directory.path().join("notes.md");
+        fs::write(&real, "old\n").unwrap();
+        std::os::unix::fs::symlink("elsewhere/real.md", &link).unwrap();
+
+        write_text_atomic(&link, "new\n").unwrap();
+
+        assert_eq!(fs::read_to_string(&real).unwrap(), "new\n");
+    }
+
+    #[cfg(unix)]
+    #[test]
+    fn follows_a_symlink_out_of_its_own_directory() {
+        let directory = tempfile::tempdir().unwrap();
+        let elsewhere = directory.path().join("elsewhere");
+        fs::create_dir(&elsewhere).unwrap();
+
+        let real = elsewhere.join("real.md");
+        let link = directory.path().join("notes.md");
+        fs::write(&real, "old\n").unwrap();
+        std::os::unix::fs::symlink(&real, &link).unwrap();
+
+        write_text_atomic(&link, "new\n").unwrap();
+
+        assert_eq!(fs::read_to_string(&real).unwrap(), "new\n");
+        // The temporary file has to sit next to the file it replaces, not next
+        // to the link, or the rename crosses directories and stops being one.
+        let left: Vec<_> = fs::read_dir(&elsewhere)
+            .unwrap()
+            .map(|entry| entry.unwrap().file_name().to_string_lossy().into_owned())
+            .collect();
+        assert_eq!(left, vec!["real.md".to_owned()]);
+    }
+
+    #[cfg(unix)]
+    #[test]
+    fn keeps_the_mode_of_the_file_it_overwrites() {
+        use std::os::unix::fs::PermissionsExt;
+
+        let directory = tempfile::tempdir().unwrap();
+        let path = directory.path().join("private.md");
+        fs::write(&path, "old\n").unwrap();
+        fs::set_permissions(&path, fs::Permissions::from_mode(0o600)).unwrap();
+
+        write_text_atomic(&path, "new\n").unwrap();
+
+        let mode = fs::metadata(&path).unwrap().permissions().mode() & 0o777;
+        assert_eq!(mode, 0o600, "saving should not widen who can read the file");
+    }
+
+    #[cfg(unix)]
+    #[test]
+    fn keeps_a_group_writable_file_group_writable() {
+        use std::os::unix::fs::PermissionsExt;
+
+        let directory = tempfile::tempdir().unwrap();
+        let path = directory.path().join("shared.md");
+        fs::write(&path, "old\n").unwrap();
+        fs::set_permissions(&path, fs::Permissions::from_mode(0o664)).unwrap();
+
+        write_text_atomic(&path, "new\n").unwrap();
+
+        let mode = fs::metadata(&path).unwrap().permissions().mode() & 0o777;
+        assert_eq!(mode, 0o664);
+    }
+
+    #[cfg(unix)]
+    #[test]
+    fn gives_a_brand_new_file_usable_permissions() {
+        use std::os::unix::fs::PermissionsExt;
+
+        let directory = tempfile::tempdir().unwrap();
+        let path = directory.path().join("notes.md");
+
+        // Nothing to carry permissions from. The point is that carry_permissions
+        // shrugs rather than leaving a file its owner cannot read back.
+        write_text_atomic(&path, "hello\n").unwrap();
+
+        let mode = fs::metadata(&path).unwrap().permissions().mode();
+        assert_ne!(
+            mode & 0o600,
+            0,
+            "the owner should be able to read and write"
+        );
+    }
+
+    #[cfg(windows)]
+    #[test]
+    fn reports_a_file_another_program_is_holding() {
+        use std::os::windows::fs::OpenOptionsExt;
+
+        let directory = tempfile::tempdir().unwrap();
+        let path = directory.path().join("notes.md");
+        fs::write(&path, "old\n").unwrap();
+
+        // A share mode of zero is what a program that has the file open with no
+        // sharing looks like from out here. This is the only test that gets the
+        // retry loop to run all the way to the end.
+        let held = fs::OpenOptions::new()
+            .read(true)
+            .share_mode(0)
+            .open(&path)
+            .unwrap();
+
+        let error = write_text_atomic(&path, "new\n").unwrap_err();
+
+        // Nothing can read the file while that handle is open, this test
+        // included, so let go before checking the contents survived.
+        drop(held);
+
+        assert!(
+            matches!(error, FileError::Locked { .. }),
+            "expected a locked file, got {error}"
+        );
+        assert_eq!(fs::read_to_string(&path).unwrap(), "old\n");
+    }
+
+    #[cfg(windows)]
+    #[test]
+    fn leaves_nothing_behind_when_the_file_is_held() {
+        use std::os::windows::fs::OpenOptionsExt;
+
+        let directory = tempfile::tempdir().unwrap();
+        let path = directory.path().join("notes.md");
+        fs::write(&path, "old\n").unwrap();
+
+        let _held = fs::OpenOptions::new()
+            .read(true)
+            .share_mode(0)
+            .open(&path)
+            .unwrap();
+
+        write_text_atomic(&path, "new\n").unwrap_err();
 
         let left: Vec<_> = fs::read_dir(directory.path())
             .unwrap()

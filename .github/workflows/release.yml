@@ -20,7 +20,7 @@ permissions:
 jobs:
   # Pushing a tag creates a tag. It does not create a release, and there is
   # nothing for the installers to attach themselves to until one exists. Its
-  # own job rather than a step in each matrix leg, so three runners don't race
+  # own job rather than a step in each matrix leg, so four runners don't race
   # each other to create the same thing.
   entry:
     name: Release entry
@@ -69,11 +69,23 @@ jobs:
             args: ''
             rust-targets: ''
             pattern: src-tauri/target/release/bundle/nsis/*-setup.exe
+          # 22.04 rather than latest on purpose. The binary links against the
+          # build machine's glibc, and that sets the floor for who can install
+          # it. Building on a newer runner would quietly drop distributions
+          # people are still on.
+          - os: ubuntu-22.04
+            name: Linux (x64)
+            args: ''
+            rust-targets: ''
+            pattern: >-
+              src-tauri/target/release/bundle/deb/*.deb
+              src-tauri/target/release/bundle/rpm/*.rpm
 
     steps:
       - uses: actions/checkout@v4
         with:
           ref: ${{ inputs.tag || github.ref }}
+      - uses: ./.github/actions/linux-webview
 
       - uses: pnpm/action-setup@v4
       - uses: actions/setup-node@v4
@@ -114,7 +126,8 @@ jobs:
       # the CI build, so it is checked here too.
       - name: Check the installer against the 8 MB budget
         shell: bash
-        run: node scripts/check-budget.mjs "${{ matrix.pattern }}"
+        # Unquoted: the Linux leg passes two globs, one per package format.
+        run: node scripts/check-budget.mjs ${{ matrix.pattern }}
 
       - name: Attach the installer to the release
         shell: bash

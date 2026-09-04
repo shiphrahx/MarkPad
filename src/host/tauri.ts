@@ -1,6 +1,7 @@
 import { convertFileSrc, invoke } from '@tauri-apps/api/core'
 import { message, open, save } from '@tauri-apps/plugin-dialog'
 import { detectEncoding, detectLineEnding, toEditorText, toFileText } from './text.js'
+import { platformFromUserAgent } from './platform.js'
 import type {
   Host,
   Platform,
@@ -79,14 +80,6 @@ export class TauriHost implements Host {
   }
 }
 
-/**
- * Which machine this is.
- *
- * Read off the user agent rather than pulling in the OS plugin, because the
- * only thing the editor uses it for is which modifier key to draw in the
- * command palette.
- */
 function detectPlatform(): Platform {
-  const agent = navigator.userAgent
-  return /mac/i.test(agent) ? 'macos' : 'windows'
+  return platformFromUserAgent(navigator.userAgent)
 }
