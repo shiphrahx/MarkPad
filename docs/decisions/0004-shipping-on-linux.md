@@ -2,7 +2,7 @@
 
 Date: 2026-09-04
 
-Status: proposed
+Status: accepted
 
 ## Context
 
@@ -16,7 +16,8 @@ that has never met an operating system. The work is in the seams: the packaging
 format, the size budget, and a handful of places that treat "not macOS" as
 "Windows".
 
-This entry is the investigation, not a commitment. Nothing here is built.
+Written as an investigation first, then built. What follows is what the work
+turned out to be, with the two things still unverified called out at the end.
 
 ## Decision
 
@@ -153,6 +154,21 @@ glibc 2.35, which rules out Debian 11 and anything older.
 `bundle.linux` section for the desktop entry and the package dependencies.
 `Cargo.toml` and `package.json` both describe MarkPad as being for Windows and
 macOS. So does CLAUDE.md, the README and the landing page.
+
+## Still unverified
+
+Two things could not be checked from a Windows machine and neither has a
+fallback, so both want a real Linux session before a tag goes out.
+
+`window.print()` in WebKitGTK is how PDF export works. It should open the GTK
+print dialog, which has a Print to File option. If it does not, PDF export has
+no second route and the command should be hidden on Linux rather than left to
+do nothing.
+
+`setAsAppMenu()` draws the menu inside the window on Linux rather than at the
+top of the screen, and the predefined Cut, Copy and Paste items go through GTK
+rather than through the webview. The tests assert we ask for them. Only pressing
+the keys proves they arrive.
 
 ## Consequences
 
