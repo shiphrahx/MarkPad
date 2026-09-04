@@ -3,10 +3,10 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
-<title>MarkPad — a small Markdown editor for Windows and macOS</title>
+<title>MarkPad — a small Markdown editor for Windows, macOS and Linux</title>
 <meta name="description" content="A Markdown editor that stays out of the way. Plain text in, plain text out. No account, no sync, no browser tab. Under 4 MB to install.">
 <meta property="og:title" content="MarkPad">
-<meta property="og:description" content="A small Markdown editor for Windows and macOS. Plain text in, plain text out.">
+<meta property="og:description" content="A small Markdown editor for Windows, macOS and Linux. Plain text in, plain text out.">
 <meta property="og:type" content="website">
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
@@ -301,7 +301,7 @@
   </header>
 
   <div class="hero" id="top">
-    <p class="eyebrow">Windows · macOS · v0.1</p>
+    <p class="eyebrow">Windows · macOS · Linux · v0.1</p>
     <h1>Markdown, without the tab.</h1>
     <p class="lede">MarkPad is a small desktop Markdown editor that opens your file, renders it,
     and gets out of the way. <strong>Plain text in, plain text out.</strong> No account, no vault,
@@ -323,12 +323,23 @@
         Windows
         <span class="size">3.3 MB</span>
       </a>
+      <a class="btn ghost" data-plat="linux" href="https://github.com/shiphrahx/MarkPad/releases/latest">
+        <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M12 2l9 5v10l-9 5-9-5V7l9-5zm0 2.3L5.5 8 12 11.7 18.5 8 12 4.3zM4.8 9.3v7l6.4 3.5v-7L4.8 9.3zm14.4 0l-6.4 3.5v7l6.4-3.5v-7z"/></svg>
+        Linux
+        <span class="size">.deb</span>
+      </a>
+      <a class="btn ghost" data-plat="linux-rpm" href="https://github.com/shiphrahx/MarkPad/releases/latest">
+        <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M12 2l9 5v10l-9 5-9-5V7l9-5zm0 2.3L5.5 8 12 11.7 18.5 8 12 4.3zM4.8 9.3v7l6.4 3.5v-7L4.8 9.3zm14.4 0l-6.4 3.5v7l6.4-3.5v-7z"/></svg>
+        Linux
+        <span class="size">.rpm</span>
+      </a>
     </div>
-    <p class="fineprint">Windows 10 and later, macOS 13 and later. Not sure which Mac you have?
-    Apple menu, then About This Mac. Anything from 2020 on is almost certainly Apple silicon.</p>
+    <p class="fineprint">Windows 10 and later, macOS 13 and later. The .deb is for Debian and
+    Ubuntu, the .rpm for Fedora. Not sure which Mac you have? Apple menu, then About This Mac.
+    Anything from 2020 on is almost certainly Apple silicon.</p>
     <p class="fineprint" style="margin-top:8px">Nothing is signed, so the first launch needs one
-    extra step: on macOS right-click the app and choose Open, on Windows click More info then
-    Run anyway.</p>
+    extra step on two of the three: on macOS right-click the app and choose Open, on Windows
+    click More info then Run anyway. Linux just installs.</p>
   </div>
 
   <section class="shot" aria-label="What MarkPad looks like">
@@ -529,7 +540,7 @@
   </section>
 
   <footer>
-    <span>MarkPad — a Markdown editor for Windows and macOS.</span>
+    <span>MarkPad — a Markdown editor for Windows, macOS and Linux.</span>
     <span class="mono"><a href="https://github.com/shiphrahx/MarkPad">github.com/shiphrahx/MarkPad</a> · MIT</span>
   </footer>
 </div>
@@ -559,17 +570,24 @@
     });
   });
 
-  // Open the mock on the chrome the visitor already knows, and lead with the
-  // download they're most likely to want.
+  // Lead with the download the visitor is most likely to want.
+  function lead(plat) {
+    document.querySelectorAll('.hero .btn').forEach(function (b) {
+      var mine = b.dataset.plat === plat;
+      b.classList.toggle('primary', mine);
+      b.classList.toggle('ghost', !mine);
+    });
+  }
+
+  // Open the mock on the chrome they already know, where there is one. Linux
+  // window decorations are the desktop environment's, and there is no single
+  // honest thing to draw, so the mock stays where it is.
   if (/Win/i.test(navigator.userAgent)) {
     var win = document.querySelector('.seg button[data-os="win"]');
     if (win) win.click();
-
-    document.querySelectorAll('.hero .btn').forEach(function (b) {
-      var isWin = b.dataset.plat === 'win';
-      b.classList.toggle('primary', isWin);
-      b.classList.toggle('ghost', !isWin);
-    });
+    lead('win');
+  } else if (/Linux|X11|Wayland/i.test(navigator.userAgent)) {
+    lead('linux');
   }
 
   // With nothing picked the page follows the OS, so the control starts out
