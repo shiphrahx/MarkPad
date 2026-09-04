@@ -9,17 +9,22 @@ import { statSync } from 'node:fs'
 
 const LIMIT_MB = 8
 
-const pattern = process.argv[2]
-if (!pattern) {
-  console.error('Usage: check-budget.mjs <glob>')
+// More than one, because a Linux release is a deb and an rpm and both of them
+// are something somebody downloads.
+const patterns = process.argv.slice(2)
+if (patterns.length === 0) {
+  console.error('Usage: check-budget.mjs <glob> [glob...]')
   process.exit(2)
 }
 
-const matches = globSync(pattern)
-if (matches.length === 0) {
-  console.error(`No installer matched ${pattern}. Did the bundle step run?`)
-  process.exit(2)
-}
+const matches = patterns.flatMap((pattern) => {
+  const found = globSync(pattern)
+  if (found.length === 0) {
+    console.error(`No installer matched ${pattern}. Did the bundle step run?`)
+    process.exit(2)
+  }
+  return found
+})
 
 let worst = 0
 for (const file of matches) {
