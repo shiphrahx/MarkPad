@@ -31,11 +31,32 @@ jobs:
       fail-fast: false
       matrix:
         # The file writing code is the part that behaves differently per
-        # platform, so its tests run on both rather than on whichever runner
-        # was cheapest.
-        os: [windows-latest, macos-latest]
+        # platform, so its tests run on all three rather than on whichever
+        # runner was cheapest. The permissions and symlink tests only exist on
+        # the Unix legs; the locking retry only means anything on Windows.
+        #
+        # 22.04 rather than latest, to match the runner the release builds on.
+        # The binary links against the build machine's glibc, so testing on a
+        # newer one would be testing something nobody can install.
+        os: [windows-latest, macos-latest, ubuntu-22.04]
     steps:
       - uses: actions/checkout@v4
+
+      # WebKitGTK is the Linux webview and Tauri links against it rather than
+      # bundling one, so the crate will not compile without its headers. The
+      # other two runners need nothing.
+      - name: Install the Linux webview
+        if: runner.os == 'Linux'
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y \
+            libwebkit2gtk-4.1-dev \
+            libayatana-appindicator3-dev \
+            librsvg2-dev \
+            libxdo-dev \
+            libssl-dev \
+            patchelf
+
       - uses: pnpm/action-setup@v4
       - uses: actions/setup-node@v4
         with:
