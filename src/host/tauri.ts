@@ -59,6 +59,16 @@ export class TauriHost implements Host {
   async report(text: string, title = 'MarkPad'): Promise<void> {
     await message(text, { title, kind: 'error' })
   }
+
+  /**
+   * `close` rather than `destroy`. Close asks, and the listener in main.ts is
+   * what turns the answer into either a destroyed window or a window that is
+   * still there with your work in it.
+   */
+  async requestClose(): Promise<void> {
+    const { getCurrentWindow } = await import('@tauri-apps/api/window')
+    await getCurrentWindow().close()
+  }
 }
 
 /**

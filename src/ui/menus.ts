@@ -43,7 +43,9 @@ export async function installMenus(
   const submenus: Submenu[] = []
 
   for (const category of CATEGORY_ORDER) {
-    const inCategory = commands.filter((command) => command.category === category)
+    const inCategory = commands.filter(
+      (command) => command.category === category && !belongsToTheAppMenu(command, platform),
+    )
     const native = await nativeItems(category)
     if (inCategory.length === 0 && native.length === 0) continue
 
@@ -86,7 +88,9 @@ export async function installMenus(
           await PredefinedMenuItem.new({ item: 'HideOthers' }),
           await PredefinedMenuItem.new({ item: 'ShowAll' }),
           await PredefinedMenuItem.new({ item: 'Separator' }),
-          await PredefinedMenuItem.new({ item: 'Quit' }),
+          // Ours rather than the predefined one. The predefined Quit quits,
+          // and this app has unsaved work to ask about first.
+          ...(await appMenuItems(commands, platform, live)),
         ],
       }),
     )
@@ -118,6 +122,30 @@ async function nativeItems(category: CommandCategory): Promise<PredefinedMenuIte
   return Promise.all(
     (['Cut', 'Copy', 'Paste'] as const).map((item) => PredefinedMenuItem.new({ item })),
   )
+}
+
+/**
+ * Commands macOS expects in the application menu rather than where their
+ * category would otherwise put them.
+ *
+ * Quit is the whole list. It is a File command everywhere else, and on macOS
+ * a File menu with a Quit in it is one of those small things that makes an app
+ * feel like it came from somewhere else.
+ */
+const APP_MENU_COMMANDS = new Set(['file.quit'])
+
+function belongsToTheAppMenu(command: Command, platform: Platform): boolean {
+  return platform === 'macos' && APP_MENU_COMMANDS.has(command.id)
+}
+
+/** Those same commands, built, for the menu they were held back for. */
+async function appMenuItems(
+  commands: readonly Command[],
+  platform: Platform,
+  live: Live[],
+): Promise<MenuItem[]> {
+  const wanted = commands.filter((command) => APP_MENU_COMMANDS.has(command.id))
+  return Promise.all(wanted.map((command) => buildItem(command, platform, live)))
 }
 
 async function buildItem(

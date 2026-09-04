@@ -75,6 +75,16 @@ export function buildCommands(app: App): Command[] {
       },
     },
     {
+      // Asks the window to close rather than closing anything itself, so it
+      // meets the same unsaved check the close button does. On macOS this
+      // lives in the application menu instead of here; see ui/menus.ts.
+      id: 'file.quit',
+      title: 'Quit MarkPad',
+      category: 'File',
+      key: 'Mod+Q',
+      run: () => app.quit(),
+    },
+    {
       id: 'file.exportHtml',
       title: 'Export as HTML…',
       category: 'File',

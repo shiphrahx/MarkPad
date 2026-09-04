@@ -24,6 +24,8 @@ export class MemoryHost implements Host {
   readonly reported: string[] = []
   /** Every name the app has offered in a save dialog. */
   readonly suggestedNames: string[] = []
+  /** How many times the app has asked the window to close. */
+  closeRequests = 0
 
   constructor(platform: Platform = 'macos') {
     this.platform = platform
@@ -76,6 +78,10 @@ export class MemoryHost implements Host {
 
   async report(message: string): Promise<void> {
     this.reported.push(message)
+  }
+
+  async requestClose(): Promise<void> {
+    this.closeRequests += 1
   }
 }
 

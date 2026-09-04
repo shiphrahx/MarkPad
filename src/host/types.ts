@@ -59,5 +59,13 @@ export interface Host {
   pickPathToSave(suggestedName: string): Promise<string | null>
   /** Tell the user something went wrong. */
   report(message: string, title?: string): Promise<void>
+  /**
+   * Ask the window to close.
+   *
+   * Asking rather than closing. The unsaved check lives on the way out, so
+   * everything that ends the session goes through the same door: the close
+   * button, Quit, and the menu item that calls this.
+   */
+  requestClose(): Promise<void>
 }
 

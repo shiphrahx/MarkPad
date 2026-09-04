@@ -712,6 +712,46 @@ export class App {
     return this.workspace.close(id, true)
   }
 
+  /**
+   * Ask about every unsaved buffer, for a window that is about to go.
+   *
+   * Closing one tab has always asked. Closing the window used to take the lot
+   * without a word, which is the same loss and a great deal easier to trigger
+   * by accident. There is no autosave behind it and no crash recovery, so this
+   * dialog is the only thing between somebody and an afternoon's work.
+   *
+   * False the moment anybody changes their mind, which leaves the window open
+   * and every buffer exactly where it was.
+   */
+  async closeEverything(): Promise<boolean> {
+    this.flush()
+
+    for (const buffer of [...this.workspace.tabs]) {
+      if (!isDirty(buffer)) continue
+
+      // Show the file the question is about. Being asked to save something
+      // you cannot see is how people pick the wrong answer.
+      this.workspace.focus(buffer.id)
+
+      const answer = await askAboutUnsavedChanges(titleOf(buffer))
+      if (answer === 'cancel') return false
+      if (answer === 'save' && !(await this.save(buffer.id))) return false
+    }
+
+    return true
+  }
+
+  /**
+   * Ask the window to close.
+   *
+   * Deliberately not doing the asking here. The window's own close listener
+   * runs `closeEverything`, so Quit and the close button take the same route
+   * and cannot drift into two different answers.
+   */
+  async quit(): Promise<void> {
+    await this.host.requestClose()
+  }
+
   // Input
 
   private onKeyDown(event: KeyboardEvent): void {

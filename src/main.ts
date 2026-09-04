@@ -38,9 +38,43 @@ void start()
 
 async function start(): Promise<void> {
   applyNativeChrome()
-  await Promise.allSettled([openStartupFiles(), followCommandState()])
+  await Promise.allSettled([guardTheClose(), openStartupFiles(), followCommandState()])
   listenForDroppedFiles()
   followSystemTheme()
+}
+
+/**
+ * The close button, and everything else that ends the session.
+ *
+ * Closing a tab has always asked about unsaved work. Closing the window took
+ * the lot without a word, and there is no autosave behind it: the session file
+ * remembers which paths were open, deliberately, and nothing else.
+ *
+ * Every route out goes through here. Quit calls `window.close()`, which raises
+ * this same event, so there is one dialog and one answer rather than two
+ * implementations that will eventually disagree.
+ */
+async function guardTheClose(): Promise<void> {
+  const { getCurrentWindow } = await import('@tauri-apps/api/window')
+  const appWindow = getCurrentWindow()
+
+  let asking = false
+
+  await appWindow.onCloseRequested(async (event) => {
+    // Always. The window is only allowed to go once the answer is in.
+    event.preventDefault()
+
+    // The dialog is drawn in the page, not by the operating system, so the
+    // close button is still there to be clicked while it is open.
+    if (asking) return
+    asking = true
+
+    try {
+      if (await app.closeEverything()) await appWindow.destroy()
+    } finally {
+      asking = false
+    }
+  })
 }
 
 /**
