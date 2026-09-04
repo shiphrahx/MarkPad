@@ -85,21 +85,7 @@ jobs:
       - uses: actions/checkout@v4
         with:
           ref: ${{ inputs.tag || github.ref }}
-
-      # WebKitGTK is the Linux webview. Tauri links against it rather than
-      # bundling one, which is the whole reason a deb fits in the budget and
-      # an AppImage does not.
-      - name: Install the Linux webview
-        if: runner.os == 'Linux'
-        run: |
-          sudo apt-get update
-          sudo apt-get install -y \
-            libwebkit2gtk-4.1-dev \
-            libayatana-appindicator3-dev \
-            librsvg2-dev \
-            libxdo-dev \
-            libssl-dev \
-            patchelf
+      - uses: ./.github/actions/linux-webview
 
       - uses: pnpm/action-setup@v4
       - uses: actions/setup-node@v4

@@ -41,21 +41,7 @@ jobs:
         os: [windows-latest, macos-latest, ubuntu-22.04]
     steps:
       - uses: actions/checkout@v4
-
-      # WebKitGTK is the Linux webview and Tauri links against it rather than
-      # bundling one, so the crate will not compile without its headers. The
-      # other two runners need nothing.
-      - name: Install the Linux webview
-        if: runner.os == 'Linux'
-        run: |
-          sudo apt-get update
-          sudo apt-get install -y \
-            libwebkit2gtk-4.1-dev \
-            libayatana-appindicator3-dev \
-            librsvg2-dev \
-            libxdo-dev \
-            libssl-dev \
-            patchelf
+      - uses: ./.github/actions/linux-webview
 
       - uses: pnpm/action-setup@v4
       - uses: actions/setup-node@v4
