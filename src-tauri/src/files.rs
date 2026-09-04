@@ -70,19 +70,25 @@ pub fn read_text(path: &Path) -> Result<String, FileError> {
 /// true for a few hundred milliseconds after the temporary file appears. So
 /// the rename gets retried with a short backoff before giving up.
 pub fn write_text_atomic(path: &Path, contents: &str) -> Result<u64, FileError> {
-    let directory = path.parent().unwrap_or_else(|| Path::new("."));
-    let temporary = temporary_path(path);
+    // A symlink is followed to the file it points at. `target` is what gets
+    // written; `path` stays what the user asked for, so that is what any error
+    // message names.
+    let resolved = resolve_symlink(path);
+    let target = resolved.as_deref().unwrap_or(path);
+
+    let directory = target.parent().unwrap_or_else(|| Path::new("."));
+    let temporary = temporary_path(target);
 
     write_all(&temporary, contents.as_bytes()).map_err(|source| FileError::Write {
         path: display(path),
         source,
     })?;
 
-    carry_permissions(path, &temporary);
+    carry_permissions(target, &temporary);
 
     let mut last: Option<io::Error> = None;
     for attempt in 0..WRITE_ATTEMPTS {
-        match fs::rename(&temporary, path) {
+        match fs::rename(&temporary, target) {
             Ok(()) => {
                 // Ask the directory itself to reach the disk, so the rename
                 // survives a power cut and not only a crash. Unix only:
@@ -116,6 +122,28 @@ pub fn write_text_atomic(path: &Path, contents: &str) -> Result<u64, FileError> 
         }),
         None => unreachable!("the retry loop records an error before giving up"),
     }
+}
+
+/// Where a symlink actually points, or `None` if this is an ordinary file.
+///
+/// `~/notes.md` pointing at `~/Dropbox/notes.md` is a normal thing to have.
+/// Renaming over the link would swap the link itself for a regular file and
+/// leave the real note as it was, which looks like a save that worked right up
+/// until you open the file somewhere else.
+///
+/// Only used when the path really is a link. Canonicalising unconditionally
+/// would rewrite paths that did not need it, and on Windows it hands back the
+/// `\\?\` form, which would end up in an error message somebody has to read.
+fn resolve_symlink(path: &Path) -> Option<PathBuf> {
+    let metadata = fs::symlink_metadata(path).ok()?;
+    if !metadata.file_type().is_symlink() {
+        return None;
+    }
+
+    // A broken link has nothing to resolve to. Falling back to the link's own
+    // path writes the file the link was pointing at, which is what somebody
+    // saving over a dangling link means.
+    fs::canonicalize(path).ok()
 }
 
 /// Give the temporary file the permissions of the file it is about to replace.
@@ -249,6 +277,51 @@ mod tests {
             .map(|entry| entry.unwrap().file_name().to_string_lossy().into_owned())
             .collect();
         assert_eq!(left, vec!["notes.md".to_owned()]);
+    }
+
+    #[cfg(unix)]
+    #[test]
+    fn saves_through_a_symlink_rather_than_replacing_it() {
+        let directory = tempfile::tempdir().unwrap();
+        let real = directory.path().join("real.md");
+        let link = directory.path().join("notes.md");
+        fs::write(&real, "old\n").unwrap();
+        std::os::unix::fs::symlink(&real, &link).unwrap();
+
+        write_text_atomic(&link, "new\n").unwrap();
+
+        assert!(
+            fs::symlink_metadata(&link)
+                .unwrap()
+                .file_type()
+                .is_symlink(),
+            "the link should still be a link"
+        );
+        assert_eq!(fs::read_to_string(&real).unwrap(), "new\n");
+    }
+
+    #[cfg(unix)]
+    #[test]
+    fn follows_a_symlink_out_of_its_own_directory() {
+        let directory = tempfile::tempdir().unwrap();
+        let elsewhere = directory.path().join("elsewhere");
+        fs::create_dir(&elsewhere).unwrap();
+
+        let real = elsewhere.join("real.md");
+        let link = directory.path().join("notes.md");
+        fs::write(&real, "old\n").unwrap();
+        std::os::unix::fs::symlink(&real, &link).unwrap();
+
+        write_text_atomic(&link, "new\n").unwrap();
+
+        assert_eq!(fs::read_to_string(&real).unwrap(), "new\n");
+        // The temporary file has to sit next to the file it replaces, not next
+        // to the link, or the rename crosses directories and stops being one.
+        let left: Vec<_> = fs::read_dir(&elsewhere)
+            .unwrap()
+            .map(|entry| entry.unwrap().file_name().to_string_lossy().into_owned())
+            .collect();
+        assert_eq!(left, vec!["real.md".to_owned()]);
     }
 
     #[cfg(unix)]
