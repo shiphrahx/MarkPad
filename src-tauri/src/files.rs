@@ -78,6 +78,8 @@ pub fn write_text_atomic(path: &Path, contents: &str) -> Result<u64, FileError> 
         source,
     })?;
 
+    carry_permissions(path, &temporary);
+
     let mut last: Option<io::Error> = None;
     for attempt in 0..WRITE_ATTEMPTS {
         match fs::rename(&temporary, path) {
@@ -114,6 +116,33 @@ pub fn write_text_atomic(path: &Path, contents: &str) -> Result<u64, FileError> 
         }),
         None => unreachable!("the retry loop records an error before giving up"),
     }
+}
+
+/// Give the temporary file the permissions of the file it is about to replace.
+///
+/// Writing somewhere else and renaming means the file that ends up on disk was
+/// created a moment ago, so the umask decided who can read it. Without this,
+/// saving a note that was `chmod 600` hands it back world readable, and a
+/// group writable file in a shared directory quietly stops being group
+/// writable. Neither is something a text editor should do behind your back.
+///
+/// Best effort on purpose. A file being saved for the first time has nothing
+/// to copy from, and not every filesystem carries a Unix mode. Neither is a
+/// reason to fail a save that has otherwise worked.
+#[cfg(unix)]
+fn carry_permissions(from: &Path, to: &Path) {
+    if let Ok(metadata) = fs::metadata(from) {
+        let _ = fs::set_permissions(to, metadata.permissions());
+    }
+}
+
+/// Windows keeps its access control in an ACL rather than a mode, and the
+/// rename inherits the parent directory's, which is the right answer. The one
+/// thing `fs::Permissions` carries here is the read-only flag, and a read-only
+/// file is one the save should be refusing rather than recreating.
+#[cfg(not(unix))]
+fn carry_permissions(from: &Path, to: &Path) {
+    let _ = (from, to);
 }
 
 fn write_all(path: &Path, bytes: &[u8]) -> io::Result<()> {
@@ -220,6 +249,38 @@ mod tests {
             .map(|entry| entry.unwrap().file_name().to_string_lossy().into_owned())
             .collect();
         assert_eq!(left, vec!["notes.md".to_owned()]);
+    }
+
+    #[cfg(unix)]
+    #[test]
+    fn keeps_the_mode_of_the_file_it_overwrites() {
+        use std::os::unix::fs::PermissionsExt;
+
+        let directory = tempfile::tempdir().unwrap();
+        let path = directory.path().join("private.md");
+        fs::write(&path, "old\n").unwrap();
+        fs::set_permissions(&path, fs::Permissions::from_mode(0o600)).unwrap();
+
+        write_text_atomic(&path, "new\n").unwrap();
+
+        let mode = fs::metadata(&path).unwrap().permissions().mode() & 0o777;
+        assert_eq!(mode, 0o600, "saving should not widen who can read the file");
+    }
+
+    #[cfg(unix)]
+    #[test]
+    fn keeps_a_group_writable_file_group_writable() {
+        use std::os::unix::fs::PermissionsExt;
+
+        let directory = tempfile::tempdir().unwrap();
+        let path = directory.path().join("shared.md");
+        fs::write(&path, "old\n").unwrap();
+        fs::set_permissions(&path, fs::Permissions::from_mode(0o664)).unwrap();
+
+        write_text_atomic(&path, "new\n").unwrap();
+
+        let mode = fs::metadata(&path).unwrap().permissions().mode() & 0o777;
+        assert_eq!(mode, 0o664);
     }
 
     #[test]
