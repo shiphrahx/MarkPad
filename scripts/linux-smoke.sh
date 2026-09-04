@@ -69,8 +69,28 @@ cleanup() {
 }
 trap cleanup EXIT
 
+APP_LOG=$(mktemp)
+SHOT="${SMOKE_SCREENSHOT:-smoke-failure.png}"
+
 step() { printf '\n=== %s\n' "$1"; }
-fail() { printf '\nFAILED: %s\n' "$1" >&2; exit 1; }
+
+# Grab the screen and the app's own output before the trap tears the display
+# down. A blank window and a window that ignored a keystroke fail identically
+# from out here, and the screenshot is the thing that tells them apart.
+fail() {
+  printf '\nFAILED: %s\n' "$1" >&2
+
+  if command -v import >/dev/null 2>&1; then
+    import -window root "$SHOT" 2>/dev/null && echo "screenshot saved to $SHOT" >&2
+  fi
+
+  if [ -s "$APP_LOG" ]; then
+    echo '--- what MarkPad printed ---' >&2
+    tail -40 "$APP_LOG" >&2
+  fi
+
+  exit 1
+}
 
 # Wait for a command to succeed, up to a number of half seconds.
 wait_for() {
@@ -103,7 +123,7 @@ WM_PID=$!
 sleep 1
 
 step "Launching $BINARY"
-"$BINARY" &
+"$BINARY" >"$APP_LOG" 2>&1 &
 APP_PID=$!
 
 wait_for 120 xdotool search --onlyvisible --pid "$APP_PID" ||
