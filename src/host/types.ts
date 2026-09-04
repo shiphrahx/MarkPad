@@ -3,7 +3,7 @@
  * Tauri, so the editor can be tested in Node against the in-memory host.
  */
 
-export type Platform = 'windows' | 'macos'
+export type Platform = 'windows' | 'macos' | 'linux'
 
 /** What a file had on disk. Detected on open, written back unchanged on save. */
 export type LineEnding = 'lf' | 'crlf'
