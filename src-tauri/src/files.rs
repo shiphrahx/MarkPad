@@ -466,6 +466,81 @@ mod tests {
         assert_eq!(mode, 0o664);
     }
 
+    #[cfg(unix)]
+    #[test]
+    fn gives_a_brand_new_file_usable_permissions() {
+        use std::os::unix::fs::PermissionsExt;
+
+        let directory = tempfile::tempdir().unwrap();
+        let path = directory.path().join("notes.md");
+
+        // Nothing to carry permissions from. The point is that carry_permissions
+        // shrugs rather than leaving a file its owner cannot read back.
+        write_text_atomic(&path, "hello\n").unwrap();
+
+        let mode = fs::metadata(&path).unwrap().permissions().mode();
+        assert_ne!(
+            mode & 0o600,
+            0,
+            "the owner should be able to read and write"
+        );
+    }
+
+    #[cfg(windows)]
+    #[test]
+    fn reports_a_file_another_program_is_holding() {
+        use std::os::windows::fs::OpenOptionsExt;
+
+        let directory = tempfile::tempdir().unwrap();
+        let path = directory.path().join("notes.md");
+        fs::write(&path, "old\n").unwrap();
+
+        // A share mode of zero is what a program that has the file open with no
+        // sharing looks like from out here. This is the only test that gets the
+        // retry loop to run all the way to the end.
+        let held = fs::OpenOptions::new()
+            .read(true)
+            .share_mode(0)
+            .open(&path)
+            .unwrap();
+
+        let error = write_text_atomic(&path, "new\n").unwrap_err();
+
+        // Nothing can read the file while that handle is open, this test
+        // included, so let go before checking the contents survived.
+        drop(held);
+
+        assert!(
+            matches!(error, FileError::Locked { .. }),
+            "expected a locked file, got {error}"
+        );
+        assert_eq!(fs::read_to_string(&path).unwrap(), "old\n");
+    }
+
+    #[cfg(windows)]
+    #[test]
+    fn leaves_nothing_behind_when_the_file_is_held() {
+        use std::os::windows::fs::OpenOptionsExt;
+
+        let directory = tempfile::tempdir().unwrap();
+        let path = directory.path().join("notes.md");
+        fs::write(&path, "old\n").unwrap();
+
+        let _held = fs::OpenOptions::new()
+            .read(true)
+            .share_mode(0)
+            .open(&path)
+            .unwrap();
+
+        write_text_atomic(&path, "new\n").unwrap_err();
+
+        let left: Vec<_> = fs::read_dir(directory.path())
+            .unwrap()
+            .map(|entry| entry.unwrap().file_name().to_string_lossy().into_owned())
+            .collect();
+        assert_eq!(left, vec!["notes.md".to_owned()]);
+    }
+
     #[test]
     fn round_trips_crlf_and_a_byte_order_mark() {
         let directory = tempfile::tempdir().unwrap();
