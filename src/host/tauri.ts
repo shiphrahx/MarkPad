@@ -1,4 +1,4 @@
-import { invoke } from '@tauri-apps/api/core'
+import { convertFileSrc, invoke } from '@tauri-apps/api/core'
 import { message, open, save } from '@tauri-apps/plugin-dialog'
 import { detectEncoding, detectLineEnding, toEditorText, toFileText } from './text.js'
 import type {
@@ -58,6 +58,14 @@ export class TauriHost implements Host {
 
   async report(text: string, title = 'MarkPad'): Promise<void> {
     await message(text, { title, kind: 'error' })
+  }
+
+  async allowImagesIn(directory: string): Promise<void> {
+    await invoke('allow_images_in', { directory })
+  }
+
+  assetUrl(path: string): string {
+    return convertFileSrc(path)
   }
 
   /**

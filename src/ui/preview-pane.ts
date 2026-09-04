@@ -1,5 +1,6 @@
 import { drawDiagram, drawMath, mathStyles } from '../preview/draw.js'
 import { findInlineMath, render } from '../preview/render.js'
+import { resolveImagesIn } from '../app/images.js'
 import { el } from './dom.js'
 
 /**
@@ -22,7 +23,12 @@ export class PreviewPane {
   private stylesLoaded = false
   private generation = 0
 
-  constructor() {
+  /**
+   * @param imageUrl turns a Markdown image source into something the window
+   *   can load, or null when there is nothing to load. Given rather than
+   *   worked out here, because the answer depends on where the open file is.
+   */
+  constructor(private readonly imageUrl: (src: string) => string | null) {
     this.element.appendChild(this.body)
   }
 
@@ -65,6 +71,7 @@ export class PreviewPane {
 
     const { html, blocks } = render(text)
     this.body.innerHTML = html
+    resolveImagesIn(this.body, this.imageUrl)
     await this.drawInlineMath()
 
     for (const block of blocks) {

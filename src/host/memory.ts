@@ -26,6 +26,8 @@ export class MemoryHost implements Host {
   readonly suggestedNames: string[] = []
   /** How many times the app has asked the window to close. */
   closeRequests = 0
+  /** Folders the app has asked to be able to read images from. */
+  readonly allowedImageDirectories: string[] = []
 
   constructor(platform: Platform = 'macos') {
     this.platform = platform
@@ -82,6 +84,14 @@ export class MemoryHost implements Host {
 
   async requestClose(): Promise<void> {
     this.closeRequests += 1
+  }
+
+  async allowImagesIn(directory: string): Promise<void> {
+    this.allowedImageDirectories.push(directory)
+  }
+
+  assetUrl(path: string): string {
+    return `asset://${path}`
   }
 }
 

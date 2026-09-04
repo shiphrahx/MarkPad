@@ -19,6 +19,7 @@ import { shortcutFor, type Command } from '../commands/types.js'
 import { countWords } from './stats.js'
 import { isDirty, title as titleOf, type Buffer } from './buffer.js'
 import { extractHeadings, type Heading } from './outline.js'
+import { directoryOf, resolveImage } from './images.js'
 import { Workspace } from './workspace.js'
 import {
   isFirstLaunch,
@@ -145,12 +146,13 @@ export class App {
 
     this.rail = new OutlineRail((heading, index) => this.goToHeading(heading, index))
     this.palette = new CommandPalette(host.platform)
-    this.preview = new PreviewPane()
+    this.preview = new PreviewPane((src) => this.imageUrl(src))
 
     this.reader = new ReaderEditor({
       platform: host.platform,
       onChange: () => this.onSurfaceEdited(),
       onLink: () => void this.addLink(),
+      imageUrl: (src) => this.imageUrl(src),
     })
 
     const sourceHolder = el('div', { class: 'editor', hidden: true })
@@ -276,7 +278,7 @@ export class App {
   private extensions() {
     return [
       ...markpadExtensions(),
-      previewPopovers(),
+      previewPopovers((src) => this.imageUrl(src)),
       EditorView.updateListener.of((update) => {
         if (this.applyingExternally) return
 
@@ -677,6 +679,7 @@ export class App {
     this.flush()
     try {
       await this.workspace.open(paths)
+      await this.letImagesLoad(paths)
     } catch (error) {
       await this.host.report(describe(error))
     }
@@ -685,10 +688,26 @@ export class App {
   async openWithDialog(): Promise<void> {
     this.flush()
     try {
+      const before = new Set(this.workspace.tabs.map((buffer) => buffer.path))
       await this.workspace.openWithDialog()
+
+      const opened = this.workspace.tabs
+        .map((buffer) => buffer.path)
+        .filter((path): path is string => path !== null && !before.has(path))
+
+      await this.letImagesLoad(opened)
     } catch (error) {
       await this.host.report(describe(error))
     }
+  }
+
+  /** Let the window read the pictures sitting beside the files just opened. */
+  private async letImagesLoad(paths: readonly string[]): Promise<void> {
+    const folders = new Set(
+      paths.map((path) => directoryOf(path)).filter((folder): folder is string => folder !== null),
+    )
+
+    await Promise.all([...folders].map((folder) => this.allowImagesBeside(folder)))
   }
 
   /**
@@ -739,6 +758,35 @@ export class App {
     }
 
     return true
+  }
+
+  /**
+   * Where an image in the open document actually lives.
+   *
+   * Markdown writes image paths relative to the file, and the window cannot
+   * load a bare path, so the two have to be put together and handed to the
+   * host to turn into a URL. Null when there is nothing to load: a document
+   * that has never been saved has no folder to be relative to, and a picture
+   * on the web is a network request this app does not make.
+   */
+  imageUrl(src: string): string | null {
+    const resolved = resolveImage(src, directoryOf(this.workspace.active?.path ?? null))
+    return resolved === null ? null : this.host.assetUrl(resolved)
+  }
+
+  /**
+   * Let the window read pictures out of a folder we have just opened a file
+   * from.
+   *
+   * Best effort. A document that shows no images is the failure here, and that
+   * is not worth refusing to open the file over.
+   */
+  private async allowImagesBeside(directory: string): Promise<void> {
+    try {
+      await this.host.allowImagesIn(directory)
+    } catch {
+      // Nothing to tell the user that they could act on.
+    }
   }
 
   /**

@@ -3,6 +3,7 @@ import { syntaxTree } from '@codemirror/language'
 import type { EditorState } from '@codemirror/state'
 import { drawDiagram, drawMath } from './draw.js'
 import { findInlineMath, render } from './render.js'
+import { resolveImagesIn } from '../app/images.js'
 
 /**
  * Popover previews.
@@ -22,7 +23,11 @@ interface Target {
   readonly display: boolean
 }
 
-export function previewPopovers() {
+/**
+ * @param imageUrl resolves an image source against the open document, so a
+ *   table with a picture in it previews the same way it renders.
+ */
+export function previewPopovers(imageUrl: (src: string) => string | null) {
   return hoverTooltip(
     (view, position): Tooltip | null => {
       const target = targetAt(view.state, position)
@@ -37,7 +42,7 @@ export function previewPopovers() {
           dom.className = 'popover markpad-document'
           dom.textContent = '…'
 
-          void fill(dom, target)
+          void fill(dom, target, imageUrl)
 
           return { dom }
         },
@@ -47,13 +52,18 @@ export function previewPopovers() {
   )
 }
 
-async function fill(dom: HTMLElement, target: Target): Promise<void> {
+async function fill(
+  dom: HTMLElement,
+  target: Target,
+  imageUrl: (src: string) => string | null,
+): Promise<void> {
   const html = await htmlFor(target)
 
   // The tooltip may already be gone by the time a library finished loading.
   if (!dom.isConnected) return
 
   dom.innerHTML = html
+  resolveImagesIn(dom, imageUrl)
 }
 
 async function htmlFor(target: Target): Promise<string> {
