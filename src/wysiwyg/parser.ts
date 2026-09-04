@@ -1,85 +1,15 @@
-import MarkdownIt from 'markdown-it'
-import type StateCore from 'markdown-it/lib/rules_core/state_core.mjs'
 import { MarkdownParser } from 'prosemirror-markdown'
+import { createMarkdown, HTML_BLOCK_TOKEN } from '../markdown/markdown.js'
 import { markpadSchema } from './schema.js'
 
 /**
  * Markdown into a document.
  *
- * `html: false` matters: with it on, markdown-it emits raw HTML tokens that
- * the schema would silently drop, and dropped content does not come back.
- * Instead the task-list and html-block plugins below turn the two cases we
- * care about into nodes the schema can hold.
+ * The parser itself lives in ../markdown, because the preview and the exports
+ * have to read a file exactly the same way this does. All that belongs here is
+ * the mapping from its tokens onto the schema.
  */
-const markdownIt = MarkdownIt('commonmark', { html: false })
-  .enable(['table', 'strikethrough', 'linkify'])
-  .use(taskLists)
-  .use(keepHtmlBlocks)
-
-/**
- * GFM task lists.
- *
- * markdown-it has no notion of them, so this reads the `[ ]` or `[x]` off the
- * front of a list item, records it on the item token and removes it from the
- * text. Without this the brackets survive as literal characters and the item
- * comes back as `- [ ] [ ] thing` after a round trip.
- */
-function taskLists(md: MarkdownIt): void {
-  md.core.ruler.after('inline', 'task_lists', (state: StateCore) => {
-    const tokens = state.tokens
-
-    for (let index = 0; index < tokens.length; index++) {
-      const open = tokens[index]
-      if (open?.type !== 'list_item_open') continue
-
-      // paragraph_open, inline, so the text is two tokens along.
-      const inline = tokens[index + 2]
-      if (inline?.type !== 'inline') continue
-
-      const match = /^\[([ xX])\][ \t]+/.exec(inline.content)
-      if (!match) continue
-
-      open.attrSet('checked', match[1] === ' ' ? 'false' : 'true')
-
-      inline.content = inline.content.slice(match[0].length)
-      const first = inline.children?.[0]
-      if (first?.type === 'text') first.content = first.content.slice(match[0].length)
-    }
-
-    return true
-  })
-}
-
-/**
- * Raw HTML, kept rather than dropped.
- *
- * With `html: false` markdown-it leaves HTML as ordinary paragraph text, which
- * would come back escaped. This spots a paragraph that is nothing but a tag
- * and turns it into an html_block, so it is written out untouched.
- */
-function keepHtmlBlocks(md: MarkdownIt): void {
-  md.core.ruler.after('inline', 'keep_html_blocks', (state: StateCore) => {
-    const tokens = state.tokens
-
-    for (let index = 0; index < tokens.length - 2; index++) {
-      const open = tokens[index]
-      const inline = tokens[index + 1]
-      const close = tokens[index + 2]
-
-      if (open?.type !== 'paragraph_open') continue
-      if (inline?.type !== 'inline' || close?.type !== 'paragraph_close') continue
-      if (!/^<[a-zA-Z!/][\s\S]*>$/.test(inline.content.trim())) continue
-
-      const replacement = new state.Token('html_block_kept', '', 0)
-      replacement.content = inline.content
-      replacement.block = true
-
-      tokens.splice(index, 3, replacement)
-    }
-
-    return true
-  })
-}
+const markdownIt = createMarkdown()
 
 export const markdownParser = new MarkdownParser(markpadSchema, markdownIt, {
   blockquote: { block: 'blockquote' },
@@ -116,7 +46,7 @@ export const markdownParser = new MarkdownParser(markpadSchema, markdownIt, {
     }),
   },
   hardbreak: { node: 'hard_break' },
-  html_block_kept: {
+  [HTML_BLOCK_TOKEN]: {
     node: 'html_block',
     getAttrs: (token) => ({ html: token.content }),
   },

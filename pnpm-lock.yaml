@@ -53,9 +53,6 @@ importers:
       markdown-it:
         specifier: ^14.3.0
         version: 14.3.0
-      marked:
-        specifier: ^18.0.10
-        version: 18.0.10
       mermaid:
         specifier: ^11.17.0
         version: 11.17.0
@@ -1210,11 +1207,6 @@ packages:
 
   marked@16.4.2:
     resolution: {integrity: sha512-TI3V8YYWvkVf3KJe1dRkpnjs68JUPyEa5vjKrp1XEEJUAOaQc+Qj+L1qWbPd0SJuAdQkFU0h73sXXqwDYxsiDA==}
-    engines: {node: '>= 20'}
-    hasBin: true
-
-  marked@18.0.10:
-    resolution: {integrity: sha512-FJeH4bRpYoXiggcgriCGItKCSv3xkngJc4QCZ/rkQCogU3VYaLxYJoZl8Nw/b4+x7iij/pd+09mZ6A1dXzpL0A==}
     engines: {node: '>= 20'}
     hasBin: true
 
@@ -2581,8 +2573,6 @@ snapshots:
       uc.micro: 2.1.0
 
   marked@16.4.2: {}
-
-  marked@18.0.10: {}
 
   mdn-data@2.27.1: {}
 
