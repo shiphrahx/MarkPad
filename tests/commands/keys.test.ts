@@ -1,5 +1,6 @@
 import { describe, expect, it } from 'vitest'
 import { formatShortcut, matchesShortcut } from '../../src/commands/keys.js'
+import { shortcutFor, type Command } from '../../src/commands/types.js'
 
 describe('formatShortcut', () => {
   it('draws macOS shortcuts as run-together symbols', () => {
@@ -10,6 +11,12 @@ describe('formatShortcut', () => {
   it('draws Windows shortcuts as names joined by a plus', () => {
     expect(formatShortcut('Mod+K', 'windows')).toBe('Ctrl+K')
     expect(formatShortcut('Mod+Shift+P', 'windows')).toBe('Ctrl+Shift+P')
+  })
+
+  it('draws Linux shortcuts the same way as Windows', () => {
+    expect(formatShortcut('Mod+K', 'linux')).toBe('Ctrl+K')
+    expect(formatShortcut('Mod+Shift+P', 'linux')).toBe('Ctrl+Shift+P')
+    expect(formatShortcut('Escape', 'linux')).toBe('Esc')
   })
 
   it('spells out the named keys per platform', () => {
@@ -82,5 +89,45 @@ describe('matchesShortcut', () => {
   it('matches a bare key with no modifiers', () => {
     expect(matchesShortcut(press('F2'), 'F2', 'windows')).toBe(true)
     expect(matchesShortcut(press('F2', { ctrlKey: true }), 'F2', 'windows')).toBe(false)
+  })
+
+  it('reads Mod as Ctrl on Linux', () => {
+    expect(matchesShortcut(press('k', { ctrlKey: true }), 'Mod+K', 'linux')).toBe(true)
+    expect(matchesShortcut(press('k', { metaKey: true }), 'Mod+K', 'linux')).toBe(false)
+  })
+})
+
+describe('shortcutFor', () => {
+  const command = (partial: Partial<Command>): Command => ({
+    id: 'test',
+    title: 'Test',
+    category: 'File',
+    run: () => {},
+    ...partial,
+  })
+
+  it('gives macOS the plain key', () => {
+    const palette = command({ key: 'Mod+P', windowsStyleKey: 'Mod+Shift+P' })
+    expect(shortcutFor(palette, 'macos')).toBe('Mod+P')
+  })
+
+  /**
+   * The point of the rename. Linux keeps the Windows habits, so an override
+   * written for Windows has to reach it too, or a Linux user gets whichever
+   * shortcut macOS wanted.
+   */
+  it('gives Windows and Linux the override', () => {
+    const palette = command({ key: 'Mod+P', windowsStyleKey: 'Mod+Shift+P' })
+    expect(shortcutFor(palette, 'windows')).toBe('Mod+Shift+P')
+    expect(shortcutFor(palette, 'linux')).toBe('Mod+Shift+P')
+  })
+
+  it('falls back to the plain key when there is no override', () => {
+    const save = command({ key: 'Mod+S' })
+    expect(shortcutFor(save, 'linux')).toBe('Mod+S')
+  })
+
+  it('gives null for a command with no shortcut at all', () => {
+    expect(shortcutFor(command({}), 'linux')).toBeNull()
   })
 })

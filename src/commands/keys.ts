@@ -3,10 +3,14 @@ import type { Platform } from '../host/types.js'
 /**
  * Shortcuts, written once and drawn differently per platform.
  *
- * `Mod` is Command on macOS and Ctrl on Windows, which covers almost every
- * shortcut. Where the two platforms genuinely disagree, a command declares
- * `windowsKey` and says so explicitly rather than relying on a translation
- * that would be wrong.
+ * `Mod` is Command on macOS and Ctrl on Windows and Linux, which covers almost
+ * every shortcut. Where macOS genuinely disagrees with the other two, a command
+ * declares `windowsStyleKey` and says so explicitly rather than relying on a
+ * translation that would be wrong.
+ *
+ * Linux follows the Windows conventions here rather than getting a third set.
+ * It is the same keyboard with the same habits, and a Linux user pressing
+ * Ctrl+Shift+P is not expecting a Mac answer.
  */
 
 const MAC_SYMBOLS: Record<string, string> = {
@@ -24,7 +28,7 @@ const MAC_SYMBOLS: Record<string, string> = {
   arrowright: '→',
 }
 
-const WINDOWS_NAMES: Record<string, string> = {
+const PLAIN_NAMES: Record<string, string> = {
   mod: 'Ctrl',
   cmd: 'Win',
   ctrl: 'Ctrl',
@@ -42,9 +46,9 @@ const WINDOWS_NAMES: Record<string, string> = {
 /**
  * Draw a shortcut the way the platform writes it.
  *
- * macOS runs the symbols together with no separator, Windows joins the names
- * with a plus. Getting this wrong is one of the first things that makes an app
- * feel like it was ported.
+ * macOS runs the symbols together with no separator. Windows and Linux both
+ * join the names with a plus. Getting this wrong is one of the first things
+ * that makes an app feel like it was ported.
  */
 export function formatShortcut(shortcut: string, platform: Platform): string {
   const parts = shortcut.split('+').map((part) => part.trim().toLowerCase())
@@ -53,7 +57,7 @@ export function formatShortcut(shortcut: string, platform: Platform): string {
     return parts.map((part) => MAC_SYMBOLS[part] ?? draw(part)).join('')
   }
 
-  return parts.map((part) => WINDOWS_NAMES[part] ?? draw(part)).join('+')
+  return parts.map((part) => PLAIN_NAMES[part] ?? draw(part)).join('+')
 }
 
 /**
@@ -99,8 +103,9 @@ export function parseShortcut(shortcut: string): ParsedShortcut | null {
     mod: wanted.has('mod'),
     shift: wanted.has('shift'),
     alt: wanted.has('alt'),
-    // Ctrl on macOS, or the Windows key on Windows: the modifier Mod did not
-    // claim. Named once here so the matcher does not have to think about it.
+    // Ctrl on macOS, or the Windows and Super keys elsewhere: the modifier
+    // Mod did not claim. Named once here so the matcher does not have to
+    // think about it.
     otherMod: wanted.has('ctrl') || wanted.has('cmd'),
   }
 }

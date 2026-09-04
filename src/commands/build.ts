@@ -125,7 +125,7 @@ export function buildCommands(app: App): Command[] {
       title: 'Show all commands',
       category: 'View',
       key: 'Mod+K',
-      windowsKey: 'Mod+K',
+      windowsStyleKey: 'Mod+K',
       run: () => app.openPalette(),
     },
     // Formatting. These were reachable by shortcut and by typing Markdown

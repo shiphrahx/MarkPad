@@ -14,12 +14,17 @@ export interface Command {
   /** Groups the palette and the menu bar. */
   readonly category: CommandCategory
   /**
-   * Shortcut in the neutral notation: `Mod` means Command on macOS and Ctrl on
-   * Windows. Per-platform overrides go in `windowsKey` where the two
-   * conventions genuinely differ.
+   * Shortcut in the neutral notation: `Mod` means Command on macOS and Ctrl
+   * everywhere else. Overrides go in `windowsStyleKey` where the conventions
+   * genuinely differ.
    */
   readonly key?: string
-  readonly windowsKey?: string
+  /**
+   * The shortcut on Windows and Linux, where the two follow the same habits
+   * and both differ from macOS. Named for the convention rather than for one
+   * of the platforms that keeps it, because it is used by both.
+   */
+  readonly windowsStyleKey?: string
   /**
    * Shortcuts that also fire the command but are never drawn.
    *
@@ -46,6 +51,6 @@ export const CATEGORY_ORDER: readonly CommandCategory[] = [
 ]
 
 export function shortcutFor(command: Command, platform: Platform): string | null {
-  const raw = platform === 'windows' ? command.windowsKey ?? command.key : command.key
+  const raw = platform === 'macos' ? command.key : command.windowsStyleKey ?? command.key
   return raw ?? null
 }
