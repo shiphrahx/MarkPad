@@ -86,4 +86,26 @@ describe('exportHtml', () => {
 
     expect(await exportHtml(buffer('# Title\n'), host)).toBe(false)
   })
+
+  /**
+   * An exported file is a new file, so it gets the platform's own habit rather
+   * than whatever the Markdown source happened to use. The buffer here is LF
+   * either way, which is the point: the source's ending is not consulted.
+   */
+  it('writes CRLF on Windows and LF on the other two', async () => {
+    const windows = new MemoryHost('windows')
+    windows.queueSavePick('C:/notes.html')
+    await exportHtml(buffer('# Title\n'), windows)
+    expect(windows.raw('C:/notes.html')).toContain('\r\n')
+
+    const linux = new MemoryHost('linux')
+    linux.queueSavePick('/home/cassia/notes.html')
+    await exportHtml(buffer('# Title\n'), linux)
+    expect(linux.raw('/home/cassia/notes.html')).not.toContain('\r')
+
+    const mac = new MemoryHost('macos')
+    mac.queueSavePick('/Users/cassia/notes.html')
+    await exportHtml(buffer('# Title\n'), mac)
+    expect(mac.raw('/Users/cassia/notes.html')).not.toContain('\r')
+  })
 })
