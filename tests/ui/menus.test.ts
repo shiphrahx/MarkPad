@@ -99,6 +99,25 @@ describe('installMenus', () => {
     expect(predefinedIn('Edit')).toEqual(expect.arrayContaining(['Cut', 'Copy', 'Paste']))
   })
 
+  it('gives the Edit menu the clipboard items on Linux', async () => {
+    await installMenus([command({ id: 'edit.lineEndings', title: 'Change line endings' })], 'linux')
+
+    expect(predefinedIn('Edit')).toEqual(expect.arrayContaining(['Cut', 'Copy', 'Paste']))
+  })
+
+  /**
+   * The application menu with About, Hide and Quit in it is a macOS shape.
+   * Linux and Windows put those elsewhere, and a menu called MarkPad sitting
+   * inside a MarkPad window is the sort of thing that reads as a port.
+   */
+  it('only gives macOS the application menu', async () => {
+    await installMenus([command({ id: 'file.new', title: 'New file', category: 'File' })], 'linux')
+    expect(submenu('MarkPad').items).toBeUndefined()
+
+    await installMenus([command({ id: 'file.new', title: 'New file', category: 'File' })], 'macos')
+    expect(predefinedIn('MarkPad')).toEqual(expect.arrayContaining(['Quit', 'Hide']))
+  })
+
   it('still builds an Edit menu when no command lives in it', async () => {
     await installMenus([command({ id: 'file.new', title: 'New file', category: 'File' })], 'windows')
 
