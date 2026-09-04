@@ -1,6 +1,11 @@
 import { Menu, MenuItem, PredefinedMenuItem, Submenu } from '@tauri-apps/api/menu'
 import { formatShortcut } from '../commands/keys.js'
-import { CATEGORY_ORDER, shortcutFor, type Command } from '../commands/types.js'
+import {
+  CATEGORY_ORDER,
+  shortcutFor,
+  type Command,
+  type CommandCategory,
+} from '../commands/types.js'
 import type { Platform } from '../host/types.js'
 
 /**
@@ -39,7 +44,8 @@ export async function installMenus(
 
   for (const category of CATEGORY_ORDER) {
     const inCategory = commands.filter((command) => command.category === category)
-    if (inCategory.length === 0) continue
+    const native = await nativeItems(category)
+    if (inCategory.length === 0 && native.length === 0) continue
 
     const items = await Promise.all(
       inCategory.map((command) => buildItem(command, platform, live)),
@@ -48,7 +54,10 @@ export async function installMenus(
     submenus.push(
       await Submenu.new({
         text: category,
-        items,
+        items:
+          native.length > 0 && items.length > 0
+            ? [...native, await PredefinedMenuItem.new({ item: 'Separator' }), ...items]
+            : [...native, ...items],
       }),
     )
   }
@@ -87,6 +96,28 @@ export async function installMenus(
   await menu.setAsAppMenu()
 
   return refresher(live)
+}
+
+/**
+ * The items the operating system owns rather than we do.
+ *
+ * Cut, copy and paste are not MarkPad commands and cannot be: nothing running
+ * in the page can reach the system clipboard, so the webview only does them
+ * when the menu it is under says it can. Setting an app menu replaces the
+ * default one, and the default one is where these lived, which is how the
+ * editor ended up with a Ctrl+C that did nothing.
+ *
+ * Undo, redo and select all are deliberately not here even though they are
+ * predefined too. The editor binds all three and keeps its own history; a
+ * native item would take the key and hand it to something that has never
+ * heard of the document.
+ */
+async function nativeItems(category: CommandCategory): Promise<PredefinedMenuItem[]> {
+  if (category !== 'Edit') return []
+
+  return Promise.all(
+    (['Cut', 'Copy', 'Paste'] as const).map((item) => PredefinedMenuItem.new({ item })),
+  )
 }
 
 async function buildItem(
