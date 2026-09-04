@@ -78,8 +78,18 @@ jobs:
           - os: macos-latest
             bundle: dmg
             pattern: src-tauri/target/release/bundle/dmg/*.dmg
+          # Two legs rather than one building both, so every entry in this
+          # matrix stays one bundle and one glob. The second compile is almost
+          # entirely cache.
+          - os: ubuntu-22.04
+            bundle: deb
+            pattern: src-tauri/target/release/bundle/deb/*.deb
+          - os: ubuntu-22.04
+            bundle: rpm
+            pattern: src-tauri/target/release/bundle/rpm/*.rpm
     steps:
       - uses: actions/checkout@v4
+      - uses: ./.github/actions/linux-webview
       - uses: pnpm/action-setup@v4
       - uses: actions/setup-node@v4
         with:
