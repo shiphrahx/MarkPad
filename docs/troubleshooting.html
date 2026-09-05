@@ -201,15 +201,17 @@
         <h3>"MarkPad is damaged and can't be opened"</h3>
         <p class="said"><b>The message</b>“MarkPad” is damaged and can’t be opened.
         You should move it to the Bin.</p>
-        <p>Nothing is damaged. It's what Gatekeeper says about an unsigned app you
-        downloaded.</p>
+        <p>Nothing is damaged. macOS says this when a downloaded app carries the
+        quarantine flag and isn't signed by a paid developer account. Right-clicking and
+        choosing Open won't get past this one, so clear the flag instead.</p>
         <ol>
           <li>Drag MarkPad into <strong>Applications</strong>.</li>
-          <li>Right-click it and choose <strong>Open</strong>. Double-clicking won't work.</li>
-          <li>Choose <strong>Open</strong> again in the dialog.</li>
+          <li>Open <strong>Terminal</strong> and run:
+          <pre><code>xattr -dr com.apple.quarantine /Applications/MarkPad.app</code></pre></li>
+          <li>Open MarkPad normally.</li>
         </ol>
-        <p>If the message comes back, run this in Terminal, then open the app again:</p>
-        <pre><code>xattr -dr com.apple.quarantine /Applications/MarkPad.app</code></pre>
+        <p>That command removes the download flag from one app you chose to install.
+        Run it on things you trust and nothing else.</p>
       </div>
 
       <div class="issue" id="unverified">
@@ -217,13 +219,16 @@
         <p class="said"><b>The message</b>“MarkPad” can’t be opened because Apple
         cannot check it for malicious software.</p>
         <ol>
-          <li>Right-click MarkPad in Applications, choose <strong>Open</strong>, then
-          <strong>Open</strong> in the dialog.</li>
-          <li>No Open button? Try to launch it, then go to <strong>System Settings</strong>,
-          <strong>Privacy &amp; Security</strong>, and click <strong>Open Anyway</strong>.
-          That button only shows for about an hour after the blocked launch.</li>
+          <li>Double-click MarkPad and dismiss the warning.</li>
+          <li>Go to <strong>System Settings</strong>, <strong>Privacy &amp; Security</strong>,
+          scroll to Security and click <strong>Open Anyway</strong>. The button only shows
+          for about an hour after the blocked launch.</li>
+          <li>Confirm with your password or Touch ID.</li>
         </ol>
-        <p>macOS remembers, so it's a first launch step only.</p>
+        <p>On macOS 14 and earlier you can skip that: right-click the app, choose
+        <strong>Open</strong>, then <strong>Open</strong> in the dialog. macOS 15 removed
+        that shortcut for unsigned apps.</p>
+        <p>macOS remembers either way, so it's a first launch step only.</p>
       </div>
 
       <div class="issue" id="chip">
