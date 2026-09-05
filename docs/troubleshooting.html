@@ -1,0 +1,358 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Troubleshooting MarkPad</title>
+<meta name="description" content="Fixes for the things that go wrong when you install MarkPad: the macOS damaged message, the unrecognised publisher warning on Windows, a missing WebView2, and the wrong build for your chip.">
+<meta property="og:title" content="Troubleshooting MarkPad">
+<meta property="og:description" content="Fixes for the things that go wrong when you install MarkPad.">
+<meta property="og:type" content="website">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Instrument+Sans:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500;700&display=swap" rel="stylesheet">
+<style>
+  :root{
+    --page:#EFF1EF;
+    --raise:#FFFFFF;
+    --chrome:#E8EBE9;
+    --ink:#131A19;
+    --muted:#6E7A78;
+    --mark:#A9B3B0;
+    --rule:#E1E6E3;
+    --accent:#0E7C66;
+    --accent-ink:#FFFFFF;
+    --tint:rgba(14,124,102,.09);
+    --ui:'Instrument Sans',system-ui,-apple-system,sans-serif;
+    --mono:'JetBrains Mono',ui-monospace,Menlo,Consolas,monospace;
+    color-scheme:light;
+  }
+  @media (prefers-color-scheme:dark){
+    :root:not([data-theme="light"]){
+      color-scheme:dark;
+      --page:#0D1211;
+      --raise:#131817;
+      --chrome:#171C1B;
+      --ink:#E4EAE8;
+      --muted:#87938F;
+      --mark:#4A5754;
+      --rule:#232A28;
+      --accent:#4FD1AE;
+      --accent-ink:#08201B;
+      --tint:rgba(79,209,174,.10);
+    }
+  }
+
+  *{box-sizing:border-box}
+  html{scroll-behavior:smooth}
+  @media (prefers-reduced-motion:reduce){html{scroll-behavior:auto}}
+  html,body{margin:0}
+  body{
+    background:var(--page);
+    color:var(--ink);
+    font-family:var(--ui);
+    -webkit-font-smoothing:antialiased;
+    line-height:1.6;
+  }
+  .wrap{max-width:1000px;margin:0 auto;padding:0 24px}
+  a{color:var(--accent)}
+  code{font-family:var(--mono);font-size:.88em;background:var(--tint);color:var(--accent);padding:2px 6px;border-radius:4px}
+
+  /* ---------- top bar ---------- */
+  .top{display:flex;align-items:center;justify-content:space-between;gap:16px;padding:22px 0}
+  .wordmark{
+    font-family:var(--mono);font-weight:700;font-size:17px;letter-spacing:-.02em;
+    display:flex;align-items:center;gap:.35em;text-decoration:none;color:var(--ink);
+  }
+  .wordmark .hash{color:var(--mark);font-weight:400}
+  .top nav{display:flex;align-items:center;gap:22px;font-size:14px}
+  .top nav a{color:var(--muted);text-decoration:none}
+  .top nav a:hover,.top nav a[aria-current="page"]{color:var(--ink)}
+
+  /* ---------- hero ---------- */
+  .hero{padding:48px 0 8px;max-width:62ch}
+  .eyebrow{
+    font-family:var(--mono);font-size:11px;letter-spacing:.14em;text-transform:uppercase;
+    color:var(--mark);margin:0 0 18px;
+  }
+  h1{font-size:clamp(32px,5vw,48px);line-height:1.08;letter-spacing:-.03em;font-weight:700;margin:0 0 18px}
+  .hero p{font-size:18px;color:var(--muted);margin:0;max-width:56ch}
+
+  /* ---------- jump list ---------- */
+  .jump{
+    display:flex;flex-wrap:wrap;gap:10px;margin:28px 0 8px;padding:0;list-style:none;
+  }
+  .jump a{
+    display:inline-block;font-size:13.5px;text-decoration:none;color:var(--muted);
+    background:var(--raise);border:1px solid var(--rule);border-radius:999px;padding:7px 14px;
+  }
+  .jump a:hover{color:var(--ink)}
+
+  /* ---------- sections ---------- */
+  section{padding:52px 0 0}
+  h2{font-size:clamp(22px,3vw,28px);line-height:1.15;letter-spacing:-.02em;font-weight:700;margin:0 0 6px}
+  h2 .hash{font-family:var(--mono);color:var(--mark);font-weight:400;margin-right:.35em}
+  .section-head{max-width:58ch;margin-bottom:26px}
+  .section-head p{margin:0;color:var(--muted);font-size:15.5px}
+
+  /* ---------- issue cards ---------- */
+  .issues{display:grid;gap:16px}
+  .issue{
+    background:var(--raise);border:1px solid var(--rule);border-radius:11px;
+    padding:22px 24px;
+  }
+  .issue h3{font-size:16.5px;margin:0 0 10px;font-weight:600;letter-spacing:-.01em}
+  .issue p{margin:0 0 12px;font-size:15px;color:var(--muted)}
+  .issue p:last-child{margin-bottom:0}
+  .issue ol,.issue ul{margin:0 0 12px;padding-left:20px;font-size:15px;color:var(--muted)}
+  .issue li{margin:5px 0}
+  .issue li:last-child{margin-bottom:0}
+  .issue strong{color:var(--ink);font-weight:600}
+
+  .said{
+    font-family:var(--mono);font-size:13px;line-height:1.55;
+    background:var(--chrome);border-left:2px solid var(--mark);border-radius:0 6px 6px 0;
+    padding:10px 14px;margin:0 0 14px;color:var(--ink);
+  }
+  .said b{display:block;font-family:var(--ui);font-size:10.5px;font-weight:600;
+    letter-spacing:.12em;text-transform:uppercase;color:var(--mark);margin-bottom:5px}
+
+  pre{
+    font-family:var(--mono);font-size:12.5px;line-height:1.6;overflow-x:auto;
+    background:var(--chrome);border:1px solid var(--rule);border-radius:7px;
+    padding:12px 14px;margin:0 0 12px;
+  }
+  pre code{background:none;color:var(--ink);padding:0;font-size:inherit}
+
+  kbd{
+    font-family:var(--mono);font-size:11.5px;color:var(--ink);
+    border:1px solid var(--rule);border-radius:4px;padding:1px 5px;background:var(--chrome);
+  }
+
+  /* ---------- closing ---------- */
+  .closer{
+    background:var(--raise);border:1px solid var(--rule);border-radius:12px;
+    padding:32px 30px;margin:52px 0 0;
+  }
+  .closer h2{margin-bottom:10px}
+  .closer p{color:var(--muted);margin:0 0 18px;max-width:52ch;font-size:15.5px}
+  .btn{
+    display:inline-flex;align-items:center;gap:10px;
+    font:600 15px/1 var(--ui);text-decoration:none;
+    padding:13px 19px;border-radius:9px;border:1px solid transparent;
+    background:var(--accent);color:var(--accent-ink);
+  }
+  .btn:focus-visible{outline:2px solid var(--accent);outline-offset:2px}
+
+  footer{
+    border-top:1px solid var(--rule);margin-top:48px;padding:26px 0 56px;
+    display:flex;flex-wrap:wrap;gap:12px 24px;justify-content:space-between;
+    font-size:13px;color:var(--muted);
+  }
+  footer a{color:var(--muted)}
+  footer .mono{font-family:var(--mono);font-size:12px;color:var(--mark)}
+
+  @media (max-width:720px){
+    .wrap{padding:0 16px}
+    section{padding:38px 0 0}
+    .hero{padding:30px 0 4px}
+    .issue{padding:18px 18px}
+  }
+</style>
+</head>
+<body>
+
+<div class="wrap">
+  <header class="top">
+    <a class="wordmark" href="./index.html"><span class="hash">#</span>MarkPad</a>
+    <nav>
+      <a href="./index.html#features">Features</a>
+      <a href="./troubleshooting.html" aria-current="page">Troubleshooting</a>
+      <a href="https://github.com/shiphrahx/MarkPad">GitHub</a>
+    </nav>
+  </header>
+
+  <div class="hero" id="top">
+    <p class="eyebrow">Installing · Windows · macOS</p>
+    <h1>When it won't open</h1>
+    <p>MarkPad isn't code signed, because a certificate costs money every year and this
+    is free. Both operating systems notice, and both say something alarming about it.
+    Here is what each message means and how to get past it.</p>
+
+    <ul class="jump">
+      <li><a href="#damaged">"MarkPad is damaged"</a></li>
+      <li><a href="#unverified">"Apple cannot check it"</a></li>
+      <li><a href="#chip">Wrong Mac build</a></li>
+      <li><a href="#smartscreen">"Windows protected your PC"</a></li>
+      <li><a href="#antivirus">Antivirus removes it</a></li>
+      <li><a href="#webview2">Blank window on Windows</a></li>
+      <li><a href="#association">Double-click opens something else</a></li>
+    </ul>
+  </div>
+
+  <section id="mac">
+    <div class="section-head">
+      <h2><span class="hash">##</span>macOS</h2>
+      <p>Anything downloaded through a browser gets a quarantine flag. Gatekeeper checks
+      that flag on first launch and refuses apps it can't trace back to a paid developer
+      account, which is every build here.</p>
+    </div>
+
+    <div class="issues">
+      <div class="issue" id="damaged">
+        <h3>"MarkPad is damaged and can't be opened"</h3>
+        <p class="said"><b>What macOS says</b>“MarkPad” is damaged and can’t be opened.
+        You should move it to the Bin.</p>
+        <p>Nothing is damaged. It's the message Gatekeeper gives for a quarantined app
+        with no signature, and it's the same wording it would use for a genuinely corrupt
+        download, which is unhelpful of it.</p>
+        <p>Drag MarkPad into Applications first, then right-click it and choose
+        <strong>Open</strong>. Choose <strong>Open</strong> again in the dialog that follows.
+        Double-clicking gives you the dead end instead of the dialog, so the right-click
+        matters.</p>
+        <p>If the message keeps coming back, clear the flag yourself in Terminal:</p>
+        <pre><code>xattr -dr com.apple.quarantine /Applications/MarkPad.app</code></pre>
+        <p>That command removes the download flag from one app you chose to install.
+        Run it on things you trust and nothing else.</p>
+      </div>
+
+      <div class="issue" id="unverified">
+        <h3>"Apple cannot check it for malicious software"</h3>
+        <p class="said"><b>What macOS says</b>“MarkPad” can’t be opened because Apple
+        cannot check it for malicious software.</p>
+        <p>Same cause, softer wording. macOS shows this one when the app is unsigned but
+        not quarantined as hard.</p>
+        <ol>
+          <li>Right-click MarkPad in Applications and choose <strong>Open</strong>.</li>
+          <li>Choose <strong>Open</strong> in the dialog.</li>
+        </ol>
+        <p>If there's no Open button, try to launch it once, then go to
+        <strong>System Settings</strong>, <strong>Privacy &amp; Security</strong>, scroll to
+        the Security section and click <strong>Open Anyway</strong> next to the note about
+        MarkPad. The button only appears for about an hour after the blocked launch.</p>
+        <p>macOS remembers the decision, so this is a first launch thing and not something
+        you do again.</p>
+      </div>
+
+      <div class="issue" id="chip">
+        <h3>It opens and immediately quits, or won't install at all</h3>
+        <p>Usually the wrong dmg for the chip. There are two: <code>aarch64</code> for
+        Apple silicon and <code>x64</code> for Intel.</p>
+        <p>Check yours in the <strong>Apple menu</strong>, then <strong>About This Mac</strong>.
+        A Mac from 2020 or later is almost certainly Apple silicon. Download the other dmg,
+        drag it over the copy in Applications and replace it.</p>
+      </div>
+    </div>
+  </section>
+
+  <section id="windows">
+    <div class="section-head">
+      <h2><span class="hash">##</span>Windows</h2>
+      <p>The installer is per user, so it never asks for an admin password. What it does
+      trip is SmartScreen, which flags any installer it hasn't seen enough copies of.</p>
+    </div>
+
+    <div class="issues">
+      <div class="issue" id="smartscreen">
+        <h3>"Windows protected your PC"</h3>
+        <p class="said"><b>What Windows says</b>Windows protected your PC. Microsoft
+        Defender SmartScreen prevented an unrecognised app from starting.</p>
+        <p>Unrecognised publisher, not detected malware. Signed installers from small
+        projects get this too until enough people have run them.</p>
+        <ol>
+          <li>Click <strong>More info</strong> in the dialog.</li>
+          <li>Click <strong>Run anyway</strong>.</li>
+        </ol>
+        <p>If your browser blocked the download before you got that far, open the
+        downloads list and choose <strong>Keep</strong> on the file.</p>
+      </div>
+
+      <div class="issue" id="antivirus">
+        <h3>Your antivirus deletes the installer</h3>
+        <p>Some scanners quarantine unsigned installers on sight, so the file vanishes
+        from Downloads with no message.</p>
+        <p>Check the quarantine list in your antivirus and restore it from there, or add
+        the file to its exclusions before downloading again. Only download the installer
+        from <a href="https://github.com/shiphrahx/MarkPad/releases/latest">the releases
+        page</a>, where every file is built by the project's own CI.</p>
+        <p>Windows can also block a file it thinks came from the internet. Right-click the
+        exe, choose <strong>Properties</strong>, and tick <strong>Unblock</strong> at the
+        bottom of the General tab if it's there.</p>
+      </div>
+
+      <div class="issue" id="webview2">
+        <h3>The window opens blank, or an error mentions WebView2</h3>
+        <p>MarkPad draws its interface with the WebView already on your machine rather
+        than shipping a copy of Chromium, which is how the installer stays under 4 MB.
+        Windows 11 and current Windows 10 have it. Stripped LTSC images and some Windows
+        Server builds don't.</p>
+        <p>Install the Evergreen Runtime from
+        <a href="https://developer.microsoft.com/microsoft-edge/webview2/">Microsoft's
+        WebView2 page</a>, then start MarkPad again. It's a Microsoft download, and it's
+        the same component Office and Teams use.</p>
+      </div>
+
+      <div class="issue" id="cantrun">
+        <h3>"This app can't run on your PC"</h3>
+        <p>The build is 64-bit x86. It won't start on a 32-bit install, and it won't start
+        on an Arm device such as a Surface Pro X or a Snapdragon laptop.</p>
+        <p>There's no Arm build today. If you want one, say so on an issue and it'll
+        help work out whether it's worth doing.</p>
+      </div>
+    </div>
+  </section>
+
+  <section id="both">
+    <div class="section-head">
+      <h2><span class="hash">##</span>Both platforms</h2>
+    </div>
+
+    <div class="issues">
+      <div class="issue" id="association">
+        <h3>Double-clicking a .md file still opens the old editor</h3>
+        <p>Installing MarkPad doesn't take the file association off whatever had it, which
+        is deliberate. You can hand it over whenever you want to.</p>
+        <ul>
+          <li><strong>Windows:</strong> right-click a <code>.md</code> file,
+          <strong>Open with</strong>, <strong>Choose another app</strong>, pick MarkPad and
+          tick always use this app.</li>
+          <li><strong>macOS:</strong> right-click a <code>.md</code> file,
+          <strong>Get Info</strong>, pick MarkPad under Open with, then click
+          <strong>Change All</strong>.</li>
+        </ul>
+      </div>
+
+      <div class="issue" id="linux">
+        <h3>There's no Linux download</h3>
+        <p>The <code>.deb</code> and <code>.rpm</code> builds exist and the app runs, but
+        they aren't released yet. They ship once they've had enough real use on a real
+        desktop to be worth calling a release.</p>
+      </div>
+
+      <div class="issue" id="unsaved">
+        <h3>You closed a file and lost what you'd typed</h3>
+        <p>There's no autosave and no crash recovery, so the dialog asking about unsaved
+        changes is the only thing standing between you and lost work. Every route out of
+        the app shows it, including closing a tab and quitting.</p>
+        <p>Save with <kbd>Ctrl</kbd>+<kbd>S</kbd> or <kbd>⌘</kbd>+<kbd>S</kbd> as you go.
+        Leaving autosave out is a decision rather than an oversight, and it's the reason
+        that dialog is treated as seriously as it is.</p>
+      </div>
+    </div>
+  </section>
+
+  <div class="closer">
+    <h2>Still stuck</h2>
+    <p>Open an issue with your operating system, the version of MarkPad and what the
+    message said, word for word. That's usually enough to work out what happened.</p>
+    <a class="btn" href="https://github.com/shiphrahx/MarkPad/issues/new">Open an issue</a>
+  </div>
+
+  <footer>
+    <span><a href="./index.html">MarkPad</a>, a Markdown editor for Windows and macOS.</span>
+    <span class="mono"><a href="https://github.com/shiphrahx/MarkPad">github.com/shiphrahx/MarkPad</a> · MIT</span>
+  </footer>
+</div>
+
+</body>
+</html>
