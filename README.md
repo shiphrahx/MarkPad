@@ -7,6 +7,7 @@
 [![CI](https://github.com/shiphrahx/MarkPad/actions/workflows/ci.yml/badge.svg)](https://github.com/shiphrahx/MarkPad/actions/workflows/ci.yml)
 [![Latest release](https://img.shields.io/github/v/release/shiphrahx/MarkPad?display_name=tag&sort=semver&color=0E7C66)](https://github.com/shiphrahx/MarkPad/releases/latest)
 [![Licence](https://img.shields.io/badge/licence-MIT-0E7C66)](./LICENSE)
+[![Last updated](https://img.shields.io/github/last-commit/shiphrahx/MarkPad?label=last%20updated&color=6E7A78)](https://github.com/shiphrahx/MarkPad/commits/main)
 
 [![Platforms](https://img.shields.io/badge/platforms-Windows%2010%2B%20%C2%B7%20macOS%2013%2B-6E7A78)](https://github.com/shiphrahx/MarkPad/releases/latest)
 [![Installer size](https://img.shields.io/badge/installer-under%204%20MB-6E7A78)](https://github.com/shiphrahx/MarkPad/releases/latest)
