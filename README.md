@@ -2,19 +2,19 @@
 
 # MarkPad
 
-**A small, simple Markdown reader and editor for Mac, Windows and Linux.**
+**A small, simple Markdown reader and editor for Mac and Windows.**
 
 [![CI](https://github.com/shiphrahx/MarkPad/actions/workflows/ci.yml/badge.svg)](https://github.com/shiphrahx/MarkPad/actions/workflows/ci.yml)
 [![Latest release](https://img.shields.io/github/v/release/shiphrahx/MarkPad?display_name=tag&sort=semver&color=0E7C66)](https://github.com/shiphrahx/MarkPad/releases/latest)
 [![Licence](https://img.shields.io/badge/licence-MIT-0E7C66)](./LICENSE)
 
-[![Platforms](https://img.shields.io/badge/platforms-Windows%2010%2B%20%C2%B7%20macOS%2013%2B%20%C2%B7%20Linux-6E7A78)](https://github.com/shiphrahx/MarkPad/releases/latest)
+[![Platforms](https://img.shields.io/badge/platforms-Windows%2010%2B%20%C2%B7%20macOS%2013%2B-6E7A78)](https://github.com/shiphrahx/MarkPad/releases/latest)
 [![Installer size](https://img.shields.io/badge/installer-under%204%20MB-6E7A78)](#it-doesnt-run-in-your-browser)
 [![Built with Tauri](https://img.shields.io/badge/built%20with-Tauri%20v2-6E7A78)](https://tauri.app)
 
 <img src="./docs/logo.png" alt="MarkPad" width="440">
 
-**[Download for macOS, Windows or Linux](https://github.com/shiphrahx/MarkPad/releases/latest)**
+**[Download for macOS or Windows](https://github.com/shiphrahx/MarkPad/releases/latest)**
 
 </div>
 
@@ -35,19 +35,24 @@ then About This Mac. Open the dmg and drag MarkPad into Applications.
 **Windows** — download the `-setup.exe` and run it. It installs for the current
 user, so there's no admin prompt.
 
-**Linux** — take the `.deb` on Debian and Ubuntu, the `.rpm` on Fedora. Both pull
-in WebKitGTK if you haven't got it. There's no AppImage: it would have to carry
-its own copy of WebKitGTK, which is ten times the size of everything else here
-put together.
-
 The builds are unsigned, because code-signing certificates cost money per year
-and this is free. So the first launch has an extra step on two of the three:
+and this is free. So the first launch has an extra step on both:
 
 - On macOS, right-click the app and choose **Open**, then **Open** again in the
   dialog. macOS remembers after that. Double-clicking the first time gives you a
   dead end rather than that dialog.
 - On Windows, SmartScreen will flag an unrecognised publisher. Click **More info**,
   then **Run anyway**.
+
+## Coming next
+
+**Linux.** The `.deb` and `.rpm` builds work and the app runs, but it isn't
+released yet. It ships when it's had enough real use on a real desktop to be
+worth calling a release.
+
+**A portable Windows build.** One `.exe` you can drop on a USB stick or run on a
+machine you're not allowed to install anything on. Nothing to install, nothing
+left behind.
 
 ## Why it exists
 
@@ -59,9 +64,9 @@ first. That's what this is.
 
 MarkPad is a real desktop app, not a web page in a tab.
 
-It uses the WebView already on your computer (WebView2 on Windows, WKWebView on macOS,
-WebKitGTK on Linux) rather than shipping its own copy of Chromium. That's why every
-installer is under 4 MB.
+It uses the WebView already on your computer (WebView2 on Windows, WKWebView on
+macOS) rather than shipping its own copy of Chromium. That's why every installer
+is under 4 MB.
 It starts quickly, it stays small in memory, and when you close it, it's closed.
 
 ## What it does
