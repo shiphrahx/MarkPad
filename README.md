@@ -9,7 +9,7 @@
 [![Licence](https://img.shields.io/badge/licence-MIT-0E7C66)](./LICENSE)
 
 [![Platforms](https://img.shields.io/badge/platforms-Windows%2010%2B%20%C2%B7%20macOS%2013%2B-6E7A78)](https://github.com/shiphrahx/MarkPad/releases/latest)
-[![Installer size](https://img.shields.io/badge/installer-under%204%20MB-6E7A78)](#it-doesnt-run-in-your-browser)
+[![Installer size](https://img.shields.io/badge/installer-under%204%20MB-6E7A78)](https://github.com/shiphrahx/MarkPad/releases/latest)
 [![Built with Tauri](https://img.shields.io/badge/built%20with-Tauri%20v2-6E7A78)](https://tauri.app)
 
 <img src="./docs/logo.png" alt="MarkPad" width="440">
@@ -20,76 +20,68 @@
 
 ---
 
-You double-click a `.md` file, it opens, and it looks like a document rather than
-raw syntax. You type. It saves.
+You double-click a `.md` file, it opens, and it looks like a document rather than raw
+syntax. You type. It saves.
 
-## Installing
+![MarkPad editing a Markdown file, dark theme on Windows](./docs/screenshot.png)
 
-Grab the file for your machine from
-[the latest release](https://github.com/shiphrahx/MarkPad/releases/latest).
+## 📥 Install
 
-**macOS** — there are two dmgs, one per chip. Take `aarch64` for Apple silicon
-and `x64` for Intel. If you're not sure which you have, check the Apple menu and
-then About This Mac. Open the dmg and drag MarkPad into Applications.
+Grab your file from [the latest release](https://github.com/shiphrahx/MarkPad/releases/latest).
 
-**Windows** — download the `-setup.exe` and run it. It installs for the current
-user, so there's no admin prompt.
+- **macOS** 🍎 two dmgs, one per chip. `aarch64` for Apple silicon, `x64` for Intel.
+  Not sure which? Apple menu, then About This Mac. Open the dmg, drag MarkPad into
+  Applications.
+- **Windows** 🪟 download the `-setup.exe` and run it. Installs for the current user,
+  so no admin prompt.
 
-The builds are unsigned, because code-signing certificates cost money per year
-and this is free. So the first launch has an extra step on both:
+Nothing is code signed, because certificates cost money every year and this is free.
+So the first launch needs one extra step:
 
-- On macOS, right-click the app and choose **Open**, then **Open** again in the
-  dialog. macOS remembers after that. Double-clicking the first time gives you a
-  dead end rather than that dialog.
-- On Windows, SmartScreen will flag an unrecognised publisher. Click **More info**,
-  then **Run anyway**.
+- **macOS:** right-click the app, choose **Open**, then **Open** again.
+- **Windows:** SmartScreen flags an unrecognised publisher. Click **More info**, then
+  **Run anyway**.
 
-## Coming next
+Stuck on a message about a damaged app or a blocked installer?
+[Troubleshooting](https://shiphrahx.github.io/MarkPad/troubleshooting.html) has the
+exact wording and the fix.
 
-**Linux.** The `.deb` and `.rpm` builds work and the app runs, but it isn't
-released yet. It ships when it's had enough real use on a real desktop to be
-worth calling a release.
-
-**A portable Windows build.** One `.exe` you can drop on a USB stick or run on a
-machine you're not allowed to install anything on. Nothing to install, nothing
-left behind.
-
-## Why it exists
-
-I wanted a way to read and edit Markdown that was just a small app on my desktop.
-Something that opens the file, shows it properly, and doesn't ask for anything else
-first. That's what this is.
-
-## It doesn't run in your browser
-
-MarkPad is a real desktop app, not a web page in a tab.
-
-It uses the WebView already on your computer (WebView2 on Windows, WKWebView on
-macOS) rather than shipping its own copy of Chromium. That's why every installer
-is under 4 MB.
-It starts quickly, it stays small in memory, and when you close it, it's closed.
-
-## What it does
+## ✍️ What it does
 
 - Opens and edits `.md` files, several at a time, in tabs
-- Renders as you type, so you're reading a document and not a source file
-- Source view is one keystroke away when you need it
-- `Ctrl+K` / `⌘K` reaches every command, so there's no hunting through menus
+- Renders as you type, so you read a document instead of a source file
+- Source view is one keystroke away when you want it
+- `Ctrl+K` / `⌘K` reaches every command, so no hunting through menus
 - Tables, LaTeX and Mermaid diagrams preview in a popover
-- Export to HTML or PDF
+- Exports to HTML or PDF
 - Light and dark, following your system setting
-- Detects CRLF or LF on open and keeps it on save, which matters if you move files
+- Detects CRLF or LF on open and keeps it on save, which matters when files move
   between Windows, Mac and Linux
 
-## What it doesn't do
+## 🚫 What it doesn't do
 
-No accounts, no sync, no telemetry. No tags, backlinks or graph view. No Markdown
-syntax that only works here.
+- No accounts, no sync, no telemetry
+- No tags, backlinks or graph view
+- No Markdown syntax that only works here
+- No bundled Chromium. It uses the WebView already on your machine, which is how the
+  installer stays under 4 MB
 
 Your files are ordinary files in ordinary folders. Uninstall MarkPad and they still
 open in everything else.
 
-## Building it yourself
+## 🔭 Coming next
+
+- **Linux.** The `.deb` and `.rpm` builds work and the app runs, but it isn't released
+  yet. It ships once it's had enough real use on a real desktop to be worth calling a
+  release.
+- **A portable Windows build.** One `.exe` you can drop on a USB stick or run on a
+  machine you're not allowed to install anything on. Nothing to install, nothing left
+  behind.
+
+Try it and [open an issue](https://github.com/shiphrahx/MarkPad/issues) when something
+annoys you. That's what shapes the next version.
+
+## 🔧 Build it yourself
 
 You'll need [Node 20+](https://nodejs.org), [pnpm](https://pnpm.io) and
 [Rust](https://rustup.rs).
@@ -98,12 +90,7 @@ You'll need [Node 20+](https://nodejs.org), [pnpm](https://pnpm.io) and
 pnpm install
 pnpm icons      # generates the app icons, which aren't committed
 pnpm tauri dev  # run it
-```
-
-To build an installer:
-
-```bash
-pnpm tauri build
+pnpm tauri build  # build an installer
 ```
 
 Tests and checks:
@@ -114,19 +101,15 @@ pnpm typecheck   # tsc, no emit
 cd src-tauri && cargo test
 ```
 
-## Under the hood
-
 Tauri v2 for the shell, CodeMirror 6 for the editor, TypeScript and hand-written CSS
 for the chrome. No UI framework.
 
-There are hard size and speed budgets in [`CLAUDE.md`](./CLAUDE.md) that CI enforces.
-If a change breaks one, the change is wrong and not the budget.
-
-Design decisions live in [`docs/decisions/`](./docs/decisions). Worth reading before
-suggesting an architectural change.
-
-Owes a lot to [MarkEdit](https://github.com/MarkEdit-app/MarkEdit), which is excellent
-and macOS only. This is the cross-platform take on the same idea.
+- Hard size and speed budgets live in [`CLAUDE.md`](./CLAUDE.md) and CI enforces them.
+  If a change breaks one, the change is wrong and not the budget.
+- Design decisions live in [`docs/decisions/`](./docs/decisions). Worth reading before
+  suggesting an architectural change.
+- Owes a lot to [MarkEdit](https://github.com/MarkEdit-app/MarkEdit), which is excellent
+  and macOS only. This is the cross-platform take on the same idea.
 
 ## Licence
 
