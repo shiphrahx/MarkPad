@@ -105,6 +105,7 @@
   .issue p{margin:0 0 12px;font-size:15px;color:var(--muted)}
   .issue p:last-child{margin-bottom:0}
   .issue ol,.issue ul{margin:0 0 12px;padding-left:20px;font-size:15px;color:var(--muted)}
+  .issue ol:last-child,.issue ul:last-child{margin-bottom:0}
   .issue li{margin:5px 0}
   .issue li:last-child{margin-bottom:0}
   .issue strong{color:var(--ink);font-weight:600}
@@ -175,72 +176,65 @@
   <div class="hero" id="top">
     <p class="eyebrow">Installing · Windows · macOS</p>
     <h1>When it won't open</h1>
-    <p>MarkPad isn't code signed, because a certificate costs money every year and this
-    is free. Both operating systems notice, and both say something alarming about it.
-    Here is what each message means and how to get past it.</p>
+    <p>MarkPad isn't code signed, so both systems warn about it on first launch.
+    Find your message and follow the steps.</p>
 
     <ul class="jump">
-      <li><a href="#damaged">"MarkPad is damaged"</a></li>
+      <li><a href="#damaged">"is damaged"</a></li>
       <li><a href="#unverified">"Apple cannot check it"</a></li>
-      <li><a href="#chip">Wrong Mac build</a></li>
+      <li><a href="#chip">Quits on launch</a></li>
       <li><a href="#smartscreen">"Windows protected your PC"</a></li>
-      <li><a href="#antivirus">Antivirus removes it</a></li>
-      <li><a href="#webview2">Blank window on Windows</a></li>
-      <li><a href="#association">Double-click opens something else</a></li>
+      <li><a href="#antivirus">Installer disappears</a></li>
+      <li><a href="#webview2">Blank window</a></li>
+      <li><a href="#cantrun">"can't run on your PC"</a></li>
+      <li><a href="#association">Opens in the wrong app</a></li>
     </ul>
   </div>
 
   <section id="mac">
     <div class="section-head">
       <h2><span class="hash">##</span>macOS</h2>
-      <p>Anything downloaded through a browser gets a quarantine flag. Gatekeeper checks
-      that flag on first launch and refuses apps it can't trace back to a paid developer
-      account, which is every build here.</p>
     </div>
 
     <div class="issues">
       <div class="issue" id="damaged">
         <h3>"MarkPad is damaged and can't be opened"</h3>
-        <p class="said"><b>What macOS says</b>“MarkPad” is damaged and can’t be opened.
+        <p class="said"><b>The message</b>“MarkPad” is damaged and can’t be opened.
         You should move it to the Bin.</p>
-        <p>Nothing is damaged. It's the message Gatekeeper gives for a quarantined app
-        with no signature, and it's the same wording it would use for a genuinely corrupt
-        download, which is unhelpful of it.</p>
-        <p>Drag MarkPad into Applications first, then right-click it and choose
-        <strong>Open</strong>. Choose <strong>Open</strong> again in the dialog that follows.
-        Double-clicking gives you the dead end instead of the dialog, so the right-click
-        matters.</p>
-        <p>If the message keeps coming back, clear the flag yourself in Terminal:</p>
+        <p>Nothing is damaged. It's what Gatekeeper says about an unsigned app you
+        downloaded.</p>
+        <ol>
+          <li>Drag MarkPad into <strong>Applications</strong>.</li>
+          <li>Right-click it and choose <strong>Open</strong>. Double-clicking won't work.</li>
+          <li>Choose <strong>Open</strong> again in the dialog.</li>
+        </ol>
+        <p>If the message comes back, run this in Terminal, then open the app again:</p>
         <pre><code>xattr -dr com.apple.quarantine /Applications/MarkPad.app</code></pre>
-        <p>That command removes the download flag from one app you chose to install.
-        Run it on things you trust and nothing else.</p>
       </div>
 
       <div class="issue" id="unverified">
         <h3>"Apple cannot check it for malicious software"</h3>
-        <p class="said"><b>What macOS says</b>“MarkPad” can’t be opened because Apple
+        <p class="said"><b>The message</b>“MarkPad” can’t be opened because Apple
         cannot check it for malicious software.</p>
-        <p>Same cause, softer wording. macOS shows this one when the app is unsigned but
-        not quarantined as hard.</p>
         <ol>
-          <li>Right-click MarkPad in Applications and choose <strong>Open</strong>.</li>
-          <li>Choose <strong>Open</strong> in the dialog.</li>
+          <li>Right-click MarkPad in Applications, choose <strong>Open</strong>, then
+          <strong>Open</strong> in the dialog.</li>
+          <li>No Open button? Try to launch it, then go to <strong>System Settings</strong>,
+          <strong>Privacy &amp; Security</strong>, and click <strong>Open Anyway</strong>.
+          That button only shows for about an hour after the blocked launch.</li>
         </ol>
-        <p>If there's no Open button, try to launch it once, then go to
-        <strong>System Settings</strong>, <strong>Privacy &amp; Security</strong>, scroll to
-        the Security section and click <strong>Open Anyway</strong> next to the note about
-        MarkPad. The button only appears for about an hour after the blocked launch.</p>
-        <p>macOS remembers the decision, so this is a first launch thing and not something
-        you do again.</p>
+        <p>macOS remembers, so it's a first launch step only.</p>
       </div>
 
       <div class="issue" id="chip">
-        <h3>It opens and immediately quits, or won't install at all</h3>
-        <p>Usually the wrong dmg for the chip. There are two: <code>aarch64</code> for
-        Apple silicon and <code>x64</code> for Intel.</p>
-        <p>Check yours in the <strong>Apple menu</strong>, then <strong>About This Mac</strong>.
-        A Mac from 2020 or later is almost certainly Apple silicon. Download the other dmg,
-        drag it over the copy in Applications and replace it.</p>
+        <h3>It quits straight away, or the dmg won't install</h3>
+        <p>Wrong build for the chip.</p>
+        <ol>
+          <li><strong>Apple menu</strong>, <strong>About This Mac</strong>. A chip line
+          reading Apple M something means Apple silicon.</li>
+          <li>Download <code>aarch64</code> for Apple silicon, <code>x64</code> for Intel.</li>
+          <li>Drag it into Applications and replace the copy that's there.</li>
+        </ol>
       </div>
     </div>
   </section>
@@ -248,56 +242,54 @@
   <section id="windows">
     <div class="section-head">
       <h2><span class="hash">##</span>Windows</h2>
-      <p>The installer is per user, so it never asks for an admin password. What it does
-      trip is SmartScreen, which flags any installer it hasn't seen enough copies of.</p>
     </div>
 
     <div class="issues">
       <div class="issue" id="smartscreen">
         <h3>"Windows protected your PC"</h3>
-        <p class="said"><b>What Windows says</b>Windows protected your PC. Microsoft
-        Defender SmartScreen prevented an unrecognised app from starting.</p>
-        <p>Unrecognised publisher, not detected malware. Signed installers from small
-        projects get this too until enough people have run them.</p>
+        <p class="said"><b>The message</b>Windows protected your PC. Microsoft Defender
+        SmartScreen prevented an unrecognised app from starting.</p>
+        <p>Unrecognised publisher, not detected malware.</p>
         <ol>
-          <li>Click <strong>More info</strong> in the dialog.</li>
+          <li>Click <strong>More info</strong>.</li>
           <li>Click <strong>Run anyway</strong>.</li>
         </ol>
-        <p>If your browser blocked the download before you got that far, open the
-        downloads list and choose <strong>Keep</strong> on the file.</p>
+        <p>If the download itself was blocked, open your browser's downloads list and
+        choose <strong>Keep</strong>.</p>
       </div>
 
       <div class="issue" id="antivirus">
-        <h3>Your antivirus deletes the installer</h3>
-        <p>Some scanners quarantine unsigned installers on sight, so the file vanishes
-        from Downloads with no message.</p>
-        <p>Check the quarantine list in your antivirus and restore it from there, or add
-        the file to its exclusions before downloading again. Only download the installer
-        from <a href="https://github.com/shiphrahx/MarkPad/releases/latest">the releases
-        page</a>, where every file is built by the project's own CI.</p>
-        <p>Windows can also block a file it thinks came from the internet. Right-click the
-        exe, choose <strong>Properties</strong>, and tick <strong>Unblock</strong> at the
-        bottom of the General tab if it's there.</p>
+        <h3>The installer disappears from Downloads</h3>
+        <p>Some scanners quarantine unsigned installers without saying so.</p>
+        <ol>
+          <li>Open your antivirus, find the quarantine list, restore the file.</li>
+          <li>Or add it to exclusions and download again from
+          <a href="https://github.com/shiphrahx/MarkPad/releases/latest">the releases page</a>.</li>
+          <li>Right-click the exe, <strong>Properties</strong>, tick <strong>Unblock</strong>
+          if it's there, then <strong>OK</strong>.</li>
+        </ol>
       </div>
 
       <div class="issue" id="webview2">
-        <h3>The window opens blank, or an error mentions WebView2</h3>
-        <p>MarkPad draws its interface with the WebView already on your machine rather
-        than shipping a copy of Chromium, which is how the installer stays under 4 MB.
-        Windows 11 and current Windows 10 have it. Stripped LTSC images and some Windows
-        Server builds don't.</p>
-        <p>Install the Evergreen Runtime from
-        <a href="https://developer.microsoft.com/microsoft-edge/webview2/">Microsoft's
-        WebView2 page</a>, then start MarkPad again. It's a Microsoft download, and it's
-        the same component Office and Teams use.</p>
+        <h3>The window is blank, or an error names WebView2</h3>
+        <p>MarkPad uses the WebView already on your machine. Windows 11 and current
+        Windows 10 have it. Stripped LTSC and Server images don't.</p>
+        <ol>
+          <li>Install the Evergreen Runtime from
+          <a href="https://developer.microsoft.com/microsoft-edge/webview2/">Microsoft</a>.</li>
+          <li>Start MarkPad again.</li>
+        </ol>
       </div>
 
       <div class="issue" id="cantrun">
         <h3>"This app can't run on your PC"</h3>
-        <p>The build is 64-bit x86. It won't start on a 32-bit install, and it won't start
-        on an Arm device such as a Surface Pro X or a Snapdragon laptop.</p>
-        <p>There's no Arm build today. If you want one, say so on an issue and it'll
-        help work out whether it's worth doing.</p>
+        <p>The build is 64-bit x86 only.</p>
+        <ol>
+          <li>Check <strong>Settings</strong>, <strong>System</strong>,
+          <strong>About</strong>, and read System type.</li>
+          <li>32-bit or Arm, such as a Surface Pro X, has no build today. Say so on
+          <a href="https://github.com/shiphrahx/MarkPad/issues">an issue</a> if you want one.</li>
+        </ol>
       </div>
     </div>
   </section>
@@ -309,42 +301,38 @@
 
     <div class="issues">
       <div class="issue" id="association">
-        <h3>Double-clicking a .md file still opens the old editor</h3>
-        <p>Installing MarkPad doesn't take the file association off whatever had it, which
-        is deliberate. You can hand it over whenever you want to.</p>
+        <h3>Double-clicking a .md file opens the old editor</h3>
+        <p>Installing MarkPad doesn't take the association off anything. Hand it over
+        when you want to.</p>
         <ul>
           <li><strong>Windows:</strong> right-click a <code>.md</code> file,
-          <strong>Open with</strong>, <strong>Choose another app</strong>, pick MarkPad and
+          <strong>Open with</strong>, <strong>Choose another app</strong>, pick MarkPad,
           tick always use this app.</li>
           <li><strong>macOS:</strong> right-click a <code>.md</code> file,
-          <strong>Get Info</strong>, pick MarkPad under Open with, then click
+          <strong>Get Info</strong>, pick MarkPad under Open with, then
           <strong>Change All</strong>.</li>
         </ul>
       </div>
 
       <div class="issue" id="linux">
         <h3>There's no Linux download</h3>
-        <p>The <code>.deb</code> and <code>.rpm</code> builds exist and the app runs, but
-        they aren't released yet. They ship once they've had enough real use on a real
-        desktop to be worth calling a release.</p>
+        <p>The <code>.deb</code> and <code>.rpm</code> builds run, but they aren't
+        released yet.</p>
       </div>
 
       <div class="issue" id="unsaved">
-        <h3>You closed a file and lost what you'd typed</h3>
-        <p>There's no autosave and no crash recovery, so the dialog asking about unsaved
-        changes is the only thing standing between you and lost work. Every route out of
-        the app shows it, including closing a tab and quitting.</p>
-        <p>Save with <kbd>Ctrl</kbd>+<kbd>S</kbd> or <kbd>⌘</kbd>+<kbd>S</kbd> as you go.
-        Leaving autosave out is a decision rather than an oversight, and it's the reason
-        that dialog is treated as seriously as it is.</p>
+        <h3>You lost what you'd typed</h3>
+        <p>There's no autosave and no crash recovery. The dialog about unsaved changes
+        is the only warning, and every route out of the app shows it.</p>
+        <p>Save as you go with <kbd>Ctrl</kbd>+<kbd>S</kbd> or <kbd>⌘</kbd>+<kbd>S</kbd>.</p>
       </div>
     </div>
   </section>
 
   <div class="closer">
     <h2>Still stuck</h2>
-    <p>Open an issue with your operating system, the version of MarkPad and what the
-    message said, word for word. That's usually enough to work out what happened.</p>
+    <p>Open an issue with your operating system, the MarkPad version and the message
+    word for word.</p>
     <a class="btn" href="https://github.com/shiphrahx/MarkPad/issues/new">Open an issue</a>
   </div>
 
