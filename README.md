@@ -26,7 +26,7 @@ syntax. You type. It saves.
 
 ![MarkPad editing a Markdown file, dark theme on Windows](./docs/screenshot.png)
 
-## 📥 Install
+## Install
 
 Grab your file from [the latest release](https://github.com/shiphrahx/MarkPad/releases/latest).
 
@@ -61,7 +61,7 @@ exact wording and the fix.
 - Detects CRLF or LF on open and keeps it on save, which matters when files move
   between Windows, Mac and Linux
 
-## 🚫 What it doesn't do
+## What it doesn't do
 
 - No accounts, no sync, no telemetry
 - No tags, backlinks or graph view
@@ -72,7 +72,7 @@ exact wording and the fix.
 Your files are ordinary files in ordinary folders. Uninstall MarkPad and they still
 open in everything else.
 
-## 🔭 Coming next
+## Coming next
 
 - **A portable Windows build.** One `.exe` you can drop on a USB stick or run on a
   machine you're not allowed to install anything on. Nothing to install, nothing left
@@ -81,7 +81,7 @@ open in everything else.
 Try it and [open an issue](https://github.com/shiphrahx/MarkPad/issues) when something
 annoys you. That's what shapes the next version.
 
-## 🔧 Build it yourself
+## Build it yourself
 
 You'll need [Node 20+](https://nodejs.org), [pnpm](https://pnpm.io) and
 [Rust](https://rustup.rs).
