@@ -2,20 +2,20 @@
 
 # MarkPad
 
-**A small, simple Markdown reader and editor for Mac and Windows.**
+**A small, simple Markdown reader and editor for Mac, Windows and Linux.**
 
 [![CI](https://github.com/shiphrahx/MarkPad/actions/workflows/ci.yml/badge.svg)](https://github.com/shiphrahx/MarkPad/actions/workflows/ci.yml)
 [![Latest release](https://img.shields.io/github/v/release/shiphrahx/MarkPad?display_name=tag&sort=semver&color=0E7C66)](https://github.com/shiphrahx/MarkPad/releases/latest)
 [![Licence](https://img.shields.io/badge/licence-MIT-0E7C66)](./LICENSE)
 [![Last updated](https://img.shields.io/github/last-commit/shiphrahx/MarkPad?label=last%20updated&color=6E7A78)](https://github.com/shiphrahx/MarkPad/commits/main)
 
-[![Platforms](https://img.shields.io/badge/platforms-Windows%2010%2B%20%C2%B7%20macOS%2013%2B-6E7A78)](https://github.com/shiphrahx/MarkPad/releases/latest)
+[![Platforms](https://img.shields.io/badge/platforms-Windows%2010%2B%20%C2%B7%20macOS%2013%2B%20%C2%B7%20Linux-6E7A78)](https://github.com/shiphrahx/MarkPad/releases/latest)
 [![Installer size](https://img.shields.io/badge/installer-under%204%20MB-6E7A78)](https://github.com/shiphrahx/MarkPad/releases/latest)
 [![Built with Tauri](https://img.shields.io/badge/built%20with-Tauri%20v2-6E7A78)](https://tauri.app)
 
 <img src="./docs/logo.png" alt="MarkPad" width="440">
 
-**[Download for macOS or Windows](https://github.com/shiphrahx/MarkPad/releases/latest)**
+**[Download for macOS, Windows or Linux](https://github.com/shiphrahx/MarkPad/releases/latest)**
 
 </div>
 
@@ -35,9 +35,11 @@ Grab your file from [the latest release](https://github.com/shiphrahx/MarkPad/re
   Applications.
 - **Windows** 🪟 download the `-setup.exe` and run it. Installs for the current user,
   so no admin prompt.
+- **Linux** 🐧 the `.deb` on Debian 12 or Ubuntu 22.04 and later, the `.rpm` on Fedora.
+  Either one pulls in WebKitGTK if you haven't got it.
 
 Nothing is code signed, because certificates cost money every year and this is free.
-So the first launch needs one extra step:
+Linux just installs, but macOS and Windows need one extra step on first launch:
 
 - **macOS:** right-click the app, choose **Open**, then **Open** again.
 - **Windows:** SmartScreen flags an unrecognised publisher. Click **More info**, then
@@ -72,9 +74,6 @@ open in everything else.
 
 ## 🔭 Coming next
 
-- **Linux.** The `.deb` and `.rpm` builds work and the app runs, but it isn't released
-  yet. It ships once it's had enough real use on a real desktop to be worth calling a
-  release.
 - **A portable Windows build.** One `.exe` you can drop on a USB stick or run on a
   machine you're not allowed to install anything on. Nothing to install, nothing left
   behind.

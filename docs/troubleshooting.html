@@ -174,9 +174,9 @@
   </header>
 
   <div class="hero" id="top">
-    <p class="eyebrow">Installing · Windows · macOS</p>
+    <p class="eyebrow">Installing · Windows · macOS · Linux</p>
     <h1>When it won't open</h1>
-    <p>MarkPad isn't code signed, so both systems warn about it on first launch.
+    <p>MarkPad isn't code signed, so macOS and Windows warn about it on first launch.
     Find your message and follow the steps.</p>
 
     <ul class="jump">
@@ -187,6 +187,7 @@
       <li><a href="#antivirus">Installer disappears</a></li>
       <li><a href="#webview2">Blank window</a></li>
       <li><a href="#cantrun">"can't run on your PC"</a></li>
+      <li><a href="#linux">Linux package won't install</a></li>
       <li><a href="#association">Opens in the wrong app</a></li>
     </ul>
   </div>
@@ -303,7 +304,7 @@
 
   <section id="both">
     <div class="section-head">
-      <h2><span class="hash">##</span>Both platforms</h2>
+      <h2><span class="hash">##</span>Every platform</h2>
     </div>
 
     <div class="issues">
@@ -322,9 +323,13 @@
       </div>
 
       <div class="issue" id="linux">
-        <h3>There's no Linux download</h3>
-        <p>The <code>.deb</code> and <code>.rpm</code> builds run, but they aren't
-        released yet.</p>
+        <h3>The Linux package won't install</h3>
+        <p>Take the <code>.deb</code> on Debian, Ubuntu and anything built on them, and
+        the <code>.rpm</code> on Fedora. Either one pulls in WebKitGTK 4.1 if it's
+        missing.</p>
+        <p>The <code>.deb</code> needs Debian 12 or Ubuntu 22.04 at least. Older
+        releases ship a glibc and WebKitGTK too old to run it, and there's no build for
+        them.</p>
       </div>
 
       <div class="issue" id="unsaved">
@@ -344,7 +349,7 @@
   </div>
 
   <footer>
-    <span><a href="./index.html">MarkPad</a>, a Markdown editor for Windows and macOS.</span>
+    <span><a href="./index.html">MarkPad</a>, a Markdown editor for Windows, macOS and Linux.</span>
     <span class="mono"><a href="https://github.com/shiphrahx/MarkPad">github.com/shiphrahx/MarkPad</a> · MIT</span>
   </footer>
 </div>
