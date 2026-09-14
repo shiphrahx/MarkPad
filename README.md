@@ -49,7 +49,7 @@ Stuck on a message about a damaged app or a blocked installer?
 [Troubleshooting](https://shiphrahx.github.io/MarkPad/troubleshooting.html) has the
 exact wording and the fix.
 
-## ✍️ What it does
+## What it does
 
 - Opens and edits `.md` files, several at a time, in tabs
 - Renders as you type, so you read a document instead of a source file
