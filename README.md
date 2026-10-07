@@ -24,7 +24,7 @@
 You double-click a `.md` file, it opens, and it looks like a document rather than raw
 syntax. You type. It saves.
 
-![MarkPad editing a Markdown file, dark theme on Windows](./docs/screenshot.png)
+![MarkPad editing a Markdown file, dark theme on Windows](./docs/markpad-combo.gif)
 
 ## Install
 
