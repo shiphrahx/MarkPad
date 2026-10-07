@@ -61,6 +61,8 @@ exact wording and the fix.
 - Detects CRLF or LF on open and keeps it on save, which matters when files move
   between Windows, Mac and Linux
 
+![Exporting a Markdown file from MarkPad](./docs/markpad-export.gif)
+
 ## What it doesn't do
 
 - No accounts, no sync, no telemetry
