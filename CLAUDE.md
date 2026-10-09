@@ -92,6 +92,7 @@ won't compile without them. `pnpm tauri dev` runs the app.
 | `src/export/` | HTML and PDF export. |
 | `src/commands/` | The command list the palette and menus are both built from. |
 | `src/ui/` | Chrome: tabs, status bar, palette, dialogs, theme. |
+| `src/styles/` | The chrome's CSS, one file per piece, imported in cascade order by `src/app.css`. |
 | `src/host/` | The only boundary to Tauri. `memory.ts` is the test double. |
 | `src-tauri/src/` | Rust: file IO, dialogs, path permissions, window chrome. |
 | `tests/` | Mirrors `src/`. |
