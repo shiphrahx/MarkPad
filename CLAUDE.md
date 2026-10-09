@@ -58,6 +58,36 @@ including on lines nobody touched. Anything that reduces that is worth doing.
 Do not add a UI framework. The chrome is a few hundred lines of hand-written TS and CSS.
 Every new dependency needs a one-line justification in the PR description.
 
+## Commands
+
+Run all four before every commit. CI runs the same ones.
+
+```bash
+pnpm typecheck                     # tsc, no emit
+pnpm test                          # vitest, editor logic in jsdom
+cd src-tauri && cargo test         # the Rust side
+cd src-tauri && cargo clippy --all-targets -- -D warnings
+```
+
+`pnpm icons` once after cloning: the icons aren't committed and the Rust crate
+won't compile without them. `pnpm tauri dev` runs the app.
+
+## Where things live
+
+| Path | What it is |
+|---|---|
+| `src/app/` | The app: tabs, buffers, session, saving and closing. No DOM in `workspace.ts`. |
+| `src/wysiwyg/` | Reader mode. ProseMirror schema, parser, serialiser, keymaps. |
+| `src/editor/` | Source view. CodeMirror setup. |
+| `src/markdown/` | The one markdown-it configuration everything shares. |
+| `src/preview/` | Rendering to HTML, popovers, KaTeX and Mermaid. |
+| `src/export/` | HTML and PDF export. |
+| `src/commands/` | The command list the palette and menus are both built from. |
+| `src/ui/` | Chrome: tabs, status bar, palette, dialogs, theme. |
+| `src/host/` | The only boundary to Tauri. `memory.ts` is the test double. |
+| `src-tauri/src/` | Rust: file IO, dialogs, path permissions, window chrome. |
+| `tests/` | Mirrors `src/`. |
+
 ## Hard budgets
 
 These are pass/fail, checked in CI:
