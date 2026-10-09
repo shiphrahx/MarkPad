@@ -3,6 +3,7 @@ mod chrome;
 mod dialogs;
 mod files;
 mod images;
+mod links;
 mod opening;
 mod session;
 #[cfg(windows)]
@@ -71,6 +72,8 @@ pub fn run() {
             },
         ))
         .plugin(tauri_plugin_dialog::init())
+        .plugin(tauri_plugin_opener::init())
+        .plugin(links::navigation_guard())
         .manage(opening::Arrivals::default())
         .manage(Access::default())
         .register_asynchronous_uri_scheme_protocol(
@@ -94,6 +97,7 @@ pub fn run() {
             opening::startup_files,
             session::load_session,
             session::save_session,
+            links::open_link,
             dialogs::pick_files_to_open,
             dialogs::pick_path_to_save,
             chrome::set_caption_colors
