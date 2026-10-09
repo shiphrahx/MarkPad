@@ -40,7 +40,7 @@
     "@fontsource-variable/instrument-sans": "^5.3.0",
     "@fontsource-variable/jetbrains-mono": "^5.3.0",
     "@lezer/highlight": "^1.2.3",
-    "@tauri-apps/api": "^2.11.1",
+    "@tauri-apps/api": "~2.11.1",
     "@tauri-apps/plugin-dialog": "^2.7.2",
     "katex": "^0.18.4",
     "lowlight": "^3.3.0",
