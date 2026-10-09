@@ -37,6 +37,11 @@ describe('the content security policy', () => {
     expect(directive('form-action')).toBe("form-action 'none'")
   })
 
+  /** The network budget is one request, and this is the only place it can go. */
+  it('lets the page talk to GitHub’s API and nowhere else', () => {
+    expect(directive('connect-src')).toBe("connect-src 'self' https://api.github.com")
+  })
+
   it('loads pictures only from the image protocol and data URIs', () => {
     expect(directive('img-src')).not.toContain('https:')
     expect(directive('img-src')).toContain('markpad-image:')

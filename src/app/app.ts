@@ -22,6 +22,7 @@ import { extractHeadings, type Heading } from './outline.js'
 import { directoryOf, resolveImage } from './images.js'
 import { ChangedOnDisk, Workspace } from './workspace.js'
 import { followLinks } from './links.js'
+import type { Update } from './updates.js'
 import {
   isFirstLaunch,
   loadSession,
@@ -143,6 +144,7 @@ export class App {
         const active = this.workspace.active
         if (active) this.workspace.setEncoding(active.id, encoding)
       },
+      onOpenUpdate: (update) => void this.openLink(update.url),
     })
 
     this.rail = new OutlineRail((heading, index) => this.goToHeading(heading, index))
@@ -806,6 +808,12 @@ export class App {
   imageUrl(src: string): string | null {
     const resolved = resolveImage(src, directoryOf(this.workspace.active?.path ?? null))
     return resolved === null ? null : this.host.imageUrl(resolved)
+  }
+
+  /** Say in the status bar that a newer version is out. */
+  showUpdate(update: Update): void {
+    this.status.update = update
+    this.renderCaretParts()
   }
 
   /** Open a link from the document outside the app, or say why not. */

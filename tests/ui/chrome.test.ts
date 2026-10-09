@@ -114,7 +114,7 @@ describe('StatusBar', () => {
   beforeEach(() => resetBufferIds())
 
   function bar(): StatusBar {
-    return new StatusBar({ onLineEndingChange: () => {}, onEncodingChange: () => {} })
+    return new StatusBar({ onLineEndingChange: () => {}, onEncodingChange: () => {}, onOpenUpdate: () => {} })
   }
 
   it('is empty when nothing is open', () => {
@@ -154,6 +154,7 @@ describe('StatusBar', () => {
     const status = new StatusBar({
       onLineEndingChange: (value) => void changes.push(value),
       onEncodingChange: () => {},
+      onOpenUpdate: () => {},
     })
     status.render(opened('C:/a.md', 'x'), null, 1)
 
@@ -170,6 +171,7 @@ describe('StatusBar', () => {
     const status = new StatusBar({
       onLineEndingChange: () => {},
       onEncodingChange: (value) => void changes.push(value),
+      onOpenUpdate: () => {},
     })
     status.render(opened('C:/a.md', 'x'), null, 1)
 
@@ -179,6 +181,29 @@ describe('StatusBar', () => {
     button.click()
 
     expect(changes).toEqual(['utf-8-bom'])
+  })
+
+  it('says when a newer version is out, and opens its page', () => {
+    const pages: string[] = []
+    const status = new StatusBar({
+      onLineEndingChange: () => {},
+      onEncodingChange: () => {},
+      onOpenUpdate: (update) => void pages.push(update.url),
+    })
+    status.update = { version: '0.2.0', url: 'https://github.com/shiphrahx/MarkPad/releases/tag/v0.2.0' }
+    status.render(opened('C:/a.md', 'x'), null, 1)
+
+    const notice = status.element.querySelector<HTMLElement>('.status-update')!
+    expect(notice.textContent).toBe('MarkPad 0.2.0 is available')
+    notice.click()
+    expect(pages).toEqual(['https://github.com/shiphrahx/MarkPad/releases/tag/v0.2.0'])
+  })
+
+  it('says nothing about updates until there is one', () => {
+    const status = bar()
+    status.render(opened('C:/a.md', 'x'), null, 1)
+
+    expect(status.element.querySelector('.status-update')).toBeNull()
   })
 })
 

@@ -1,6 +1,7 @@
 import type { Buffer } from '../app/buffer.js'
 import { formatEncoding, formatFileSize, formatLineEnding } from '../app/stats.js'
 import type { Encoding, LineEnding } from '../host/types.js'
+import type { Update } from '../app/updates.js'
 import { el, replace } from './dom.js'
 
 export interface Caret {
@@ -11,6 +12,7 @@ export interface Caret {
 export interface StatusBarHandlers {
   onLineEndingChange: (lineEnding: LineEnding) => void
   onEncodingChange: (encoding: Encoding) => void
+  onOpenUpdate: (update: Update) => void
 }
 
 /**
@@ -22,6 +24,9 @@ export interface StatusBarHandlers {
  */
 export class StatusBar {
   readonly element = el('footer', { class: 'status' })
+
+  /** A newer release, once the update check has found one. */
+  update: Update | null = null
 
   constructor(private readonly handlers: StatusBarHandlers) {}
 
@@ -41,6 +46,7 @@ export class StatusBar {
       el('span', { class: 'status-item' }, `${words.toLocaleString()} ${words === 1 ? 'word' : 'words'}`),
       caret && el('span', { class: 'status-item' }, `Ln ${caret.line}, Col ${caret.column}`),
       el('span', { class: 'status-spacer' }),
+      this.update && this.updateNotice(this.update),
       this.picker(
         formatEncoding(buffer.encoding),
         'Change encoding',
@@ -59,6 +65,16 @@ export class StatusBar {
       ),
       el('span', { class: 'status-item' }, formatFileSize(buffer.byteLength)),
     )
+  }
+
+  private updateNotice(update: Update): HTMLElement {
+    const button = el(
+      'button',
+      { class: 'status-item status-button status-update', type: 'button', title: 'Open the release page' },
+      `MarkPad ${update.version} is available`,
+    )
+    button.addEventListener('click', () => this.handlers.onOpenUpdate(update))
+    return button
   }
 
   private picker(

@@ -7,6 +7,8 @@ import { applyZoom, onZoomChange } from './ui/zoom.js'
 import { installMenus } from './ui/menus.js'
 import { applyNativeChrome } from './ui/native-chrome.js'
 import { DOCUMENT_CSS } from './preview/document-css.js'
+import { checkForUpdate } from './app/updates.js'
+import { version } from '../package.json'
 
 const root = document.querySelector<HTMLDivElement>('#app')
 if (!root) throw new Error('MarkPad could not find its root element.')
@@ -41,6 +43,19 @@ async function start(): Promise<void> {
   await Promise.allSettled([guardTheClose(), openStartupFiles(), followCommandState()])
   followSystemTheme()
   addEventListener('focus', () => void app.catchUpWithDisk())
+  lookForUpdates()
+}
+
+/**
+ * The one network request. Left until well after launch, so it never sits
+ * between opening the app and typing, and never at all if it is turned off.
+ */
+function lookForUpdates(): void {
+  setTimeout(() => {
+    void checkForUpdate(version).then((update) => {
+      if (update) app.showUpdate(update)
+    })
+  }, 10_000)
 }
 
 /**

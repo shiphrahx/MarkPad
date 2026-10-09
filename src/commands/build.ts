@@ -13,6 +13,7 @@ import {
   zoomOut,
 } from '../ui/zoom.js'
 import { FORMAT_ACTIONS } from '../wysiwyg/format.js'
+import { setUpdateChecks, updateChecksEnabled } from '../app/updates.js'
 import type { Command } from './types.js'
 
 /**
@@ -238,6 +239,22 @@ export function buildCommands(app: App): Command[] {
       category: 'Go',
       key: 'Escape',
       run: () => app.focusEditor(),
+    },
+    // Two commands that say what they do, like the themes, rather than one
+    // toggle you have to run to find out which way it went.
+    {
+      id: 'help.updatesOff',
+      title: 'Turn off update checks',
+      category: 'Help',
+      enabled: updateChecksEnabled,
+      run: () => setUpdateChecks(false),
+    },
+    {
+      id: 'help.updatesOn',
+      title: 'Turn on update checks',
+      category: 'Help',
+      enabled: () => !updateChecksEnabled(),
+      run: () => setUpdateChecks(true),
     },
     {
       id: 'file.saveAll',

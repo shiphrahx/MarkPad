@@ -508,6 +508,10 @@ body {
   color: var(--accent);
 }
 
+.status-update {
+  color: var(--accent);
+}
+
 /* Command palette
    ------------------------------------------------------------------------ */
 
