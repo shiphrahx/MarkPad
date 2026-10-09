@@ -202,22 +202,47 @@ fn carry_permissions(from: &Path, to: &Path) {
     let _ = (from, to);
 }
 
+/// Create the temporary file and fill it.
+///
+/// `create_new`, so it fails rather than opening something already sitting
+/// at that name. In a shared folder that something could be a link somebody
+/// else planted, and following it would write the document wherever it
+/// pointed.
 fn write_all(path: &Path, bytes: &[u8]) -> io::Result<()> {
-    let mut file = fs::File::create(path)?;
+    let mut file = fs::OpenOptions::new()
+        .write(true)
+        .create_new(true)
+        .open(path)?;
     file.write_all(bytes)?;
     file.sync_all()
 }
 
 /// Sit the temporary file next to the target so the rename stays on one
 /// volume. A rename across volumes is a copy, which is not atomic.
+///
+/// The name is different every time. It used to be the process id alone,
+/// which anyone on the machine could guess and get there first.
 fn temporary_path(path: &Path) -> PathBuf {
+    use std::sync::atomic::{AtomicU64, Ordering};
+    use std::time::{SystemTime, UNIX_EPOCH};
+
+    static COUNTER: AtomicU64 = AtomicU64::new(0);
+
     let name = path
         .file_name()
         .map(|name| name.to_string_lossy().into_owned())
         .unwrap_or_else(|| "markpad".to_owned());
+    let nanos = SystemTime::now()
+        .duration_since(UNIX_EPOCH)
+        .map(|elapsed| elapsed.subsec_nanos())
+        .unwrap_or(0);
+    let count = COUNTER.fetch_add(1, Ordering::Relaxed);
 
     let directory = path.parent().unwrap_or_else(|| Path::new("."));
-    directory.join(format!(".{name}.markpad-{}.tmp", std::process::id()))
+    directory.join(format!(
+        ".{name}.markpad-{}-{nanos:08x}-{count}.tmp",
+        std::process::id()
+    ))
 }
 
 /// Whether the rename failed because something else is holding the file.
@@ -542,6 +567,23 @@ mod tests {
             .map(|entry| entry.unwrap().file_name().to_string_lossy().into_owned())
             .collect();
         assert_eq!(left, vec!["notes.md".to_owned()]);
+    }
+
+    #[test]
+    fn never_reuses_a_temporary_name() {
+        let path = Path::new("/notes/today.md");
+
+        assert_ne!(temporary_path(path), temporary_path(path));
+    }
+
+    #[test]
+    fn will_not_write_through_something_already_at_the_temporary_name() {
+        let directory = tempfile::tempdir().unwrap();
+        let squatter = directory.path().join(".today.md.tmp");
+        fs::write(&squatter, "not yours").unwrap();
+
+        assert!(write_all(&squatter, b"document").is_err());
+        assert_eq!(fs::read_to_string(&squatter).unwrap(), "not yours");
     }
 
     #[test]
