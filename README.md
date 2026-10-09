@@ -45,6 +45,13 @@ Linux just installs, but macOS and Windows need one extra step on first launch:
 - **Windows:** SmartScreen flags an unrecognised publisher. Click **More info**, then
   **Run anyway**.
 
+Every installer has a `.sha256` beside it on the release, and a build attestation, so
+you can check the file is the one GitHub Actions built:
+
+```bash
+gh attestation verify MarkPad_0.1.5_x64-setup.exe --repo shiphrahx/MarkPad
+```
+
 Stuck on a message about a damaged app or a blocked installer?
 [Troubleshooting](https://shiphrahx.github.io/MarkPad/troubleshooting.html) has the
 exact wording and the fix.
