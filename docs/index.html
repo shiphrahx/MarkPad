@@ -4,9 +4,9 @@
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <title>MarkPad, a small Markdown editor for Windows, macOS and Linux</title>
-<meta name="description" content="A Markdown editor that stays out of the way. Plain text in, plain text out. No account, no sync, no browser tab. Under 4 MB to install.">
+<meta name="description" content="A small desktop Markdown editor for Windows, macOS and Linux. It opens ordinary .md files and saves them as ordinary .md files. The installer is under 4 MB.">
 <meta property="og:title" content="MarkPad">
-<meta property="og:description" content="A small Markdown editor for Windows, macOS and Linux. Plain text in, plain text out.">
+<meta property="og:description" content="A small desktop Markdown editor for Windows, macOS and Linux.">
 <meta property="og:type" content="website">
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
@@ -304,9 +304,9 @@
   <div class="hero" id="top">
     <p class="eyebrow">Windows · macOS · Linux · v0.1</p>
     <h1>Markdown, without the tab.</h1>
-    <p class="lede">MarkPad is a small desktop Markdown editor that opens your file, renders it,
-    and gets out of the way. <strong>Plain text in, plain text out.</strong> No account, no vault,
-    no sync, and no browser tab quietly eating a gigabyte in the background.</p>
+    <p class="lede">MarkPad is a small desktop Markdown editor. It opens a file, shows it
+    rendered, and lets you type straight into it. <strong>It saves ordinary .md files</strong>
+    and doesn't need an account. It runs as its own app, so there's no browser tab to keep open.</p>
 
     <div class="get">
       <a class="btn primary" data-plat="mac" href="https://github.com/shiphrahx/MarkPad/releases/latest">
@@ -396,7 +396,7 @@
           <span class="row"><span class="m">| </span><span class="sel">Windows 10+</span> <span class="m">| </span>WebView2 <span class="m">| </span>3.3 MB <span class="m">|</span></span>
           <span class="row"><span class="m">| </span>macOS 13+ <span class="m">| </span>WKWebView <span class="m">| </span>3.6 MB <span class="m">|</span></span>
           <span class="row">&nbsp;</span>
-          <span class="row"><span class="quote"><span class="m">&gt; </span>Your files are files. Delete MarkPad tomorrow and nothing breaks.</span></span>
+          <span class="row"><span class="quote"><span class="m">&gt; </span>These are plain .md files. If you delete MarkPad, they still open anywhere.</span></span>
         </div>
 
         <div class="pop">
@@ -420,80 +420,81 @@
     <div class="pitch">
       <div>
         <span class="num">3.3 MB</span>
-        <h3>Small enough not to think about</h3>
-        <p>That is the whole installer, on either platform. It uses the WebView already sitting
-        on your machine instead of shipping a second copy of Chromium.</p>
+        <h3>A small download</h3>
+        <p>That's the full installer. It uses the WebView your system already has, so it
+        doesn't need to bundle its own copy of Chromium.</p>
       </div>
       <div>
         <span class="num">Native</span>
-        <h3>A real window, not a tab</h3>
-        <p>Traffic lights on macOS, caption buttons on Windows. It snaps, minimises and
-        alt-tabs the way everything else on your desktop does.</p>
+        <h3>Uses the system window</h3>
+        <p>It has the usual window buttons on macOS and Windows, and it snaps, minimises and
+        alt-tabs like your other apps.</p>
       </div>
       <div>
         <span class="num">.md</span>
-        <h3>Your files stay yours</h3>
-        <p>Ordinary Markdown on your own disk. No database, no proprietary syntax,
-        nothing to export if you walk away.</p>
+        <h3>Plain Markdown files</h3>
+        <p>Your notes are .md files on your own disk, written in standard GitHub-flavoured
+        Markdown. There's nothing to export if you stop using it.</p>
       </div>
     </div>
   </section>
 
   <section id="features">
     <div class="section-head">
-      <h2><span class="hash">##</span>What is in it</h2>
-      <p>Everything below ships in v0.1. Anything not listed is deliberately absent.</p>
+      <h2><span class="hash">##</span>What's in it</h2>
+      <p>This is what v0.1 does. If something isn't listed, it isn't there.</p>
     </div>
 
     <ul class="features">
       <li>
         <h3>Reader mode by default</h3>
-        <p>Files open rendered, and you type straight into the rendered surface.
-        The raw source is one command away when you need to see it.</p>
+        <p>Files open rendered and you type into the rendered text. There's a command
+        to switch to the raw source when you want to see it.</p>
       </li>
       <li>
         <h3>Command palette</h3>
-        <p><kbd>Ctrl</kbd>/<kbd>⌘</kbd>+<kbd>K</kbd> reaches every command. Menus are the second
-        way to do things, never the only way.</p>
+        <p><kbd>Ctrl</kbd>/<kbd>⌘</kbd>+<kbd>K</kbd> opens a list of every command. The menus
+        have them too.</p>
       </li>
       <li>
         <h3>Outline spine</h3>
-        <p>A 26px rail of heading ticks down the left edge. You get the shape of the document
-        without surrendering a sidebar to it.</p>
+        <p>A 26px strip down the left edge with one tick per heading. It shows the shape of
+        the document and takes far less room than a sidebar.</p>
       </li>
       <li>
         <h3>Tabs that come back</h3>
-        <p>Several files open at once, drag and drop to open, and the set you had last time
-        is waiting when you reopen the app.</p>
+        <p>Open several files at once, or drag them in. The tabs you had open come back
+        the next time you start the app.</p>
       </li>
       <li>
         <h3>Popover previews</h3>
-        <p>Tables, LaTeX and Mermaid diagrams render in a popover where the cursor is.
-        A full preview pane exists, and ships switched off.</p>
+        <p>Tables, LaTeX and Mermaid diagrams show up in a popover next to the cursor.
+        There's also a full preview pane, which is off by default.</p>
       </li>
       <li>
         <h3>Export to HTML and PDF</h3>
-        <p>Through the system print engine, in the box. No Pandoc, no LaTeX distribution,
-        nothing extra to install.</p>
+        <p>Export uses your system's print engine, so you don't need Pandoc or a LaTeX
+        install.</p>
       </li>
       <li>
-        <h3>Line endings it will not mangle</h3>
-        <p>CRLF and LF are detected on open and preserved on save, with the current setting
-        visible in the status bar. Same for a UTF-8 BOM.</p>
+        <h3>Keeps your line endings</h3>
+        <p>It detects CRLF or LF when you open a file and saves it the same way. The status
+        bar shows which one it is. A UTF-8 BOM is kept too.</p>
       </li>
       <li>
         <h3>Themes that follow the OS</h3>
-        <p>Light and dark, switching when your system does. Diagrams and code blocks follow
-        along instead of staying stubbornly white.</p>
+        <p>Light and dark, switching when your system does. Diagrams and code blocks
+        switch with it.</p>
       </li>
     </ul>
   </section>
 
   <section id="budgets">
     <div class="section-head">
-      <h2><span class="hash">##</span>Numbers it is held to</h2>
-      <p>These are checked on every commit and they fail the build. If a change breaks one,
-      the change is wrong, not the budget.</p>
+      <h2><span class="hash">##</span>Performance limits</h2>
+      <p>These are the limits the project sets itself. Only the installer size is checked
+      automatically on every build. The rest are measured, and a change that goes over one
+      gets fixed or dropped.</p>
     </div>
 
     <div class="table-scroll">
@@ -514,25 +515,25 @@
 
   <section>
     <div class="section-head">
-      <h2><span class="hash">##</span>What it will never do</h2>
-      <p>Not a gap in the roadmap. These are refused on purpose, because each one is a step
-      on the road from a text editor to something you have to manage.</p>
+      <h2><span class="hash">##</span>What it won't do</h2>
+      <p>These are left out on purpose. Each one would turn a text editor into something
+      you have to manage.</p>
     </div>
 
     <ul class="nope">
-      <li><span class="x">✕</span> Backlinks, tags, graph views, second-brain anything</li>
-      <li><span class="x">✕</span> Accounts, cloud sync, or a subscription</li>
-      <li><span class="x">✕</span> Analytics, crash reporting, or telemetry with your name on it</li>
-      <li><span class="x">✕</span> Its own flavour of Markdown that only opens here</li>
-      <li><span class="x">✕</span> A bundled Chromium, or any runtime you install separately</li>
+      <li><span class="x">✕</span> Note-taking features such as backlinks, tags and graph views</li>
+      <li><span class="x">✕</span> Accounts, cloud sync or subscriptions</li>
+      <li><span class="x">✕</span> Analytics, crash reporting or telemetry</li>
+      <li><span class="x">✕</span> Markdown syntax that only works in MarkPad</li>
+      <li><span class="x">✕</span> A bundled Chromium, or a runtime you have to install yourself</li>
     </ul>
   </section>
 
   <section>
     <div class="closer">
-      <h2>Give it ten minutes</h2>
-      <p>It is a few megabytes and your files are plain text. If it turns out not to be for you,
-      uninstalling costs you nothing.</p>
+      <h2>Try it</h2>
+      <p>It's a few megabytes and your files stay plain text, so you can uninstall it
+      whenever you like.</p>
       <div class="get">
         <a class="btn primary" href="https://github.com/shiphrahx/MarkPad/releases/latest">Download MarkPad</a>
         <a class="btn ghost" href="https://github.com/shiphrahx/MarkPad">View the source</a>
