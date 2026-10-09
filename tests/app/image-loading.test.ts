@@ -74,7 +74,7 @@ describe('the reader', () => {
 
     await app.openFiles(['C:/notes/today.md'])
 
-    const image = document.querySelector<HTMLImageElement>('.markpad-document img')
+    const image = document.querySelector<HTMLImageElement>('.markpad-document img:not(.ProseMirror-separator)')
     expect(image).not.toBeNull()
     expect(image?.getAttribute('src')).toBe('markpad-image://C:/notes/chart.png')
     expect(image?.alt).toBe('A chart')
@@ -91,7 +91,7 @@ describe('the reader', () => {
 
     await app.openFiles(['C:/notes/today.md'])
 
-    const image = document.querySelector<HTMLImageElement>('.markpad-document img')
+    const image = document.querySelector<HTMLImageElement>('.markpad-document img:not(.ProseMirror-separator)')
     expect(image?.dataset.src).toBe('chart.png')
   })
 
@@ -101,7 +101,7 @@ describe('the reader', () => {
 
     await app.openFiles(['C:/notes/today.md'])
 
-    const image = document.querySelector<HTMLImageElement>('.markpad-document img')
+    const image = document.querySelector<HTMLImageElement>('.markpad-document img:not(.ProseMirror-separator)')
     expect(image?.hasAttribute('src')).toBe(false)
     expect(image?.dataset.unresolved).toBe('true')
     expect(image?.alt).toBe('A cat')
