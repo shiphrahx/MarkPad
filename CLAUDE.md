@@ -45,7 +45,10 @@ including on lines nobody touched. Anything that reduces that is worth doing.
 
 - **Shell:** Tauri v2 (Rust). WebView2 on Windows, WKWebView on macOS, WebKitGTK on
   Linux. No bundled Chromium.
-- **Editor:** CodeMirror 6 + TypeScript. `@codemirror/lang-markdown` with GFM extensions.
+- **Reader mode (the default surface):** ProseMirror + TypeScript, in `src/wysiwyg/`.
+  markdown-it tokens in, `prosemirror-markdown` serialiser out.
+- **Source view:** CodeMirror 6, in `src/editor/`. `@codemirror/lang-markdown` with GFM
+  extensions.
 - **Markdown:** markdown-it, once. The editor, the preview and the exports all read a
   file the same way. `docs/decisions/0005-one-markdown-parser.md` says why that had to
   be spelled out.
