@@ -15,6 +15,8 @@ use std::path::{Path, PathBuf};
 use serde::{Deserialize, Serialize};
 use tauri::Manager;
 
+use crate::access::Access;
+
 #[derive(Debug, Default, Clone, PartialEq, Eq, Serialize, Deserialize)]
 pub struct Session {
     pub paths: Vec<String>,
@@ -58,15 +60,39 @@ pub fn location(app: &tauri::AppHandle) -> Option<PathBuf> {
         .map(|dir| dir.join(FILE_NAME))
 }
 
+/// Last time's tabs. Every path in it was given to the app last time, so it
+/// is given again now.
 #[tauri::command]
-pub fn load_session(app: tauri::AppHandle) -> Session {
-    location(&app).map(|file| read(&file)).unwrap_or_default()
+pub fn load_session(app: tauri::AppHandle, access: tauri::State<'_, Access>) -> Session {
+    let session = location(&app).map(|file| read(&file)).unwrap_or_default();
+    access.grant_all(&session.paths);
+    session
 }
 
+/// Remember the tabs. Anything the user did not give the app is dropped
+/// first, so the page cannot launder a path through the session file.
 #[tauri::command]
-pub fn save_session(app: tauri::AppHandle, session: Session) -> Result<(), String> {
+pub fn save_session(
+    app: tauri::AppHandle,
+    access: tauri::State<'_, Access>,
+    session: Session,
+) -> Result<(), String> {
     let file = location(&app).ok_or("MarkPad has no config folder to keep its tabs in.")?;
-    write(&file, &session).map_err(|error| error.to_string())
+    write(&file, &only_given(&access, session)).map_err(|error| error.to_string())
+}
+
+fn only_given(access: &Access, session: Session) -> Session {
+    let front = session.paths.get(session.active).cloned();
+    let paths: Vec<String> = session
+        .paths
+        .into_iter()
+        .filter(|path| access.is_granted(Path::new(path)))
+        .collect();
+    let active = front
+        .and_then(|front| paths.iter().position(|path| *path == front))
+        .unwrap_or(0);
+
+    Session { paths, active }
 }
 
 #[cfg(test)]
@@ -110,6 +136,34 @@ mod tests {
         let directory = tempfile::tempdir().unwrap();
 
         write(&directory.path().join(FILE_NAME), &Session::default()).unwrap();
+    }
+
+    #[test]
+    fn drops_paths_the_user_never_gave_the_app() {
+        let directory = tempfile::tempdir().unwrap();
+        let given = directory.path().join("given.md");
+        let other = directory.path().join("other.md");
+        fs::write(&given, "x").unwrap();
+        fs::write(&other, "x").unwrap();
+        let access = Access::default();
+        access.grant(&given);
+
+        let kept = only_given(
+            &access,
+            Session {
+                paths: vec![
+                    other.to_string_lossy().into_owned(),
+                    given.to_string_lossy().into_owned(),
+                ],
+                active: 1,
+            },
+        );
+
+        assert_eq!(kept.paths, vec![given.to_string_lossy().into_owned()]);
+        assert_eq!(
+            kept.active, 0,
+            "the front tab should still be the front tab"
+        );
     }
 
     #[test]

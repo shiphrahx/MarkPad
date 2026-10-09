@@ -7,7 +7,10 @@
 
 use std::path::PathBuf;
 
+use tauri::Manager;
 use tauri_plugin_dialog::{DialogExt, FilePath};
+
+use crate::access::Access;
 
 /// The extensions the dialogs offer, and the ones a dropped file must have.
 pub const MARKDOWN_EXTENSIONS: [&str; 5] = ["md", "markdown", "mdown", "mkd", "txt"];
@@ -26,9 +29,11 @@ pub async fn pick_files_to_open(window: tauri::Window) -> Vec<String> {
         .blocking_pick_files()
         .unwrap_or_default();
 
+    let access = window.state::<Access>();
     picked
         .into_iter()
         .filter_map(into_path)
+        .inspect(|path| access.grant(path))
         .map(display)
         .collect()
 }
@@ -44,7 +49,9 @@ pub async fn pick_path_to_save(window: tauri::Window, suggested_name: String) ->
         .add_filter("Markdown", &MARKDOWN_EXTENSIONS)
         .blocking_save_file()?;
 
-    into_path(picked).map(display)
+    let path = into_path(picked)?;
+    window.state::<Access>().grant(&path);
+    Some(display(path))
 }
 
 fn into_path(path: FilePath) -> Option<PathBuf> {

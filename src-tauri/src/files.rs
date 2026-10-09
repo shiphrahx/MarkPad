@@ -40,6 +40,9 @@ pub enum FileError {
     #[error("{path} is in use by another program, so the file was left unchanged.")]
     Locked { path: String },
 
+    #[error("MarkPad can only open files you give it. Open {path} with Open file, or drag it onto the window.")]
+    NotGiven { path: String },
+
     #[error("MarkPad is not allowed to write to {path}. Check its permissions, or use Save as to put it somewhere else.")]
     Denied { path: String },
 }

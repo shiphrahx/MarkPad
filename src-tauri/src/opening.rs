@@ -11,6 +11,7 @@ use std::sync::Mutex;
 
 use tauri::{Emitter, Manager};
 
+use crate::access::Access;
 use crate::dialogs::MARKDOWN_EXTENSIONS;
 
 /// The event the page listens for. Its payload is a list of paths.
@@ -35,6 +36,8 @@ pub fn deliver(app: &tauri::AppHandle, paths: Vec<String>) {
         return;
     }
 
+    app.state::<Access>().grant_all(&paths);
+
     let arrivals = app.state::<Arrivals>();
     let mut queue = arrivals.inner.lock().unwrap_or_else(|e| e.into_inner());
 
@@ -52,11 +55,15 @@ pub fn deliver(app: &tauri::AppHandle, paths: Vec<String>) {
 /// Calling it is also the page saying it is now listening, so it must only be
 /// called once the `open-files` listener is in place.
 #[tauri::command]
-pub fn startup_files(arrivals: tauri::State<'_, Arrivals>) -> Vec<String> {
+pub fn startup_files(
+    arrivals: tauri::State<'_, Arrivals>,
+    access: tauri::State<'_, Access>,
+) -> Vec<String> {
     let mut queue = arrivals.inner.lock().unwrap_or_else(|e| e.into_inner());
     queue.listening = true;
 
     let mut paths = files_from_arguments(std::env::args().skip(1), None);
+    access.grant_all(&paths);
     paths.append(&mut queue.waiting);
     paths
 }

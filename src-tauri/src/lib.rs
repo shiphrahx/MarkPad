@@ -1,3 +1,4 @@
+mod access;
 mod chrome;
 mod dialogs;
 mod files;
@@ -10,13 +11,18 @@ use std::path::PathBuf;
 
 use tauri::Manager;
 
+use access::Access;
 pub use files::FileError;
 
 /// Read a file as text. The byte order mark and the line endings come back
 /// exactly as they were on disk; the editor decides what to do with them.
+///
+/// Only a file the user gave the app. See `access.rs`.
 #[tauri::command]
-fn read_text_file(path: String) -> Result<String, FileError> {
-    files::read_text(&PathBuf::from(path))
+fn read_text_file(access: tauri::State<'_, Access>, path: String) -> Result<String, FileError> {
+    let path = PathBuf::from(path);
+    allowed(&access, &path)?;
+    files::read_text(&path)
 }
 
 /// Write a file atomically, retrying while Windows has it locked.
@@ -24,8 +30,24 @@ fn read_text_file(path: String) -> Result<String, FileError> {
 /// Returns the number of bytes written, which the status bar shows as the
 /// file size.
 #[tauri::command]
-fn write_text_file(path: String, contents: String) -> Result<u64, FileError> {
-    files::write_text_atomic(&PathBuf::from(path), &contents)
+fn write_text_file(
+    access: tauri::State<'_, Access>,
+    path: String,
+    contents: String,
+) -> Result<u64, FileError> {
+    let path = PathBuf::from(path);
+    allowed(&access, &path)?;
+    files::write_text_atomic(&path, &contents)
+}
+
+fn allowed(access: &Access, path: &std::path::Path) -> Result<(), FileError> {
+    if access.is_granted(path) {
+        Ok(())
+    } else {
+        Err(FileError::NotGiven {
+            path: path.to_string_lossy().into_owned(),
+        })
+    }
 }
 
 /// Let the webview load images out of one folder.
@@ -58,6 +80,7 @@ pub fn run() {
     tauri::Builder::default()
         .plugin(tauri_plugin_dialog::init())
         .manage(opening::Arrivals::default())
+        .manage(Access::default())
         .on_window_event(|window, event| {
             // Handled here rather than in the page, so a dropped file arrives
             // the same way as every other file that comes from outside.
