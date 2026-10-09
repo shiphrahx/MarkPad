@@ -9,7 +9,7 @@ import { StatusBar } from '../ui/statusbar.js'
 import { OutlineRail } from '../ui/outline-rail.js'
 import { CommandPalette } from '../ui/palette.js'
 import { PreviewPane } from '../ui/preview-pane.js'
-import { askAboutUnsavedChanges } from '../ui/unsaved-dialog.js'
+import { askAboutUnsavedChanges, askWhichVersion } from '../ui/unsaved-dialog.js'
 import {
   matchesParsed,
   parseShortcut,
@@ -17,10 +17,10 @@ import {
 } from '../commands/keys.js'
 import { shortcutFor, type Command } from '../commands/types.js'
 import { countWords } from './stats.js'
-import { isDirty, title as titleOf, type Buffer } from './buffer.js'
+import { fileName, isDirty, title as titleOf, type Buffer } from './buffer.js'
 import { extractHeadings, type Heading } from './outline.js'
 import { directoryOf, resolveImage } from './images.js'
-import { Workspace } from './workspace.js'
+import { ChangedOnDisk, Workspace } from './workspace.js'
 import { followLinks } from './links.js'
 import {
   isFirstLaunch,
@@ -656,14 +656,39 @@ export class App {
     this.view.focus()
   }
 
-  /** Save, telling the user plainly if the file could not be written. */
-  async save(id: string): Promise<boolean> {
+  /**
+   * Save, telling the user plainly if the file could not be written, and
+   * asking which version wins if something else changed it in the meantime.
+   */
+  async save(id: string, { overwrite = false } = {}): Promise<boolean> {
     this.flush()
     try {
-      return await this.workspace.save(id)
+      return await this.workspace.save(id, { overwrite })
     } catch (error) {
+      if (error instanceof ChangedOnDisk) return this.settleConflict(id, error.path)
       await this.host.report(describe(error))
       return false
+    }
+  }
+
+  private async settleConflict(id: string, path: string): Promise<boolean> {
+    const answer = await askWhichVersion(fileName(path))
+
+    if (answer === 'mine') return this.save(id, { overwrite: true })
+    if (answer === 'theirs') await this.reload(id)
+    return false
+  }
+
+  /** Replace a buffer with what is on disk now. */
+  async reload(id: string): Promise<void> {
+    try {
+      await this.workspace.reload(id)
+      // The kept editor states hold the old document, undo history and all.
+      // Restoring one on the next tab switch would put the old text back.
+      this.states.delete(id)
+      this.readerStates.delete(id)
+    } catch (error) {
+      await this.host.report(describe(error))
     }
   }
 

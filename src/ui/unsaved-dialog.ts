@@ -96,6 +96,25 @@ export function askAboutUnsavedChanges(fileName: string): Promise<UnsavedAnswer>
   })
 }
 
+export type ChangedAnswer = 'mine' | 'theirs' | 'cancel'
+
+/**
+ * The file changed on disk while it was open here, and there are two versions
+ * now. Which one wins is the user's call, never ours.
+ */
+export function askWhichVersion(fileName: string): Promise<ChangedAnswer> {
+  return ask<ChangedAnswer>({
+    title: 'Changed on disk',
+    message: `${fileName} was changed by another program after you opened it. Saving now replaces those changes with yours.`,
+    choices: [
+      { answer: 'cancel', label: 'Keep editing' },
+      { answer: 'theirs', label: 'Reload from disk', style: 'danger' },
+      { answer: 'mine', label: 'Save my version', style: 'primary' },
+    ],
+    cancel: 'cancel',
+  })
+}
+
 function button(label: string, className: string, onClick: () => void): HTMLButtonElement {
   const node = el(
     'button',

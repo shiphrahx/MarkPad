@@ -11,6 +11,17 @@ import {
 export type WorkspaceListener = (workspace: Workspace) => void
 
 /**
+ * A save refused because something else wrote to the file after we last read
+ * or wrote it. The caller asks the user which version wins.
+ */
+export class ChangedOnDisk extends Error {
+  constructor(readonly path: string) {
+    super(`${fileName(path)} was changed by another program after MarkPad opened it.`)
+    this.name = 'ChangedOnDisk'
+  }
+}
+
+/**
  * Every open tab, and the operations that change them.
  *
  * Knows about the host interface but not about Tauri, and nothing about the
@@ -111,13 +122,21 @@ export class Workspace {
    *
    * Returns false when the user cancelled the dialog, so a caller closing the
    * tab afterwards knows not to.
+   *
+   * Throws `ChangedOnDisk` rather than saving over a file somebody else has
+   * changed since, unless `overwrite` says the user already chose to.
    */
-  async save(id: string): Promise<boolean> {
+  async save(id: string, { overwrite = false } = {}): Promise<boolean> {
     const buffer = this.buffers.find((candidate) => candidate.id === id)
     if (!buffer) return false
 
     const path = buffer.path ?? (await this.host.pickPathToSave(suggestedName(buffer)))
     if (path === null) return false
+
+    if (!overwrite && buffer.path !== null && buffer.modified !== null) {
+      const now = await this.host.modifiedTime(path)
+      if (now !== null && now !== buffer.modified) throw new ChangedOnDisk(path)
+    }
 
     const { byteLength, modified } = await this.host.writeFile({
       path,
@@ -145,7 +164,41 @@ export class Workspace {
     if (path === null) return false
 
     this.update(id, (current) => ({ ...current, path }))
-    return this.save(id)
+    // The save dialog has already asked about replacing whatever is there.
+    return this.save(id, { overwrite: true })
+  }
+
+  /**
+   * Throw away the buffer's text and read the file again. For when the file
+   * changed on disk and the user wants that version.
+   */
+  async reload(id: string): Promise<void> {
+    const buffer = this.buffers.find((candidate) => candidate.id === id)
+    if (!buffer || buffer.path === null) return
+
+    const document = await this.host.readFile(buffer.path)
+    this.update(id, (current) => ({
+      ...current,
+      text: document.text,
+      savedText: document.text,
+      lineEnding: document.lineEnding,
+      encoding: document.encoding,
+      byteLength: document.byteLength,
+      modified: document.modified,
+    }))
+  }
+
+  /**
+   * Treat the file's current modified time as the one this buffer is based
+   * on, without reading it. For when the user has seen the change and wants
+   * to keep their own version, so the next save does not ask again.
+   */
+  async acceptDiskTime(id: string): Promise<void> {
+    const buffer = this.buffers.find((candidate) => candidate.id === id)
+    if (!buffer || buffer.path === null) return
+
+    const modified = await this.host.modifiedTime(buffer.path)
+    this.update(id, (current) => ({ ...current, modified }))
   }
 
   /**
