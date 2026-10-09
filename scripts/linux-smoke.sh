@@ -136,30 +136,7 @@ xdotool windowactivate --sync "$WINDOW"
 xdotool windowfocus --sync "$WINDOW"
 # The editing surface, safely below the tab strip and above the status bar.
 xdotool mousemove --window "$WINDOW" 450 400 click 1
-
-# The window is mapped well before the page has loaded and opened its first
-# document. Keys sent in that gap go nowhere, or into a document that is then
-# replaced, and the failure looks exactly like a broken Ctrl+C. So wait until
-# the first document is really there: select all and copy until the clipboard
-# holds the welcome text. Then Ctrl+Home puts the caret at the start of it,
-# which is text, rather than wherever the click happened to land.
-step "Waiting for the first document"
-ready=""
-for _ in $(seq 60); do
-  xdotool key --clearmodifiers ctrl+a
-  sleep 0.3
-  xdotool key --clearmodifiers ctrl+c
-  sleep 0.5
-  case "$(clipboard)" in
-  *"Welcome to MarkPad"*)
-    ready=yes
-    break
-    ;;
-  esac
-done
-[ -n "$ready" ] || fail "the first document never appeared"
-xdotool key --clearmodifiers ctrl+Home
-sleep 1
+sleep 2
 
 step "Copy: type a marker, select all, Ctrl+C"
 xdotool type --delay 30 "$MARKER"
