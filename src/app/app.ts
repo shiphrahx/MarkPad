@@ -28,7 +28,7 @@ import { SessionKeeper } from './session-keeper.js'
 import WELCOME from '../welcome.md?raw'
 import { buildCommands } from '../commands/build.js'
 import { ReaderEditor } from '../wysiwyg/editor.js'
-import { markpadSchema } from '../wysiwyg/schema.js'
+import { removeLink, setLink } from '../wysiwyg/format.js'
 import { askForText } from '../ui/prompt-dialog.js'
 import type { Command as ProseCommand } from 'prosemirror-state'
 import type { EditorState as ProseState } from 'prosemirror-state'
@@ -556,38 +556,7 @@ export class App {
       return
     }
 
-    const mark = markpadSchema.marks.link!
-    if (href === '') {
-      this.reader.run((state, dispatch) => {
-        const { from, to } = state.selection
-        if (dispatch) dispatch(state.tr.removeMark(from, to, mark))
-        return true
-      })
-      return
-    }
-
-    this.reader.run((state, dispatch) => {
-      const { from, to, empty } = state.selection
-      // With nothing selected there is no text to make into a link, so the
-      // address becomes the text as well. That is what a person means when
-      // they paste a URL into an empty line.
-      if (empty) {
-        if (dispatch) {
-          dispatch(
-            state.tr.replaceSelectionWith(
-              state.schema.text(href, [mark.create({ href, title: null })]),
-              false,
-            ),
-          )
-        }
-        return true
-      }
-
-      if (dispatch) {
-        dispatch(state.tr.addMark(from, to, mark.create({ href, title: null })))
-      }
-      return true
-    })
+    this.reader.run(href === '' ? removeLink : setLink(href))
   }
 
   /**
