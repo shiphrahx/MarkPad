@@ -21,3 +21,6 @@ Thumbs.db
 # with icons.
 /build/
 src-tauri/icons/
+
+# Personal Claude Code overrides. The shared ones are in .claude/settings.json.
+.claude/settings.local.json
