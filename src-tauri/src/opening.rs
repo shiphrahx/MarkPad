@@ -86,6 +86,21 @@ pub fn opened(app: &tauri::AppHandle, urls: &[tauri::Url]) {
     deliver(app, paths);
 }
 
+/// A second launch, which the single instance plugin turned into a message
+/// to this one. Its files open here, and this window comes to the front.
+///
+/// Its arguments are read against its own working directory, not ours: a
+/// relative path typed in a terminal means the terminal's folder.
+pub fn second_launch(app: &tauri::AppHandle, arguments: Vec<String>, directory: String) {
+    let paths = files_from_arguments(arguments.into_iter().skip(1), Some(Path::new(&directory)));
+    deliver(app, paths);
+
+    if let Some(window) = app.get_webview_window("main") {
+        let _ = window.unminimize();
+        let _ = window.set_focus();
+    }
+}
+
 /// Files dropped on the window. Only the ones that look like Markdown.
 pub fn dropped(app: &tauri::AppHandle, paths: &[PathBuf]) {
     let markdown = paths

@@ -26,6 +26,11 @@ thiserror = "2"
 # Two Win32 jobs Tauri does not cover: a message box before any window exists,
 # for the WebView2 check, and colouring the real window caption so the chrome
 # can match the design without faking a title bar.
+# A second launch hands its files to the window that's already open, rather
+# than starting a second copy that restores the same tabs and saves over them.
+[target.'cfg(any(target_os = "windows", target_os = "macos", target_os = "linux"))'.dependencies]
+tauri-plugin-single-instance = "2"
+
 [target.'cfg(windows)'.dependencies]
 windows-sys = { version = "0.61", features = ["Win32_UI_WindowsAndMessaging", "Win32_Graphics_Dwm"] }
 
