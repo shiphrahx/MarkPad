@@ -237,7 +237,7 @@ export class App {
    * happen to open something else would be its own kind of rude.
    */
   private async restoreSession(): Promise<void> {
-    const session = loadSession()
+    const session = await loadSession(this.host)
     if (session.paths.length === 0) return
 
     const opened: string[] = []
@@ -272,7 +272,7 @@ export class App {
     if (signature === this.sessionSignature) return
 
     this.sessionSignature = signature
-    saveSession(session)
+    saveSession(this.host, session)
   }
 
   private extensions() {

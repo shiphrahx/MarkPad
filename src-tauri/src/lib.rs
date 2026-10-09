@@ -2,6 +2,7 @@ mod chrome;
 mod dialogs;
 mod files;
 mod opening;
+mod session;
 #[cfg(windows)]
 mod webview2;
 
@@ -68,6 +69,8 @@ pub fn run() {
             read_text_file,
             write_text_file,
             opening::startup_files,
+            session::load_session,
+            session::save_session,
             allow_images_in,
             dialogs::pick_files_to_open,
             dialogs::pick_path_to_save,

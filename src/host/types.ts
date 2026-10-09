@@ -37,6 +37,13 @@ export interface SaveRequest {
   readonly encoding: Encoding
 }
 
+/** Which files were open last time, and which one was in front. */
+export interface Session {
+  readonly paths: readonly string[]
+  /** Index into `paths` of the tab that was in front. */
+  readonly active: number
+}
+
 export interface SaveResult {
   readonly byteLength: number
 }
@@ -67,6 +74,13 @@ export interface Host {
    * button, Quit, and the menu item that calls this.
    */
   requestClose(): Promise<void>
+  /**
+   * Last time's open files. Unchecked: whatever is stored comes back, and the
+   * caller decides whether it is a session at all.
+   */
+  loadSession(): Promise<unknown>
+  /** Remember the open files for next time. An empty list forgets them. */
+  saveSession(session: Session): Promise<void>
   /**
    * Let the window load images out of one folder.
    *

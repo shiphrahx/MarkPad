@@ -4,6 +4,7 @@ import type {
   Platform,
   SaveRequest,
   SaveResult,
+  Session,
   TextDocument,
 } from './types.js'
 
@@ -26,6 +27,11 @@ export class MemoryHost implements Host {
   readonly suggestedNames: string[] = []
   /** How many times the app has asked the window to close. */
   closeRequests = 0
+  /**
+   * What `saveSession` last stored. Public so a test can carry it from one
+   * host to the next, the way a real one carries it across launches.
+   */
+  session: unknown = null
   /** Folders the app has asked to be able to read images from. */
   readonly allowedImageDirectories: string[] = []
 
@@ -84,6 +90,14 @@ export class MemoryHost implements Host {
 
   async requestClose(): Promise<void> {
     this.closeRequests += 1
+  }
+
+  async loadSession(): Promise<unknown> {
+    return this.session
+  }
+
+  async saveSession(session: Session): Promise<void> {
+    this.session = session.paths.length === 0 ? null : session
   }
 
   async allowImagesIn(directory: string): Promise<void> {

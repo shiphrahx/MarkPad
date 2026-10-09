@@ -7,6 +7,7 @@ import type {
   Platform,
   SaveRequest,
   SaveResult,
+  Session,
   TextDocument,
 } from './types.js'
 
@@ -56,6 +57,14 @@ export class TauriHost implements Host {
 
   async report(text: string, title = 'MarkPad'): Promise<void> {
     await message(text, { title, kind: 'error' })
+  }
+
+  async loadSession(): Promise<unknown> {
+    return invoke('load_session')
+  }
+
+  async saveSession(session: Session): Promise<void> {
+    await invoke('save_session', { session })
   }
 
   async allowImagesIn(directory: string): Promise<void> {

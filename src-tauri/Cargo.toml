@@ -19,6 +19,8 @@ tauri-build = { version = "2", features = [] }
 tauri = { version = "2", features = ["protocol-asset"] }
 tauri-plugin-dialog = "2"
 serde = { version = "1", features = ["derive"] }
+# Already in the tree through Tauri. The session file is the only JSON we write.
+serde_json = "1"
 thiserror = "2"
 
 # Two Win32 jobs Tauri does not cover: a message box before any window exists,
