@@ -24,11 +24,7 @@
       }
     ],
     "security": {
-      "csp": "default-src 'self'; style-src 'self' 'unsafe-inline'; img-src 'self' data: asset: http://asset.localhost",
-      "assetProtocol": {
-        "enable": true,
-        "scope": []
-      }
+      "csp": "default-src 'self'; style-src 'self' 'unsafe-inline'; img-src 'self' data: markpad-image: http://markpad-image.localhost"
     }
   },
   "bundle": {

@@ -67,12 +67,8 @@ export class TauriHost implements Host {
     await invoke('save_session', { session })
   }
 
-  async allowImagesIn(directory: string): Promise<void> {
-    await invoke('allow_images_in', { directory })
-  }
-
-  assetUrl(path: string): string {
-    return convertFileSrc(path)
+  imageUrl(path: string): string {
+    return convertFileSrc(path, 'markpad-image')
   }
 
   /**

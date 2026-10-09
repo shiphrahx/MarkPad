@@ -32,8 +32,6 @@ export class MemoryHost implements Host {
    * host to the next, the way a real one carries it across launches.
    */
   session: unknown = null
-  /** Folders the app has asked to be able to read images from. */
-  readonly allowedImageDirectories: string[] = []
 
   constructor(platform: Platform = 'macos') {
     this.platform = platform
@@ -100,12 +98,8 @@ export class MemoryHost implements Host {
     this.session = session.paths.length === 0 ? null : session
   }
 
-  async allowImagesIn(directory: string): Promise<void> {
-    this.allowedImageDirectories.push(directory)
-  }
-
-  assetUrl(path: string): string {
-    return `asset://${path}`
+  imageUrl(path: string): string {
+    return `markpad-image://${path}`
   }
 }
 

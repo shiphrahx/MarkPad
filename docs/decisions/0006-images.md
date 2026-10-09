@@ -2,7 +2,7 @@
 
 Date: 2026-09-04
 
-Status: accepted
+Status: accepted. The folder scope is replaced by 0007.
 
 ## Context
 

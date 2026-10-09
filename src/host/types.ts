@@ -82,14 +82,10 @@ export interface Host {
   /** Remember the open files for next time. An empty list forgets them. */
   saveSession(session: Session): Promise<void>
   /**
-   * Let the window load images out of one folder.
+   * A picture on disk, written as a URL the window can load.
    *
-   * Called with the folder a file was opened from, and nothing else. The
-   * window starts able to read no pictures at all, and a document can only
-   * ever show the ones sitting beside it.
+   * Only pictures. The host serves image files and refuses everything else,
+   * so a document can point anywhere and still only ever show you an image.
    */
-  allowImagesIn(directory: string): Promise<void>
-  /** A path on disk, written as something the window can actually load. */
-  assetUrl(path: string): string
+  imageUrl(path: string): string
 }
-

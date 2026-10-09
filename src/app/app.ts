@@ -679,7 +679,6 @@ export class App {
     this.flush()
     try {
       await this.workspace.open(paths)
-      await this.letImagesLoad(paths)
     } catch (error) {
       await this.host.report(describe(error))
     }
@@ -688,26 +687,10 @@ export class App {
   async openWithDialog(): Promise<void> {
     this.flush()
     try {
-      const before = new Set(this.workspace.tabs.map((buffer) => buffer.path))
       await this.workspace.openWithDialog()
-
-      const opened = this.workspace.tabs
-        .map((buffer) => buffer.path)
-        .filter((path): path is string => path !== null && !before.has(path))
-
-      await this.letImagesLoad(opened)
     } catch (error) {
       await this.host.report(describe(error))
     }
-  }
-
-  /** Let the window read the pictures sitting beside the files just opened. */
-  private async letImagesLoad(paths: readonly string[]): Promise<void> {
-    const folders = new Set(
-      paths.map((path) => directoryOf(path)).filter((folder): folder is string => folder !== null),
-    )
-
-    await Promise.all([...folders].map((folder) => this.allowImagesBeside(folder)))
   }
 
   /**
@@ -771,22 +754,7 @@ export class App {
    */
   imageUrl(src: string): string | null {
     const resolved = resolveImage(src, directoryOf(this.workspace.active?.path ?? null))
-    return resolved === null ? null : this.host.assetUrl(resolved)
-  }
-
-  /**
-   * Let the window read pictures out of a folder we have just opened a file
-   * from.
-   *
-   * Best effort. A document that shows no images is the failure here, and that
-   * is not worth refusing to open the file over.
-   */
-  private async allowImagesBeside(directory: string): Promise<void> {
-    try {
-      await this.host.allowImagesIn(directory)
-    } catch {
-      // Nothing to tell the user that they could act on.
-    }
+    return resolved === null ? null : this.host.imageUrl(resolved)
   }
 
   /**

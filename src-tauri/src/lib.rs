@@ -2,6 +2,7 @@ mod access;
 mod chrome;
 mod dialogs;
 mod files;
+mod images;
 mod opening;
 mod session;
 #[cfg(windows)]
@@ -50,22 +51,6 @@ fn allowed(access: &Access, path: &std::path::Path) -> Result<(), FileError> {
     }
 }
 
-/// Let the webview load images out of one folder.
-///
-/// The asset protocol starts with nothing allowed at all. Opening a file widens
-/// it to that file's own folder, so a note can show the picture sitting next to
-/// it and cannot reach anything the user has not opened. Not recursive, for the
-/// same reason.
-///
-/// Without this, every image in every Markdown file is a broken image, which is
-/// a strange thing for a Markdown editor to be.
-#[tauri::command]
-fn allow_images_in(app: tauri::AppHandle, directory: String) -> Result<(), String> {
-    app.asset_protocol_scope()
-        .allow_directory(PathBuf::from(directory), false)
-        .map_err(|error| error.to_string())
-}
-
 #[cfg_attr(mobile, tauri::mobile_entry_point)]
 pub fn run() {
     // Windows without WebView2 would otherwise open a window with nothing in
@@ -81,6 +66,14 @@ pub fn run() {
         .plugin(tauri_plugin_dialog::init())
         .manage(opening::Arrivals::default())
         .manage(Access::default())
+        .register_asynchronous_uri_scheme_protocol(
+            images::SCHEME,
+            |_context, request, responder| {
+                // Reading a picture off disk is not something to do on the thread
+                // that draws the window.
+                std::thread::spawn(move || responder.respond(images::respond(&request)));
+            },
+        )
         .on_window_event(|window, event| {
             // Handled here rather than in the page, so a dropped file arrives
             // the same way as every other file that comes from outside.
@@ -94,7 +87,6 @@ pub fn run() {
             opening::startup_files,
             session::load_session,
             session::save_session,
-            allow_images_in,
             dialogs::pick_files_to_open,
             dialogs::pick_path_to_save,
             chrome::set_caption_colors
