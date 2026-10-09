@@ -1,6 +1,7 @@
 import type { App } from '../app/app.js'
 import { isDirty } from '../app/buffer.js'
 import { exportHtml, exportPdf } from '../export/export.js'
+import { clipboardHtml, copyRich } from '../export/clipboard.js'
 import { currentTheme, setTheme, THEMES, themeLabel } from '../ui/theme.js'
 import {
   canZoomIn,
@@ -105,6 +106,22 @@ export function buildCommands(app: App): Command[] {
       run: async () => {
         const buffer = active()
         if (buffer) await exportPdf(buffer)
+      },
+    },
+    {
+      // Synchronous on purpose: the copy has to happen inside the keypress
+      // or click that asked for it, or the webview refuses it.
+      id: 'edit.copyFormatted',
+      title: 'Copy document as formatted text',
+      category: 'Edit',
+      enabled: hasFile,
+      run: () => {
+        app.flush()
+        const buffer = active()
+        if (!buffer) return
+        if (!copyRich(clipboardHtml(buffer.text), buffer.text)) {
+          void app.host.report('The document could not be copied. Try again, or export it as HTML.')
+        }
       },
     },
     {
