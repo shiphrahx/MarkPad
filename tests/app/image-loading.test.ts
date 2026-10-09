@@ -12,47 +12,6 @@ function build(): { app: App; host: MemoryHost } {
   return { app: new App(host, root), host }
 }
 
-describe('opening a file with pictures beside it', () => {
-  beforeEach(() => {
-    resetBufferIds()
-    document.body.replaceChildren()
-  })
-
-  /**
-   * The window can read no pictures at all until it is told about a folder.
-   * Without this every image in every Markdown file is a broken image, which is
-   * a strange thing for a Markdown editor to be.
-   */
-  it('asks for the folder the file came from', async () => {
-    const { app, host } = build()
-    host.seed('C:/notes/today.md', '# Today\n')
-
-    await app.openFiles(['C:/notes/today.md'])
-
-    expect(host.allowedImageDirectories).toEqual(['C:/notes'])
-  })
-
-  it('asks once for two files in the same folder', async () => {
-    const { app, host } = build()
-    host.seed('C:/notes/one.md', 'one\n')
-    host.seed('C:/notes/two.md', 'two\n')
-
-    await app.openFiles(['C:/notes/one.md', 'C:/notes/two.md'])
-
-    expect(host.allowedImageDirectories).toEqual(['C:/notes'])
-  })
-
-  it('asks for each folder when the files are in different places', async () => {
-    const { app, host } = build()
-    host.seed('C:/notes/one.md', 'one\n')
-    host.seed('C:/work/two.md', 'two\n')
-
-    await app.openFiles(['C:/notes/one.md', 'C:/work/two.md'])
-
-    expect([...host.allowedImageDirectories].sort()).toEqual(['C:/notes', 'C:/work'])
-  })
-})
-
 describe('imageUrl', () => {
   beforeEach(() => {
     resetBufferIds()
@@ -64,7 +23,27 @@ describe('imageUrl', () => {
     host.seed('C:/notes/today.md', '# Today\n')
     await app.openFiles(['C:/notes/today.md'])
 
-    expect(app.imageUrl('diagram.png')).toBe('asset://C:/notes/diagram.png')
+    expect(app.imageUrl('diagram.png')).toBe('markpad-image://C:/notes/diagram.png')
+  })
+
+  /**
+   * The old asset protocol was scoped to the file's own folder, not
+   * recursively, so the most common layout there is showed broken images.
+   */
+  it('resolves a picture in a subfolder', async () => {
+    const { app, host } = build()
+    host.seed('C:/notes/today.md', '# Today\n')
+    await app.openFiles(['C:/notes/today.md'])
+
+    expect(app.imageUrl('images/diagram.png')).toBe('markpad-image://C:/notes/images/diagram.png')
+  })
+
+  it('resolves a picture in a folder beside this one', async () => {
+    const { app, host } = build()
+    host.seed('C:/notes/today.md', '# Today\n')
+    await app.openFiles(['C:/notes/today.md'])
+
+    expect(app.imageUrl('../assets/diagram.png')).toBe('markpad-image://C:/notes/../assets/diagram.png')
   })
 
   it('has no answer for a picture on the web', async () => {
@@ -95,9 +74,9 @@ describe('the reader', () => {
 
     await app.openFiles(['C:/notes/today.md'])
 
-    const image = document.querySelector<HTMLImageElement>('.markpad-document img')
+    const image = document.querySelector<HTMLImageElement>('.markpad-document img:not(.ProseMirror-separator)')
     expect(image).not.toBeNull()
-    expect(image?.getAttribute('src')).toBe('asset://C:/notes/chart.png')
+    expect(image?.getAttribute('src')).toBe('markpad-image://C:/notes/chart.png')
     expect(image?.alt).toBe('A chart')
   })
 
@@ -112,7 +91,7 @@ describe('the reader', () => {
 
     await app.openFiles(['C:/notes/today.md'])
 
-    const image = document.querySelector<HTMLImageElement>('.markpad-document img')
+    const image = document.querySelector<HTMLImageElement>('.markpad-document img:not(.ProseMirror-separator)')
     expect(image?.dataset.src).toBe('chart.png')
   })
 
@@ -122,7 +101,7 @@ describe('the reader', () => {
 
     await app.openFiles(['C:/notes/today.md'])
 
-    const image = document.querySelector<HTMLImageElement>('.markpad-document img')
+    const image = document.querySelector<HTMLImageElement>('.markpad-document img:not(.ProseMirror-separator)')
     expect(image?.hasAttribute('src')).toBe(false)
     expect(image?.dataset.unresolved).toBe('true')
     expect(image?.alt).toBe('A cat')
@@ -141,7 +120,7 @@ describe('the reader', () => {
     await app.save(app.workspace.active!.id)
 
     expect(host.raw('C:/notes/today.md')).toContain('](chart.png)')
-    expect(host.raw('C:/notes/today.md')).not.toContain('asset://')
+    expect(host.raw('C:/notes/today.md')).not.toContain('markpad-image://')
   })
 })
 
@@ -151,10 +130,10 @@ describe('resolveImagesIn', () => {
     holder.innerHTML =
       '<img src="local.png"><img src="https://example.com/cat.png"><img src="">'
 
-    resolveImagesIn(holder, (src) => (src === 'local.png' ? 'asset://x/local.png' : null))
+    resolveImagesIn(holder, (src) => (src === 'local.png' ? 'markpad-image://x/local.png' : null))
 
     const images = [...holder.querySelectorAll('img')]
-    expect(images[0]?.getAttribute('src')).toBe('asset://x/local.png')
+    expect(images[0]?.getAttribute('src')).toBe('markpad-image://x/local.png')
     expect(images[0]?.hasAttribute('data-unresolved')).toBe(false)
     expect(images[1]?.hasAttribute('src')).toBe(false)
     expect(images[1]?.getAttribute('data-unresolved')).toBe('true')

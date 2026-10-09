@@ -40,6 +40,9 @@ pub enum FileError {
     #[error("{path} is in use by another program, so the file was left unchanged.")]
     Locked { path: String },
 
+    #[error("MarkPad can only open files you give it. Open {path} with Open file, or drag it onto the window.")]
+    NotGiven { path: String },
+
     #[error("MarkPad is not allowed to write to {path}. Check its permissions, or use Save as to put it somewhere else.")]
     Denied { path: String },
 }
@@ -48,6 +51,19 @@ impl serde::Serialize for FileError {
     fn serialize<S: serde::Serializer>(&self, serializer: S) -> Result<S::Ok, S::Error> {
         serializer.serialize_str(&self.to_string())
     }
+}
+
+/// When a file was last changed, in milliseconds since the Unix epoch, or
+/// None when it is missing or the filesystem does not say.
+///
+/// The editor keeps this from when it opened a file, and compares before
+/// saving and when the window regains focus. A different answer means
+/// something else wrote to the file in between: git, a sync client, another
+/// editor.
+pub fn modified(path: &Path) -> Option<u64> {
+    let time = fs::metadata(path).ok()?.modified().ok()?;
+    let since = time.duration_since(std::time::UNIX_EPOCH).ok()?;
+    u64::try_from(since.as_millis()).ok()
 }
 
 /// Read a file as text, byte order mark and line endings untouched.
@@ -199,22 +215,47 @@ fn carry_permissions(from: &Path, to: &Path) {
     let _ = (from, to);
 }
 
+/// Create the temporary file and fill it.
+///
+/// `create_new`, so it fails rather than opening something already sitting
+/// at that name. In a shared folder that something could be a link somebody
+/// else planted, and following it would write the document wherever it
+/// pointed.
 fn write_all(path: &Path, bytes: &[u8]) -> io::Result<()> {
-    let mut file = fs::File::create(path)?;
+    let mut file = fs::OpenOptions::new()
+        .write(true)
+        .create_new(true)
+        .open(path)?;
     file.write_all(bytes)?;
     file.sync_all()
 }
 
 /// Sit the temporary file next to the target so the rename stays on one
 /// volume. A rename across volumes is a copy, which is not atomic.
+///
+/// The name is different every time. It used to be the process id alone,
+/// which anyone on the machine could guess and get there first.
 fn temporary_path(path: &Path) -> PathBuf {
+    use std::sync::atomic::{AtomicU64, Ordering};
+    use std::time::{SystemTime, UNIX_EPOCH};
+
+    static COUNTER: AtomicU64 = AtomicU64::new(0);
+
     let name = path
         .file_name()
         .map(|name| name.to_string_lossy().into_owned())
         .unwrap_or_else(|| "markpad".to_owned());
+    let nanos = SystemTime::now()
+        .duration_since(UNIX_EPOCH)
+        .map(|elapsed| elapsed.subsec_nanos())
+        .unwrap_or(0);
+    let count = COUNTER.fetch_add(1, Ordering::Relaxed);
 
     let directory = path.parent().unwrap_or_else(|| Path::new("."));
-    directory.join(format!(".{name}.markpad-{}.tmp", std::process::id()))
+    directory.join(format!(
+        ".{name}.markpad-{}-{nanos:08x}-{count}.tmp",
+        std::process::id()
+    ))
 }
 
 /// Whether the rename failed because something else is holding the file.
@@ -539,6 +580,33 @@ mod tests {
             .map(|entry| entry.unwrap().file_name().to_string_lossy().into_owned())
             .collect();
         assert_eq!(left, vec!["notes.md".to_owned()]);
+    }
+
+    #[test]
+    fn knows_when_a_file_changed() {
+        let directory = tempfile::tempdir().unwrap();
+        let path = directory.path().join("notes.md");
+        fs::write(&path, "one").unwrap();
+
+        assert!(modified(&path).is_some());
+        assert_eq!(modified(&directory.path().join("missing.md")), None);
+    }
+
+    #[test]
+    fn never_reuses_a_temporary_name() {
+        let path = Path::new("/notes/today.md");
+
+        assert_ne!(temporary_path(path), temporary_path(path));
+    }
+
+    #[test]
+    fn will_not_write_through_something_already_at_the_temporary_name() {
+        let directory = tempfile::tempdir().unwrap();
+        let squatter = directory.path().join(".today.md.tmp");
+        fs::write(&squatter, "not yours").unwrap();
+
+        assert!(write_all(&squatter, b"document").is_err());
+        assert_eq!(fs::read_to_string(&squatter).unwrap(), "not yours");
     }
 
     #[test]

@@ -9,10 +9,16 @@ import {
   rememberLaunch,
   saveSession,
   signatureOf,
+  withRecent,
 } from '../../src/app/session.js'
 
-function build(): { app: App; host: MemoryHost } {
+/**
+ * A fresh app. Passing the last one's host carries its session over, which is
+ * what the session file does between one launch and the next.
+ */
+function build(previous?: MemoryHost): { app: App; host: MemoryHost } {
   const host = new MemoryHost('windows')
+  if (previous) host.session = previous.session
   const root = document.createElement('div')
   document.body.append(root)
   return { app: new App(host, root), host }
@@ -23,39 +29,49 @@ function openPaths(app: App): Array<string | null> {
 }
 
 describe('session storage', () => {
-  beforeEach(() => localStorage.clear())
-
-  it('starts with nothing remembered', () => {
-    expect(loadSession()).toEqual({ paths: [], active: 0 })
+  let host: MemoryHost
+  beforeEach(() => {
+    host = new MemoryHost()
   })
 
-  it('remembers paths and which was in front', () => {
-    saveSession({ paths: ['C:/a.md', 'C:/b.md'], active: 1 })
-    expect(loadSession()).toEqual({ paths: ['C:/a.md', 'C:/b.md'], active: 1 })
+  it('starts with nothing remembered', async () => {
+    expect(await loadSession(host)).toEqual({ paths: [], active: 0, recent: [] })
+  })
+
+  it('remembers paths and which was in front', async () => {
+    saveSession(host, { paths: ['C:/a.md', 'C:/b.md'], active: 1, recent: [] })
+    expect(await loadSession(host)).toEqual({ paths: ['C:/a.md', 'C:/b.md'], active: 1, recent: [] })
   })
 
   it('clears itself when nothing is open', () => {
-    saveSession({ paths: ['C:/a.md'], active: 0 })
-    saveSession({ paths: [], active: 0 })
+    saveSession(host, { paths: ['C:/a.md'], active: 0, recent: [] })
+    saveSession(host, { paths: [], active: 0, recent: [] })
 
+    expect(host.session).toBeNull()
+  })
+
+  it('ignores nonsense in storage rather than failing to start', async () => {
+    host.session = 'not a session at all'
+    expect(await loadSession(host)).toEqual({ paths: [], active: 0, recent: [] })
+
+    host.session = { paths: [1, 2], active: 0, recent: [] }
+    expect(await loadSession(host)).toEqual({ paths: [], active: 0, recent: [] })
+
+    host.session = { paths: [], active: -4, recent: [] }
+    expect(await loadSession(host)).toEqual({ paths: [], active: 0, recent: [] })
+  })
+
+  it('forgets the copy older versions kept in localStorage', async () => {
+    localStorage.setItem('markpad.session', '{"paths":["C:/a.md"],"active":0}')
+
+    expect(await loadSession(host)).toEqual({ paths: [], active: 0, recent: [] })
     expect(localStorage.getItem('markpad.session')).toBeNull()
   })
 
-  it('ignores nonsense in storage rather than failing to start', () => {
-    localStorage.setItem('markpad.session', 'not json at all')
-    expect(loadSession()).toEqual({ paths: [], active: 0 })
-
-    localStorage.setItem('markpad.session', '{"paths":[1,2],"active":0}')
-    expect(loadSession()).toEqual({ paths: [], active: 0 })
-
-    localStorage.setItem('markpad.session', '{"paths":[],"active":-4}')
-    expect(loadSession()).toEqual({ paths: [], active: 0 })
-  })
-
   it('changes its signature when the tabs change, not when the text does', () => {
-    const one = signatureOf({ paths: ['C:/a.md'], active: 0 })
-    const same = signatureOf({ paths: ['C:/a.md'], active: 0 })
-    const other = signatureOf({ paths: ['C:/a.md', 'C:/b.md'], active: 1 })
+    const one = signatureOf({ paths: ['C:/a.md'], active: 0, recent: [] })
+    const same = signatureOf({ paths: ['C:/a.md'], active: 0, recent: [] })
+    const other = signatureOf({ paths: ['C:/a.md', 'C:/b.md'], active: 1, recent: [] })
 
     expect(one).toBe(same)
     expect(one).not.toBe(other)
@@ -84,7 +100,7 @@ describe('restoring the session', () => {
 
     await app.openFiles(['C:/a.md', 'C:/b.md'])
 
-    const second = build()
+    const second = build(host)
     second.host.seed('C:/a.md', 'a\n')
     second.host.seed('C:/b.md', 'b\n')
     await second.app.start()
@@ -99,7 +115,7 @@ describe('restoring the session', () => {
     await app.openFiles(['C:/a.md', 'C:/b.md'])
     app.focusTab(app.workspace.tabs[0]!.id)
 
-    const second = build()
+    const second = build(host)
     second.host.seed('C:/a.md', 'a\n')
     second.host.seed('C:/b.md', 'b\n')
     await second.app.start()
@@ -113,7 +129,7 @@ describe('restoring the session', () => {
     host.seed('C:/still-here.md', 'y\n')
     await app.openFiles(['C:/gone.md', 'C:/still-here.md'])
 
-    const second = build()
+    const second = build(host)
     // Only one of them exists this time.
     second.host.seed('C:/still-here.md', 'y\n')
     await second.app.start()
@@ -126,7 +142,7 @@ describe('restoring the session', () => {
     host.seed('C:/gone.md', 'x\n')
     await app.openFiles(['C:/gone.md'])
 
-    const second = build()
+    const second = build(host)
     await second.app.start()
 
     expect(second.app.workspace.tabs).toHaveLength(1)
@@ -138,7 +154,7 @@ describe('restoring the session', () => {
     host.seed('C:/a.md', 'a\n')
     await app.openFiles(['C:/a.md'])
 
-    const second = build()
+    const second = build(host)
     second.host.seed('C:/a.md', 'a\n')
     second.host.seed('C:/opened.md', 'o\n')
     await second.app.start(['C:/opened.md'])
@@ -154,7 +170,7 @@ describe('restoring the session', () => {
     await app.openFiles(['C:/a.md', 'C:/b.md'])
     await app.closeTab(app.workspace.tabs[0]!.id)
 
-    const second = build()
+    const second = build(host)
     second.host.seed('C:/a.md', 'a\n')
     second.host.seed('C:/b.md', 'b\n')
     await second.app.start()
@@ -173,7 +189,7 @@ describe('restoring the session', () => {
     await app.openFiles(['C:/a.md'])
     app.newFile()
 
-    expect(loadSession().paths).toEqual(['C:/a.md'])
+    expect((await loadSession(host)).paths).toEqual(['C:/a.md'])
   })
 })
 
@@ -191,8 +207,44 @@ describe('first launch', () => {
 
   it('does not depend on whether any tabs were remembered', () => {
     rememberLaunch()
-    saveSession({ paths: [], active: 0 })
+    saveSession(new MemoryHost(), { paths: [], active: 0, recent: [] })
 
     expect(isFirstLaunch()).toBe(false)
+  })
+})
+
+describe('recent files', () => {
+  beforeEach(() => {
+    resetBufferIds()
+    document.body.replaceChildren()
+  })
+
+  it('puts newly opened files first, each once, and keeps only ten', () => {
+    const many = Array.from({ length: 12 }, (_, index) => `C:/${index}.md`)
+
+    expect(withRecent(['C:/a.md', 'C:/b.md'], ['C:/b.md'])).toEqual(['C:/b.md', 'C:/a.md'])
+    expect(withRecent([], many)).toHaveLength(10)
+  })
+
+  it('reads an older session that has no recent list', async () => {
+    const host = new MemoryHost()
+    host.session = { paths: ['C:/a.md'], active: 0 }
+
+    expect((await loadSession(host)).recent).toEqual([])
+  })
+
+  it('remembers a file after its tab is closed and offers it in the palette', async () => {
+    const { app, host } = build()
+    host.seed('C:/notes/a.md', 'a\n')
+    await app.openFiles(['C:/notes/a.md'])
+    await app.closeTab(app.workspace.tabs[0]!.id)
+
+    const second = build(host)
+    second.host.seed('C:/notes/a.md', 'a\n')
+    await second.app.start()
+    second.app.openPalette()
+
+    const rows = [...document.querySelectorAll('.palette-row')].map((row) => row.textContent)
+    expect(rows.some((text) => text?.includes('Open recent: a.md in C:/notes'))).toBe(true)
   })
 })

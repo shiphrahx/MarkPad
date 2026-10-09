@@ -1,8 +1,8 @@
 import type { Buffer } from '../app/buffer.js'
 import { title as titleOf } from '../app/buffer.js'
 import type { Host } from '../host/types.js'
-import { drawDiagram, drawMath } from '../preview/draw.js'
-import { findInlineMath, render } from '../preview/render.js'
+import { drawDiagram, drawInlineMathIn, drawMath } from '../preview/draw.js'
+import { render } from '../preview/render.js'
 import { buildHtmlDocument, htmlNameFor } from './html.js'
 
 /**
@@ -29,46 +29,13 @@ export async function renderForExport(buffer: Buffer): Promise<string> {
         : await drawMath(block.source, { display: true, output: 'mathml' })
   }
 
-  await drawInlineMath(holder)
+  // MathML, so the exported file needs no stylesheet and no font files.
+  await drawInlineMathIn(holder, { output: 'mathml' })
 
   return buildHtmlDocument({
     title: titleOf(buffer).replace(/\.[^.]+$/, ''),
     bodyHtml: holder.innerHTML,
   })
-}
-
-async function drawInlineMath(root: HTMLElement): Promise<void> {
-  const walker = document.createTreeWalker(root, NodeFilter.SHOW_TEXT)
-  const candidates: Text[] = []
-
-  while (walker.nextNode()) {
-    const node = walker.currentNode as Text
-    if (node.parentElement?.closest('code, pre')) continue
-    if (node.data.includes('$')) candidates.push(node)
-  }
-
-  for (const node of candidates) {
-    const found = findInlineMath(node.data)
-    if (found.length === 0) continue
-
-    const fragment = document.createDocumentFragment()
-    let cursor = 0
-
-    for (const item of found) {
-      fragment.append(node.data.slice(cursor, item.from))
-      const span = document.createElement('span')
-      // MathML, so the exported file needs no stylesheet and no font files.
-      span.innerHTML = await drawMath(item.source, {
-        display: item.display,
-        output: 'mathml',
-      })
-      fragment.append(span)
-      cursor = item.to
-    }
-
-    fragment.append(node.data.slice(cursor))
-    node.replaceWith(fragment)
-  }
 }
 
 /** Ask where to put it, render, write it. Returns false if cancelled. */
@@ -90,6 +57,26 @@ export async function exportHtml(buffer: Buffer, host: Host): Promise<boolean> {
 }
 
 /**
+ * The hidden frame a document is printed from.
+ *
+ * Sandboxed. Without it the frame shares the app's origin, and anything in the
+ * document that managed to run would be one `parent.` away from the app. With
+ * it, nothing in the frame runs at all: `allow-same-origin` is only there so
+ * this side can call `print()` on it, and `allow-modals` so the print dialog
+ * is allowed to open.
+ */
+export function printFrame(html: string): HTMLIFrameElement {
+  const frame = document.createElement('iframe')
+  frame.setAttribute('aria-hidden', 'true')
+  frame.setAttribute('sandbox', 'allow-same-origin allow-modals')
+  frame.style.cssText = 'position:fixed;right:0;bottom:0;width:0;height:0;border:0;'
+  // The title in the rendered document is the file name without its
+  // extension, which is what the print dialog offers as the PDF's name.
+  frame.srcdoc = html
+  return frame
+}
+
+/**
  * Export to PDF through the system print engine.
  *
  * The rules said to use the system print engine rather than bundling a PDF
@@ -102,15 +89,7 @@ export async function exportHtml(buffer: Buffer, host: Host): Promise<boolean> {
  * tab strip and the status bar, does not end up on the page.
  */
 export async function exportPdf(buffer: Buffer): Promise<void> {
-  const html = await renderForExport(buffer)
-
-  const frame = document.createElement('iframe')
-  frame.setAttribute('aria-hidden', 'true')
-  frame.style.cssText = 'position:fixed;right:0;bottom:0;width:0;height:0;border:0;'
-  // The title in the rendered document is the file name without its
-  // extension, which is what the print dialog offers as the PDF's name.
-  frame.srcdoc = html
-
+  const frame = printFrame(await renderForExport(buffer))
   document.body.appendChild(frame)
 
   await new Promise<void>((resolve) => {

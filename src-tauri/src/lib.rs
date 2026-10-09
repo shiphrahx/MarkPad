@@ -1,17 +1,59 @@
+mod access;
 mod chrome;
+mod dialogs;
 mod files;
+mod images;
+mod links;
+mod opening;
+mod pasted;
+mod session;
 #[cfg(windows)]
 mod webview2;
 
 use std::path::PathBuf;
 
+use tauri::Manager;
+
+use access::Access;
 pub use files::FileError;
+
+/// A file's contents and when it was last changed.
+#[derive(serde::Serialize)]
+struct TextFile {
+    text: String,
+    modified: Option<u64>,
+}
+
+/// What a save wrote: the size, for the status bar, and the new modified time,
+/// so the next save can tell whether anything else has touched the file since.
+#[derive(serde::Serialize)]
+struct Written {
+    bytes: u64,
+    modified: Option<u64>,
+}
 
 /// Read a file as text. The byte order mark and the line endings come back
 /// exactly as they were on disk; the editor decides what to do with them.
+///
+/// Only a file the user gave the app. See `access.rs`.
 #[tauri::command]
-fn read_text_file(path: String) -> Result<String, FileError> {
-    files::read_text(&PathBuf::from(path))
+fn read_text_file(access: tauri::State<'_, Access>, path: String) -> Result<TextFile, FileError> {
+    let path = PathBuf::from(path);
+    allowed(&access, &path)?;
+    // Taken first. If the file changes between the two, the editor sees an
+    // older time than the contents deserve and asks once too often, which is
+    // the safe direction to be wrong in.
+    let modified = files::modified(&path);
+    let text = files::read_text(&path)?;
+    Ok(TextFile { text, modified })
+}
+
+/// When a file the user gave the app was last changed.
+#[tauri::command]
+fn file_modified(access: tauri::State<'_, Access>, path: String) -> Result<Option<u64>, FileError> {
+    let path = PathBuf::from(path);
+    allowed(&access, &path)?;
+    Ok(files::modified(&path))
 }
 
 /// Write a file atomically, retrying while Windows has it locked.
@@ -19,50 +61,28 @@ fn read_text_file(path: String) -> Result<String, FileError> {
 /// Returns the number of bytes written, which the status bar shows as the
 /// file size.
 #[tauri::command]
-fn write_text_file(path: String, contents: String) -> Result<u64, FileError> {
-    files::write_text_atomic(&PathBuf::from(path), &contents)
+fn write_text_file(
+    access: tauri::State<'_, Access>,
+    path: String,
+    contents: String,
+) -> Result<Written, FileError> {
+    let path = PathBuf::from(path);
+    allowed(&access, &path)?;
+    let bytes = files::write_text_atomic(&path, &contents)?;
+    Ok(Written {
+        bytes,
+        modified: files::modified(&path),
+    })
 }
 
-/// Paths passed on the command line.
-///
-/// This is how "Open with MarkPad" and double-clicking a `.md` file arrive.
-/// Anything that is not a file that exists is dropped rather than opened as an
-/// empty buffer with a nonsense name.
-#[tauri::command]
-fn startup_files() -> Vec<String> {
-    files_from_arguments(std::env::args().skip(1))
-}
-
-/// Which of the arguments name a file that is really there.
-///
-/// Split out from the command so it can be tested. Reading `env::args` is the
-/// only reason the whole thing was untestable, and this is the path every
-/// "Open with MarkPad" and every double-clicked file arrives through on all
-/// three platforms.
-fn files_from_arguments<I: IntoIterator<Item = String>>(arguments: I) -> Vec<String> {
-    arguments
-        .into_iter()
-        .filter(|argument| !argument.starts_with('-'))
-        .filter(|argument| PathBuf::from(argument).is_file())
-        .collect()
-}
-
-/// Let the webview load images out of one folder.
-///
-/// The asset protocol starts with nothing allowed at all. Opening a file widens
-/// it to that file's own folder, so a note can show the picture sitting next to
-/// it and cannot reach anything the user has not opened. Not recursive, for the
-/// same reason.
-///
-/// Without this, every image in every Markdown file is a broken image, which is
-/// a strange thing for a Markdown editor to be.
-#[tauri::command]
-fn allow_images_in(app: tauri::AppHandle, directory: String) -> Result<(), String> {
-    use tauri::Manager;
-
-    app.asset_protocol_scope()
-        .allow_directory(PathBuf::from(directory), false)
-        .map_err(|error| error.to_string())
+fn allowed(access: &Access, path: &std::path::Path) -> Result<(), FileError> {
+    if access.is_granted(path) {
+        Ok(())
+    } else {
+        Err(FileError::NotGiven {
+            path: path.to_string_lossy().into_owned(),
+        })
+    }
 }
 
 #[cfg_attr(mobile, tauri::mobile_entry_point)]
@@ -77,92 +97,52 @@ pub fn run() {
     }
 
     tauri::Builder::default()
+        // First, as the plugin asks: it has to see a second launch before
+        // anything else gets a chance to set up a second window.
+        .plugin(tauri_plugin_single_instance::init(
+            |app, arguments, directory| {
+                opening::second_launch(app, arguments, directory);
+            },
+        ))
         .plugin(tauri_plugin_dialog::init())
+        .plugin(tauri_plugin_opener::init())
+        .plugin(links::navigation_guard())
+        .manage(opening::Arrivals::default())
+        .manage(Access::default())
+        .register_asynchronous_uri_scheme_protocol(
+            images::SCHEME,
+            |_context, request, responder| {
+                // Reading a picture off disk is not something to do on the thread
+                // that draws the window.
+                std::thread::spawn(move || responder.respond(images::respond(&request)));
+            },
+        )
+        .on_window_event(|window, event| {
+            // Handled here rather than in the page, so a dropped file arrives
+            // the same way as every other file that comes from outside.
+            if let tauri::WindowEvent::DragDrop(tauri::DragDropEvent::Drop { paths, .. }) = event {
+                opening::dropped(window.app_handle(), paths);
+            }
+        })
         .invoke_handler(tauri::generate_handler![
             read_text_file,
             write_text_file,
-            startup_files,
-            allow_images_in,
+            file_modified,
+            opening::startup_files,
+            session::load_session,
+            session::save_session,
+            links::open_link,
+            pasted::save_pasted_image,
+            dialogs::pick_files_to_open,
+            dialogs::pick_path_to_save,
             chrome::set_caption_colors
         ])
-        .run(tauri::generate_context!())
-        .expect("MarkPad could not start.");
-}
-
-#[cfg(test)]
-mod tests {
-    use super::*;
-
-    fn arguments(items: &[&std::path::Path]) -> Vec<String> {
-        items
-            .iter()
-            .map(|path| path.to_string_lossy().into_owned())
-            .collect()
-    }
-
-    #[test]
-    fn keeps_the_files_that_exist() {
-        let directory = tempfile::tempdir().unwrap();
-        let one = directory.path().join("one.md");
-        let two = directory.path().join("two.md");
-        std::fs::write(&one, "one").unwrap();
-        std::fs::write(&two, "two").unwrap();
-
-        let opened = files_from_arguments(arguments(&[&one, &two]));
-
-        assert_eq!(opened.len(), 2);
-        assert!(opened[0].ends_with("one.md"));
-        assert!(opened[1].ends_with("two.md"));
-    }
-
-    /// Opening a path that isn't there would give the user an empty buffer
-    /// named after a file they never had, which is worse than opening nothing.
-    #[test]
-    fn drops_a_path_that_is_not_there() {
-        let directory = tempfile::tempdir().unwrap();
-        let missing = directory.path().join("gone.md");
-
-        assert!(files_from_arguments(arguments(&[&missing])).is_empty());
-    }
-
-    #[test]
-    fn drops_a_directory() {
-        let directory = tempfile::tempdir().unwrap();
-
-        assert!(files_from_arguments(arguments(&[directory.path()])).is_empty());
-    }
-
-    #[test]
-    fn drops_anything_that_looks_like_a_flag() {
-        let flags = vec!["--help".to_owned(), "-v".to_owned()];
-
-        assert!(files_from_arguments(flags).is_empty());
-    }
-
-    #[test]
-    fn keeps_the_real_file_out_of_a_mixed_command_line() {
-        let directory = tempfile::tempdir().unwrap();
-        let note = directory.path().join("notes.md");
-        std::fs::write(&note, "hello").unwrap();
-
-        let mixed = vec![
-            "--devtools".to_owned(),
-            note.to_string_lossy().into_owned(),
-            directory
-                .path()
-                .join("missing.md")
-                .to_string_lossy()
-                .into_owned(),
-        ];
-
-        let opened = files_from_arguments(mixed);
-
-        assert_eq!(opened.len(), 1);
-        assert!(opened[0].ends_with("notes.md"));
-    }
-
-    #[test]
-    fn opens_nothing_when_there_are_no_arguments() {
-        assert!(files_from_arguments(Vec::new()).is_empty());
-    }
+        .build(tauri::generate_context!())
+        .expect("MarkPad could not start.")
+        .run(|_app, _event| {
+            #[cfg(target_os = "macos")]
+            if let tauri::RunEvent::Opened { urls } = &_event {
+                opening::opened(_app, urls);
+            }
+        });
 }

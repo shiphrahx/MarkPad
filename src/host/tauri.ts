@@ -1,5 +1,5 @@
 import { convertFileSrc, invoke } from '@tauri-apps/api/core'
-import { message, open, save } from '@tauri-apps/plugin-dialog'
+import { message } from '@tauri-apps/plugin-dialog'
 import { detectEncoding, detectLineEnding, toEditorText, toFileText } from './text.js'
 import { platformFromUserAgent } from './platform.js'
 import type {
@@ -7,13 +7,9 @@ import type {
   Platform,
   SaveRequest,
   SaveResult,
+  Session,
   TextDocument,
 } from './types.js'
-
-const MARKDOWN_FILTER = {
-  name: 'Markdown',
-  extensions: ['md', 'markdown', 'mdown', 'mkd', 'txt'],
-}
 
 /**
  * The real host. This is the only file in `src/` that knows Tauri exists.
@@ -26,7 +22,10 @@ export class TauriHost implements Host {
   readonly platform: Platform = detectPlatform()
 
   async readFile(path: string): Promise<TextDocument> {
-    const raw = await invoke<string>('read_text_file', { path })
+    const { text: raw, modified } = await invoke<{ text: string; modified: number | null }>(
+      'read_text_file',
+      { path },
+    )
 
     return {
       path,
@@ -34,39 +33,62 @@ export class TauriHost implements Host {
       lineEnding: detectLineEnding(raw),
       encoding: detectEncoding(raw),
       byteLength: new TextEncoder().encode(raw).length,
+      modified,
     }
   }
 
   async writeFile(request: SaveRequest): Promise<SaveResult> {
     const contents = toFileText(request.text, request.lineEnding, request.encoding)
-    const byteLength = await invoke<number>('write_text_file', {
-      path: request.path,
-      contents,
-    })
+    const { bytes, modified } = await invoke<{ bytes: number; modified: number | null }>(
+      'write_text_file',
+      { path: request.path, contents },
+    )
 
-    return { byteLength }
+    return { byteLength: bytes, modified }
   }
 
+  async modifiedTime(path: string): Promise<number | null> {
+    return invoke<number | null>('file_modified', { path })
+  }
+
+  /**
+   * The dialogs run in Rust, so the host learns which paths the user really
+   * chose. A path from here is one the page is then allowed to read and write.
+   */
   async pickFilesToOpen(): Promise<readonly string[]> {
-    const picked = await open({ multiple: true, filters: [MARKDOWN_FILTER] })
-    if (picked === null) return []
-    return Array.isArray(picked) ? picked : [picked]
+    return invoke<string[]>('pick_files_to_open')
   }
 
   async pickPathToSave(suggestedName: string): Promise<string | null> {
-    return save({ defaultPath: suggestedName, filters: [MARKDOWN_FILTER] })
+    return invoke<string | null>('pick_path_to_save', { suggestedName })
   }
 
   async report(text: string, title = 'MarkPad'): Promise<void> {
     await message(text, { title, kind: 'error' })
   }
 
-  async allowImagesIn(directory: string): Promise<void> {
-    await invoke('allow_images_in', { directory })
+  async loadSession(): Promise<unknown> {
+    return invoke('load_session')
   }
 
-  assetUrl(path: string): string {
-    return convertFileSrc(path)
+  async saveSession(session: Session): Promise<void> {
+    await invoke('save_session', { session })
+  }
+
+  async savePastedImage(documentPath: string, bytes: Uint8Array): Promise<string> {
+    // The picture goes as the raw body rather than as JSON, which would turn
+    // every byte into a number in a string.
+    return invoke<string>('save_pasted_image', bytes, {
+      headers: { 'x-document': encodeURIComponent(documentPath) },
+    })
+  }
+
+  async openLink(url: string): Promise<void> {
+    await invoke('open_link', { url })
+  }
+
+  imageUrl(path: string): string {
+    return convertFileSrc(path, 'markpad-image')
   }
 
   /**

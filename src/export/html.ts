@@ -21,7 +21,7 @@ export function buildHtmlDocument({ title, bodyHtml, extraCss }: ExportOptions):
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
-<meta http-equiv="Content-Security-Policy" content="default-src 'none'; img-src data: https: http:; style-src 'unsafe-inline'; font-src data:">
+<meta http-equiv="Content-Security-Policy" content="default-src 'none'; img-src data: https: http:; style-src 'unsafe-inline'; font-src data:; form-action 'none'; base-uri 'none'">
 <title>${escapeHtml(title)}</title>
 <style>
 ${DOCUMENT_CSS}

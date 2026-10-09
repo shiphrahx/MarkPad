@@ -4,6 +4,7 @@ import type {
   Platform,
   SaveRequest,
   SaveResult,
+  Session,
   TextDocument,
 } from './types.js'
 
@@ -17,6 +18,9 @@ import type {
 export class MemoryHost implements Host {
   readonly platform: Platform
   private readonly files = new Map<string, string>()
+  private readonly times = new Map<string, number>()
+  /** A clock that only moves when a file is written. */
+  private clock = 1000
   private nextPick: readonly string[] = []
   private nextSavePath: string | null = null
 
@@ -24,10 +28,17 @@ export class MemoryHost implements Host {
   readonly reported: string[] = []
   /** Every name the app has offered in a save dialog. */
   readonly suggestedNames: string[] = []
+  /** Every picture pasted, by the link it was given. */
+  readonly pastedImages = new Map<string, Uint8Array>()
+  /** Every link the app has asked to open outside. */
+  readonly openedLinks: string[] = []
   /** How many times the app has asked the window to close. */
   closeRequests = 0
-  /** Folders the app has asked to be able to read images from. */
-  readonly allowedImageDirectories: string[] = []
+  /**
+   * What `saveSession` last stored. Public so a test can carry it from one
+   * host to the next, the way a real one carries it across launches.
+   */
+  session: unknown = null
 
   constructor(platform: Platform = 'macos') {
     this.platform = platform
@@ -36,6 +47,20 @@ export class MemoryHost implements Host {
   /** Seed a file, written exactly as the bytes would be on disk. */
   seed(path: string, rawContents: string): void {
     this.files.set(path, rawContents)
+    this.times.set(path, this.tick())
+  }
+
+  /**
+   * Change a file behind the app's back, the way git or another editor
+   * would. Moves its modified time on.
+   */
+  changeOnDisk(path: string, rawContents: string): void {
+    this.seed(path, rawContents)
+  }
+
+  private tick(): number {
+    this.clock += 1
+    return this.clock
   }
 
   /** Read back what a save actually wrote, endings and BOM included. */
@@ -60,13 +85,20 @@ export class MemoryHost implements Host {
       lineEnding: detectLineEnding(raw),
       encoding: detectEncoding(raw),
       byteLength: byteLength(raw),
+      modified: this.times.get(path) ?? null,
     }
   }
 
   async writeFile(request: SaveRequest): Promise<SaveResult> {
     const raw = toFileText(request.text, request.lineEnding, request.encoding)
     this.files.set(request.path, raw)
-    return { byteLength: byteLength(raw) }
+    const modified = this.tick()
+    this.times.set(request.path, modified)
+    return { byteLength: byteLength(raw), modified }
+  }
+
+  async modifiedTime(path: string): Promise<number | null> {
+    return this.times.get(path) ?? null
   }
 
   async pickFilesToOpen(): Promise<readonly string[]> {
@@ -86,12 +118,26 @@ export class MemoryHost implements Host {
     this.closeRequests += 1
   }
 
-  async allowImagesIn(directory: string): Promise<void> {
-    this.allowedImageDirectories.push(directory)
+  async loadSession(): Promise<unknown> {
+    return this.session
   }
 
-  assetUrl(path: string): string {
-    return `asset://${path}`
+  async saveSession(session: Session): Promise<void> {
+    this.session = session.paths.length === 0 && session.recent.length === 0 ? null : session
+  }
+
+  async savePastedImage(_documentPath: string, bytes: Uint8Array): Promise<string> {
+    const link = `images/pasted-${this.pastedImages.size + 1}.png`
+    this.pastedImages.set(link, bytes)
+    return link
+  }
+
+  async openLink(url: string): Promise<void> {
+    this.openedLinks.push(url)
+  }
+
+  imageUrl(path: string): string {
+    return `markpad-image://${path}`
   }
 }
 

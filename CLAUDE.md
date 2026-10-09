@@ -41,11 +41,20 @@ every Markdown serialiser is lossy. Marker characters, emphasis delimiters,
 table padding and line wrapping come back in the serialiser's preferred form,
 including on lines nobody touched. Anything that reduces that is worth doing.
 
+Since 0.1.5, blocks nobody touched are written back exactly as the file had
+them (`src/wysiwyg/source-memory.ts`). The loss is now confined to the blocks
+somebody actually edited. Keep it that way: anything that rebuilds top-level
+nodes it didn't change, such as a plugin that re-creates the whole document,
+quietly brings the old problem back.
+
 ## Stack
 
 - **Shell:** Tauri v2 (Rust). WebView2 on Windows, WKWebView on macOS, WebKitGTK on
   Linux. No bundled Chromium.
-- **Editor:** CodeMirror 6 + TypeScript. `@codemirror/lang-markdown` with GFM extensions.
+- **Reader mode (the default surface):** ProseMirror + TypeScript, in `src/wysiwyg/`.
+  markdown-it tokens in, `prosemirror-markdown` serialiser out.
+- **Source view:** CodeMirror 6, in `src/editor/`. `@codemirror/lang-markdown` with GFM
+  extensions.
 - **Markdown:** markdown-it, once. The editor, the preview and the exports all read a
   file the same way. `docs/decisions/0005-one-markdown-parser.md` says why that had to
   be spelled out.
@@ -55,9 +64,42 @@ including on lines nobody touched. Anything that reduces that is worth doing.
 Do not add a UI framework. The chrome is a few hundred lines of hand-written TS and CSS.
 Every new dependency needs a one-line justification in the PR description.
 
+## Commands
+
+Run all of these before every commit. CI runs the same ones.
+
+```bash
+pnpm typecheck                     # tsc, no emit
+pnpm lint                          # biome, correctness rules only
+pnpm test                          # vitest, editor logic in jsdom
+cd src-tauri && cargo test         # the Rust side
+cd src-tauri && cargo clippy --all-targets -- -D warnings
+```
+
+`pnpm bench` when touching parsing, saving or anything that walks the whole document.
+`pnpm icons` once after cloning: the icons aren't committed and the Rust crate
+won't compile without them. `pnpm tauri dev` runs the app.
+
+## Where things live
+
+| Path | What it is |
+|---|---|
+| `src/app/` | The app: tabs, buffers, session, saving and closing. No DOM in `workspace.ts`. |
+| `src/wysiwyg/` | Reader mode. ProseMirror schema, parser, serialiser, keymaps. |
+| `src/editor/` | Source view. CodeMirror setup. |
+| `src/markdown/` | The one markdown-it configuration everything shares. |
+| `src/preview/` | Rendering to HTML, popovers, KaTeX and Mermaid. |
+| `src/export/` | HTML and PDF export. |
+| `src/commands/` | The command list the palette and menus are both built from. |
+| `src/ui/` | Chrome: tabs, status bar, palette, dialogs, theme. |
+| `src/styles/` | The chrome's CSS, one file per piece, imported in cascade order by `src/app.css`. |
+| `src/host/` | The only boundary to Tauri. `memory.ts` is the test double. |
+| `src-tauri/src/` | Rust: file IO, dialogs, path permissions, window chrome. |
+| `tests/` | Mirrors `src/`. |
+
 ## Hard budgets
 
-These are pass/fail, checked in CI:
+These are pass/fail:
 
 | Budget | Limit |
 |---|---|
@@ -67,8 +109,14 @@ These are pass/fail, checked in CI:
 | Typing latency in a 5 MB file | indistinguishable from an empty file |
 | Runtime network requests | one, the opt-out update check |
 
-Only the installer size is enforced by CI today. The other four are honoured by hand
-and by the code being shaped around them, which is a weaker thing and worth knowing.
+Only the installer size is enforced by CI today. The network budget is pinned by the
+CSP and its test (`tests/packaging/csp.test.ts`). Opening and typing are measured by
+`pnpm bench`, which CI runs and reports but cannot fail on, because shared runners are
+too noisy. Cold start is honoured by hand. Measured is weaker than enforced, and worth
+knowing.
+
+Files over two million characters open in source view, because reader mode cannot
+meet the 10 MB budget. `LARGE_FILE_CHARACTERS` in `src/app/app.ts`.
 
 The network budget is the reason images on the web do not load: one request, and it is
 the update check. `docs/decisions/0006-images.md` has the rest.
@@ -126,5 +174,6 @@ MarkEdit could assume macOS. We cannot. Get these right or the app feels foreign
   `src/host/` boundary so the editor stays testable in Node.
 - Small commits, conventional commit messages, one concern each.
 - New behaviour ships with a test. Bug fixes ship with the failing test first.
-- Never commit binaries, `.env` files, or generated bundles.
+- Never commit binaries, `.env` files, or generated bundles. The one exception is
+  images the README and the docs site show, in `docs/`. Keep each under 1 MB.
 - When something in this file conflicts with a request, say so before writing code.

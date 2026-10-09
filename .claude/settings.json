@@ -1,0 +1,34 @@
+{
+  "permissions": {
+    "allow": [
+      "Bash(pnpm typecheck)",
+      "Bash(pnpm lint)",
+      "Bash(pnpm test)",
+      "Bash(pnpm test *)",
+      "Bash(pnpm vitest *)",
+      "Bash(pnpm bench)",
+      "Bash(pnpm build)",
+      "Bash(cargo test*)",
+      "Bash(cargo clippy *)",
+      "Bash(cargo fmt*)",
+      "Bash(git status*)",
+      "Bash(git diff*)",
+      "Bash(git log*)"
+    ]
+  },
+  "hooks": {
+    "PostToolUse": [
+      {
+        "matcher": "Write|Edit",
+        "hooks": [
+          {
+            "type": "command",
+            "command": "node \"$CLAUDE_PROJECT_DIR/.claude/hooks/typecheck.mjs\"",
+            "timeout": 120,
+            "statusMessage": "Type checking"
+          }
+        ]
+      }
+    ]
+  }
+}

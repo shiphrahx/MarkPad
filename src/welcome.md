@@ -146,11 +146,11 @@ Anything in here comes back out byte for byte.
 
 ## Two honest notes
 
-**Saving rewrites formatting, not content.** MarkPad generates the Markdown
-source from what you edited, so emphasis markers, table padding and line
-wrapping come back in its preferred form. That happens on lines you never
-touched. The words are yours and stay yours, the punctuation of the markup is
-not always.
+**Saving rewrites what you edited, not what you didn't.** Paragraphs, lists
+and tables you never touched go back to the file exactly as they were. The
+ones you did edit are written out in MarkPad's preferred form, so emphasis
+markers, table padding and line wrapping can change inside them. The words are
+yours and stay yours, the punctuation of the markup is not always.
 
 **There is no vault.** No database, no account, no sync, no telemetry. Files
 you make here are plain `.md` files in a folder you chose. Delete MarkPad and

@@ -1,0 +1,25 @@
+/* Popovers. Values come from ../ui/tokens.css. */
+
+/* Popovers
+   ------------------------------------------------------------------------ */
+
+.cm-tooltip.cm-tooltip-hover {
+  border: 1px solid var(--rule);
+  border-radius: var(--radius-panel);
+  background: var(--sheet);
+  box-shadow: var(--shadow-popover);
+  overflow: hidden;
+}
+
+.popover {
+  max-width: 34rem;
+  max-height: 22rem;
+  overflow: auto;
+  padding: 12px 14px;
+  font-family: var(--font-ui);
+  font-size: 12px;
+}
+
+.popover.markpad-document {
+  margin: 0;
+}

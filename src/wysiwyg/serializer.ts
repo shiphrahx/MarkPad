@@ -211,11 +211,15 @@ const marks = {
     expelEnclosingWhitespace: true,
   },
   link: {
+    // `open` is handed the index of the first node inside the link, `close`
+    // the index of the first node after it. They used to share one guess at
+    // which node was the link, which was wrong for open whenever the link
+    // wasn't first in its paragraph: `[https://example.com>`.
     open(_state: MarkdownSerializerState, _mark: unknown, parent: ProseNode, index: number) {
-      return isPlainAutolink(parent, index) ? '<' : '['
+      return isPlainAutolink(parent.child(index)) ? '<' : '['
     },
-    close(state: MarkdownSerializerState, mark: { attrs: Record<string, unknown> }, parent: ProseNode, index: number) {
-      if (isPlainAutolink(parent, index)) return '>'
+    close(_state: MarkdownSerializerState, mark: { attrs: Record<string, unknown> }, parent: ProseNode, index: number) {
+      if (isPlainAutolink(parent.child(index - 1))) return '>'
 
       const href = String(mark.attrs.href ?? '').replace(/[()"]/g, '\\$&')
       const title = mark.attrs.title
@@ -241,8 +245,7 @@ const marks = {
  * when the link text is the URL. Both render identically; only one is
  * readable, and it is the one people actually type.
  */
-function isPlainAutolink(parent: ProseNode, index: number): boolean {
-  const node = parent.child(Math.max(0, index === 0 ? 0 : index - 1))
+function isPlainAutolink(node: ProseNode): boolean {
   const link = node.marks.find((mark) => mark.type.name === 'link')
   return link !== undefined && node.isText && node.text === link.attrs.href
 }

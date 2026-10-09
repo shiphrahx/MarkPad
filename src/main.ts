@@ -4,9 +4,12 @@ import { TauriHost } from './host/tauri.js'
 import { resetDiagramTheme } from './preview/draw.js'
 import { apply as applyTheme, onThemeChange, watchSystemTheme } from './ui/theme.js'
 import { applyZoom, onZoomChange } from './ui/zoom.js'
+import { apply as applyWriting, onWritingChange } from './ui/writing.js'
 import { installMenus } from './ui/menus.js'
 import { applyNativeChrome } from './ui/native-chrome.js'
 import { DOCUMENT_CSS } from './preview/document-css.js'
+import { checkForUpdate } from './app/updates.js'
+import { version } from '../package.json'
 
 const root = document.querySelector<HTMLDivElement>('#app')
 if (!root) throw new Error('MarkPad could not find its root element.')
@@ -15,6 +18,7 @@ if (!root) throw new Error('MarkPad could not find its root element.')
 // the way to the right ones, or the wrong size on the way to the right one.
 applyTheme()
 applyZoom()
+applyWriting()
 
 // The preview pane and the popovers both render Markdown, so the document
 // styles have to exist in the app as well as inside an exported file.
@@ -39,8 +43,21 @@ void start()
 async function start(): Promise<void> {
   applyNativeChrome()
   await Promise.allSettled([guardTheClose(), openStartupFiles(), followCommandState()])
-  listenForDroppedFiles()
   followSystemTheme()
+  addEventListener('focus', () => void app.catchUpWithDisk())
+  lookForUpdates()
+}
+
+/**
+ * The one network request. Left until well after launch, so it never sits
+ * between opening the app and typing, and never at all if it is turned off.
+ */
+function lookForUpdates(): void {
+  setTimeout(() => {
+    void checkForUpdate(version).then((update) => {
+      if (update) app.showUpdate(update)
+    })
+  }, 10_000)
 }
 
 /**
@@ -92,39 +109,29 @@ async function followCommandState(): Promise<void> {
   app.onStateChange(refresh)
   onThemeChange(refresh)
   onZoomChange(refresh)
+  onWritingChange(refresh)
 }
 
 /**
- * Last time's tabs, plus whatever was double-clicked to get here.
+ * Last time's tabs, plus whatever was double-clicked to get here, plus
+ * anything that arrives while the app is running.
  *
  * Both, rather than one or the other: opening a file should add to what you
  * had, not replace it.
+ *
+ * Every file from outside the window comes through the one `open-files`
+ * event: a drop, and the files Rust held on to because they turned up before
+ * this page was listening. So the listener goes in first, and asking for the
+ * startup files is what tells Rust it can stop holding them.
  */
 async function openStartupFiles(): Promise<void> {
   const { invoke } = await import('@tauri-apps/api/core')
+  const { listen } = await import('@tauri-apps/api/event')
+
+  await listen<string[]>('open-files', (event) => void app.openFiles(event.payload))
+
   const paths = await invoke<string[]>('startup_files')
   await app.start(paths)
-}
-
-/**
- * Files dragged onto the window.
- *
- * Tauri reports the drop on the window rather than through a DOM event,
- * because the WebView never sees a file that came from the desktop.
- */
-function listenForDroppedFiles(): void {
-  void import('@tauri-apps/api/webview').then(({ getCurrentWebview }) => {
-    void getCurrentWebview().onDragDropEvent((event) => {
-      if (event.payload.type !== 'drop') return
-
-      const markdown = event.payload.paths.filter(looksLikeText)
-      if (markdown.length > 0) void app.openFiles(markdown)
-    })
-  })
-}
-
-function looksLikeText(path: string): boolean {
-  return /\.(md|markdown|mdown|mkd|txt)$/i.test(path)
 }
 
 /**

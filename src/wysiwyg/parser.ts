@@ -1,4 +1,7 @@
 import { MarkdownParser } from 'prosemirror-markdown'
+import type MarkdownIt from 'markdown-it'
+import type Token from 'markdown-it/lib/token.mjs'
+import type { Node as ProseNode } from 'prosemirror-model'
 import { createMarkdown, HTML_BLOCK_TOKEN } from '../markdown/markdown.js'
 import { markpadSchema } from './schema.js'
 
@@ -11,7 +14,31 @@ import { markpadSchema } from './schema.js'
  */
 const markdownIt = createMarkdown()
 
-export const markdownParser = new MarkdownParser(markpadSchema, markdownIt, {
+/**
+ * The tokens from the most recent parse.
+ *
+ * prosemirror-markdown tokenises and builds the document in one call and
+ * throws the tokens away. They know which lines of the file each block came
+ * from, which is what writing untouched blocks back exactly needs, so the
+ * tokenizer it is handed keeps hold of them. Tokenising twice would cost the
+ * same again on a 10 MB file.
+ */
+let lastTokens: Token[] = []
+
+const tokenizer = {
+  parse(text: string, env: object): Token[] {
+    lastTokens = markdownIt.parse(text, env)
+    return lastTokens
+  },
+} as unknown as MarkdownIt
+
+/** A document and the tokens it was built from. */
+export function parseWithTokens(markdown: string): { doc: ProseNode; tokens: Token[] } {
+  const doc = markdownParser.parse(markdown)
+  return { doc, tokens: lastTokens }
+}
+
+export const markdownParser = new MarkdownParser(markpadSchema, tokenizer, {
   blockquote: { block: 'blockquote' },
   paragraph: { block: 'paragraph' },
   list_item: {

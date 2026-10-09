@@ -138,3 +138,37 @@ function insertTable(): Command {
     return true
   }
 }
+
+/**
+ * Make the selection a link to `href`, or change the address of the link it
+ * is in.
+ *
+ * With nothing selected there is no text to make into a link, so the address
+ * becomes the text as well. That is what a person means when they paste a URL
+ * into an empty line.
+ */
+export function setLink(href: string): Command {
+  const mark = schema.marks.link!
+
+  return (state, dispatch) => {
+    const { from, to, empty } = state.selection
+    if (!dispatch) return true
+
+    dispatch(
+      empty
+        ? state.tr.replaceSelectionWith(
+            state.schema.text(href, [mark.create({ href, title: null })]),
+            false,
+          )
+        : state.tr.addMark(from, to, mark.create({ href, title: null })),
+    )
+    return true
+  }
+}
+
+/** Take the link off the selection, leaving its text. */
+export const removeLink: Command = (state, dispatch) => {
+  const { from, to } = state.selection
+  if (dispatch) dispatch(state.tr.removeMark(from, to, schema.marks.link!))
+  return true
+}

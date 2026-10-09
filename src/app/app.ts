@@ -9,7 +9,7 @@ import { StatusBar } from '../ui/statusbar.js'
 import { OutlineRail } from '../ui/outline-rail.js'
 import { CommandPalette } from '../ui/palette.js'
 import { PreviewPane } from '../ui/preview-pane.js'
-import { askAboutUnsavedChanges } from '../ui/unsaved-dialog.js'
+import { askAboutUnsavedChanges, askWhichVersion } from '../ui/unsaved-dialog.js'
 import {
   matchesParsed,
   parseShortcut,
@@ -17,22 +17,18 @@ import {
 } from '../commands/keys.js'
 import { shortcutFor, type Command } from '../commands/types.js'
 import { countWords } from './stats.js'
-import { isDirty, title as titleOf, type Buffer } from './buffer.js'
+import { fileName, isDirty, title as titleOf, type Buffer } from './buffer.js'
 import { extractHeadings, type Heading } from './outline.js'
 import { directoryOf, resolveImage } from './images.js'
-import { Workspace } from './workspace.js'
-import {
-  isFirstLaunch,
-  loadSession,
-  rememberLaunch,
-  saveSession,
-  signatureOf,
-  type Session,
-} from './session.js'
+import { ChangedOnDisk, Workspace } from './workspace.js'
+import { followLinks } from './links.js'
+import type { Update } from './updates.js'
+import { isFirstLaunch, rememberLaunch } from './session.js'
+import { SessionKeeper } from './session-keeper.js'
 import WELCOME from '../welcome.md?raw'
 import { buildCommands } from '../commands/build.js'
 import { ReaderEditor } from '../wysiwyg/editor.js'
-import { markpadSchema } from '../wysiwyg/schema.js'
+import { removeLink, setLink } from '../wysiwyg/format.js'
 import { askForText } from '../ui/prompt-dialog.js'
 import type { Command as ProseCommand } from 'prosemirror-state'
 import type { EditorState as ProseState } from 'prosemirror-state'
@@ -60,6 +56,17 @@ const IDLE_MS = 100
  * Markdown you cannot inspect is worse than one that does not generate it.
  */
 export type Mode = 'reader' | 'source'
+
+/**
+ * Above this many characters a file opens in source view.
+ *
+ * Reader mode lays out every block of the document as real DOM, with no
+ * virtualisation, and the budget is a 10 MB file open in under a second.
+ * CodeMirror only draws what is on screen and meets that easily. Reader mode
+ * does not, so a big file gets the surface that can open it, and reader mode
+ * is still one command away for anybody who wants to wait.
+ */
+export const LARGE_FILE_CHARACTERS = 2_000_000
 
 /**
  * The app: the workspace, the editor and the chrome, wired together.
@@ -118,14 +125,15 @@ export class App {
    * whole file exists to avoid.
    */
   private syncedText: string | null = null
-  /** Last session written to storage, so an unchanged one is not rewritten. */
-  private sessionSignature = ''
+  /** The session file: last time's tabs and the recent files. */
+  private readonly session: SessionKeeper
 
   constructor(
     readonly host: Host,
     root: HTMLElement,
   ) {
     this.workspace = new Workspace(host)
+    this.session = new SessionKeeper(host, this.workspace)
 
     this.tabs = new TabStrip({
       onFocus: (id) => this.focusTab(id),
@@ -142,6 +150,7 @@ export class App {
         const active = this.workspace.active
         if (active) this.workspace.setEncoding(active.id, encoding)
       },
+      onOpenUpdate: (update) => void this.openLink(update.url),
     })
 
     this.rail = new OutlineRail((heading, index) => this.goToHeading(heading, index))
@@ -153,6 +162,7 @@ export class App {
       onChange: () => this.onSurfaceEdited(),
       onLink: () => void this.addLink(),
       imageUrl: (src) => this.imageUrl(src),
+      onPasteImage: (file) => this.pasteImage(file),
     })
 
     const sourceHolder = el('div', { class: 'editor', hidden: true })
@@ -193,9 +203,10 @@ export class App {
 
     this.workspace.subscribe(() => {
       this.render()
-      this.rememberSession()
+      this.session.remember()
     })
     document.addEventListener('keydown', (event) => this.onKeyDown(event), true)
+    followLinks(root, (href) => void this.openLink(href))
 
     // Nothing in the editor is worth losing to a window closing, and the
     // last tenth of a second of typing lives only in CodeMirror until this
@@ -220,59 +231,12 @@ export class App {
     const first = isFirstLaunch()
     rememberLaunch()
 
-    await this.restoreSession()
+    await this.session.restore()
     if (commandLineFiles.length > 0) await this.openFiles(commandLineFiles)
     if (this.workspace.tabs.length > 0) return
 
     if (first) this.workspace.create({ text: WELCOME, name: 'Welcome' })
     else this.workspace.create()
-  }
-
-  /**
-   * Reopen last time's files.
-   *
-   * One at a time, because a file that has been deleted or renamed since must
-   * not stop the rest from opening. A missing file is dropped quietly: you
-   * already know you deleted it, and a dialog at every launch until you
-   * happen to open something else would be its own kind of rude.
-   */
-  private async restoreSession(): Promise<void> {
-    const session = loadSession()
-    if (session.paths.length === 0) return
-
-    const opened: string[] = []
-    for (const path of session.paths) {
-      try {
-        await this.workspace.open([path])
-        opened.push(path)
-      } catch {
-        continue
-      }
-    }
-
-    const wanted = session.paths[session.active]
-    const target = this.workspace.tabs.find((buffer) => buffer.path === wanted)
-    if (target) this.workspace.focus(target.id)
-    else if (opened.length > 0) this.workspace.focus(this.workspace.tabs[0]!.id)
-  }
-
-  /** Remember the open files, if which files are open has actually changed. */
-  private rememberSession(): void {
-    const paths = this.workspace.tabs
-      .map((buffer) => buffer.path)
-      .filter((path): path is string => path !== null)
-
-    const activePath = this.workspace.active?.path ?? null
-    const session: Session = {
-      paths,
-      active: activePath === null ? 0 : Math.max(0, paths.indexOf(activePath)),
-    }
-
-    const signature = signatureOf(session)
-    if (signature === this.sessionSignature) return
-
-    this.sessionSignature = signature
-    saveSession(session)
   }
 
   private extensions() {
@@ -433,6 +397,13 @@ export class App {
     if (active.id !== this.currentId) {
       this.rememberState()
 
+      if (this.mode === 'reader' && active.text.length > LARGE_FILE_CHARACTERS) {
+        this.showSurface('source')
+        this.status.note = 'Large file, opened as source'
+      } else {
+        this.status.note = null
+      }
+
       this.applyingExternally = true
       if (this.mode === 'reader') {
         const kept = this.readerStates.get(active.id)
@@ -489,7 +460,20 @@ export class App {
 
   openPalette(): void {
     this.flush()
-    this.palette.open(this.commands)
+    this.palette.open([...this.commands, ...this.recentCommands()])
+  }
+
+  /**
+   * One palette entry per recent file that is not already open. Built when
+   * the palette opens, since the list changes as files come and go.
+   */
+  private recentCommands(): Command[] {
+    return this.session.recentClosed().map((path, index) => ({
+      id: `file.recent.${index}`,
+      title: `Open recent: ${fileName(path)} in ${directoryOf(path) ?? 'its folder'}`,
+      category: 'File' as const,
+      run: () => this.openFiles([path]),
+    }))
   }
 
   togglePreview(): void {
@@ -572,38 +556,7 @@ export class App {
       return
     }
 
-    const mark = markpadSchema.marks.link!
-    if (href === '') {
-      this.reader.run((state, dispatch) => {
-        const { from, to } = state.selection
-        if (dispatch) dispatch(state.tr.removeMark(from, to, mark))
-        return true
-      })
-      return
-    }
-
-    this.reader.run((state, dispatch) => {
-      const { from, to, empty } = state.selection
-      // With nothing selected there is no text to make into a link, so the
-      // address becomes the text as well. That is what a person means when
-      // they paste a URL into an empty line.
-      if (empty) {
-        if (dispatch) {
-          dispatch(
-            state.tr.replaceSelectionWith(
-              state.schema.text(href, [mark.create({ href, title: null })]),
-              false,
-            ),
-          )
-        }
-        return true
-      }
-
-      if (dispatch) {
-        dispatch(state.tr.addMark(from, to, mark.create({ href, title: null })))
-      }
-      return true
-    })
+    this.reader.run(href === '' ? removeLink : setLink(href))
   }
 
   /**
@@ -616,13 +569,17 @@ export class App {
     this.flush()
 
     const active = this.workspace.active
-    this.mode = this.mode === 'reader' ? 'source' : 'reader'
-
-    this.sourceHolder.hidden = this.mode !== 'source'
-    this.reader.element.hidden = this.mode !== 'reader'
+    this.showSurface(this.mode === 'reader' ? 'source' : 'reader')
+    this.status.note = null
 
     if (active) this.loadIntoSurface(active.text)
     this.renderCaretParts()
+  }
+
+  private showSurface(mode: Mode): void {
+    this.mode = mode
+    this.sourceHolder.hidden = mode !== 'source'
+    this.reader.element.hidden = mode !== 'reader'
   }
 
   /**
@@ -654,14 +611,63 @@ export class App {
     this.view.focus()
   }
 
-  /** Save, telling the user plainly if the file could not be written. */
-  async save(id: string): Promise<boolean> {
+  /**
+   * Save, telling the user plainly if the file could not be written, and
+   * asking which version wins if something else changed it in the meantime.
+   */
+  async save(id: string, { overwrite = false } = {}): Promise<boolean> {
     this.flush()
     try {
-      return await this.workspace.save(id)
+      return await this.workspace.save(id, { overwrite })
     } catch (error) {
+      if (error instanceof ChangedOnDisk) return this.settleConflict(id, error.path)
       await this.host.report(describe(error))
       return false
+    }
+  }
+
+  private async settleConflict(id: string, path: string): Promise<boolean> {
+    const answer = await askWhichVersion(fileName(path))
+
+    if (answer === 'mine') return this.save(id, { overwrite: true })
+    if (answer === 'theirs') await this.reload(id)
+    return false
+  }
+
+  /**
+   * Catch up with files changed while the window was in the background.
+   *
+   * A tab with no unsaved work just takes the new version, the way every
+   * editor does after a `git pull`. A tab with unsaved work is left alone:
+   * there are two versions now, and the next save asks which one wins.
+   */
+  async catchUpWithDisk(): Promise<void> {
+    this.flush()
+
+    for (const buffer of [...this.workspace.tabs]) {
+      if (buffer.path === null || buffer.modified === null || isDirty(buffer)) continue
+
+      let now: number | null
+      try {
+        now = await this.host.modifiedTime(buffer.path)
+      } catch {
+        continue
+      }
+
+      if (now !== null && now !== buffer.modified) await this.reload(buffer.id)
+    }
+  }
+
+  /** Replace a buffer with what is on disk now. */
+  async reload(id: string): Promise<void> {
+    try {
+      await this.workspace.reload(id)
+      // The kept editor states hold the old document, undo history and all.
+      // Restoring one on the next tab switch would put the old text back.
+      this.states.delete(id)
+      this.readerStates.delete(id)
+    } catch (error) {
+      await this.host.report(describe(error))
     }
   }
 
@@ -679,7 +685,6 @@ export class App {
     this.flush()
     try {
       await this.workspace.open(paths)
-      await this.letImagesLoad(paths)
     } catch (error) {
       await this.host.report(describe(error))
     }
@@ -688,26 +693,10 @@ export class App {
   async openWithDialog(): Promise<void> {
     this.flush()
     try {
-      const before = new Set(this.workspace.tabs.map((buffer) => buffer.path))
       await this.workspace.openWithDialog()
-
-      const opened = this.workspace.tabs
-        .map((buffer) => buffer.path)
-        .filter((path): path is string => path !== null && !before.has(path))
-
-      await this.letImagesLoad(opened)
     } catch (error) {
       await this.host.report(describe(error))
     }
-  }
-
-  /** Let the window read the pictures sitting beside the files just opened. */
-  private async letImagesLoad(paths: readonly string[]): Promise<void> {
-    const folders = new Set(
-      paths.map((path) => directoryOf(path)).filter((folder): folder is string => folder !== null),
-    )
-
-    await Promise.all([...folders].map((folder) => this.allowImagesBeside(folder)))
   }
 
   /**
@@ -771,21 +760,42 @@ export class App {
    */
   imageUrl(src: string): string | null {
     const resolved = resolveImage(src, directoryOf(this.workspace.active?.path ?? null))
-    return resolved === null ? null : this.host.assetUrl(resolved)
+    return resolved === null ? null : this.host.imageUrl(resolved)
+  }
+
+  /** Say in the status bar that a newer version is out. */
+  showUpdate(update: Update): void {
+    this.status.update = update
+    this.renderCaretParts()
   }
 
   /**
-   * Let the window read pictures out of a folder we have just opened a file
-   * from.
+   * Save a pasted picture beside the open document and return the link to it.
    *
-   * Best effort. A document that shows no images is the failure here, and that
-   * is not worth refusing to open the file over.
+   * A document that has never been saved has no folder, so there is nowhere
+   * to put the picture. That gets said rather than guessed at.
    */
-  private async allowImagesBeside(directory: string): Promise<void> {
+  async pasteImage(file: Blob): Promise<string | null> {
+    const path = this.workspace.active?.path ?? null
+    if (path === null) {
+      await this.host.report('Save the document first, so the picture has a folder to go in.')
+      return null
+    }
+
     try {
-      await this.host.allowImagesIn(directory)
-    } catch {
-      // Nothing to tell the user that they could act on.
+      return await this.host.savePastedImage(path, new Uint8Array(await file.arrayBuffer()))
+    } catch (error) {
+      await this.host.report(describe(error))
+      return null
+    }
+  }
+
+  /** Open a link from the document outside the app, or say why not. */
+  async openLink(href: string): Promise<void> {
+    try {
+      await this.host.openLink(href)
+    } catch (error) {
+      await this.host.report(describe(error))
     }
   }
 

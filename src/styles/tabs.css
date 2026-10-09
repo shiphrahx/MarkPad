@@ -1,0 +1,135 @@
+/* The tab strip. Values come from ../ui/tokens.css. */
+
+/* Tabs
+   ------------------------------------------------------------------------ */
+
+.tabs {
+  display: flex;
+  align-items: flex-end;
+  gap: var(--gap-tabs);
+  padding: var(--pad-tabs);
+  background: var(--chrome);
+  border-bottom: 1px solid var(--rule);
+  overflow-x: auto;
+  overflow-y: hidden;
+  scrollbar-width: none;
+  /* Room for the traffic lights, which sit over the window on macOS. */
+  padding-left: var(--chrome-inset, 8px);
+}
+
+.tabs::-webkit-scrollbar {
+  display: none;
+}
+
+.tab {
+  display: flex;
+  align-items: center;
+  gap: var(--gap-tab);
+  padding: var(--pad-tab);
+  max-width: 15rem;
+  font-size: var(--size-tab);
+  color: var(--muted);
+  background: transparent;
+  border-radius: var(--radius-tab) var(--radius-tab) 0 0;
+  white-space: nowrap;
+  user-select: none;
+}
+
+/*
+ * The active tab wears the editor's own background, so the two read as one
+ * surface rather than as a strip sitting on top of a page.
+ */
+.tab-active {
+  background: var(--sheet);
+  color: var(--ink);
+  font-weight: 500;
+  box-shadow: 0 1px 0 var(--sheet);
+}
+
+.tab-label {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  cursor: default;
+}
+
+/*
+ * One slot, two things in it. The dot says there is unsaved work; the cross
+ * takes its place on hover, so the tab never changes width and there is only
+ * ever one thing to aim at.
+ */
+.tab-close {
+  appearance: none;
+  border: 0;
+  background: none;
+  color: var(--mark);
+  font: inherit;
+  line-height: 1;
+  cursor: default;
+  border-radius: var(--radius-code);
+  width: 16px;
+  height: 16px;
+  display: grid;
+  place-items: center;
+  flex: none;
+  opacity: 0;
+}
+
+.tab-close::before {
+  content: '×';
+  font-size: 14px;
+}
+
+.tab:hover .tab-close,
+.tab-active .tab-close:focus-visible {
+  opacity: 1;
+}
+
+.tab-close:hover {
+  background: var(--hover);
+  color: var(--ink);
+}
+
+.tab-dot {
+  width: var(--dot);
+  height: var(--dot);
+  border-radius: 50%;
+  background: var(--accent);
+  flex: none;
+}
+
+/* The dot gives way to the cross rather than sitting beside it. */
+.tab:hover .tab-dot {
+  display: none;
+}
+
+.tab:not(.tab-dirty) .tab-dot {
+  display: none;
+}
+
+.tab-dirty:not(:hover) .tab-close {
+  display: none;
+}
+
+.tab-new {
+  appearance: none;
+  border: 0;
+  background: none;
+  color: var(--mark);
+  font-family: var(--font-mono);
+  font-size: 14px;
+  line-height: 1;
+  cursor: default;
+  align-self: center;
+  margin: 0 4px 4px;
+  width: 22px;
+  height: 22px;
+  border-radius: var(--radius-code);
+  display: grid;
+  place-items: center;
+  flex: none;
+}
+
+.tab-new:hover {
+  background: var(--hover);
+  color: var(--ink);
+}

@@ -34,7 +34,9 @@ Grab your file from [the latest release](https://github.com/shiphrahx/MarkPad/re
   Not sure which? Apple menu, then About This Mac. Open the dmg, drag MarkPad into
   Applications.
 - **Windows** 🪟 download the `-setup.exe` and run it. Installs for the current user,
-  so no admin prompt.
+  so no admin prompt. Not allowed to install anything? The `-portable.exe` is the
+  same app as one file that runs where it is. It still keeps its settings in your
+  user folder, and it needs WebView2, which Windows 10 and 11 normally have.
 - **Linux** 🐧 the `.deb` on Debian 12 or Ubuntu 22.04 and later, the `.rpm` on Fedora.
   Either one pulls in WebKitGTK if you haven't got it.
 
@@ -44,6 +46,13 @@ Linux just installs, but macOS and Windows need one extra step on first launch:
 - **macOS:** right-click the app, choose **Open**, then **Open** again.
 - **Windows:** SmartScreen flags an unrecognised publisher. Click **More info**, then
   **Run anyway**.
+
+Every installer has a `.sha256` beside it on the release, and a build attestation, so
+you can check the file is the one GitHub Actions built:
+
+```bash
+gh attestation verify MarkPad_0.1.5_x64-setup.exe --repo shiphrahx/MarkPad
+```
 
 Stuck on a message about a damaged app or a blocked installer?
 [Troubleshooting](https://shiphrahx.github.io/MarkPad/troubleshooting.html) has the
@@ -60,12 +69,19 @@ exact wording and the fix.
 - Light and dark, following your system setting
 - Detects CRLF or LF on open and keeps it on save, which matters when files move
   between Windows, Mac and Linux
+- Saves the lines you didn't touch exactly as they were, so a one-word fix is a
+  one-line diff
+- Notices when another program changes an open file, and asks before saving over it
+- Pictures next to the file, in a subfolder or a folder above all show up
+- Links open in your browser with Ctrl+click (⌘-click on a Mac)
 
 ![Exporting a Markdown file from MarkPad](./docs/markpad-export.gif)
 
 ## What it doesn't do
 
 - No accounts, no sync, no telemetry
+- One network request: a once-a-day check for a newer version, with no ID in it.
+  Turn it off from the command palette and there are none
 - No tags, backlinks or graph view
 - No Markdown syntax that only works here
 - No bundled Chromium. It uses the WebView already on your machine, which is how the
@@ -73,12 +89,6 @@ exact wording and the fix.
 
 Your files are ordinary files in ordinary folders. Uninstall MarkPad and they still
 open in everything else.
-
-## Coming next
-
-- **A portable Windows build.** One `.exe` you can drop on a USB stick or run on a
-  machine you're not allowed to install anything on. Nothing to install, nothing left
-  behind.
 
 Try it and [open an issue](https://github.com/shiphrahx/MarkPad/issues) when something
 annoys you. That's what shapes the next version.
@@ -106,8 +116,9 @@ cd src-tauri && cargo test
 Tauri v2 for the shell, CodeMirror 6 for the editor, TypeScript and hand-written CSS
 for the chrome. No UI framework.
 
-- Hard size and speed budgets live in [`CLAUDE.md`](./CLAUDE.md) and CI enforces them.
-  If a change breaks one, the change is wrong and not the budget.
+- Hard size and speed budgets live in [`CLAUDE.md`](./CLAUDE.md). CI enforces the
+  installer size and benchmarks the rest. If a change breaks one, the change is wrong
+  and not the budget.
 - Design decisions live in [`docs/decisions/`](./docs/decisions). Worth reading before
   suggesting an architectural change.
 - Owes a lot to [MarkEdit](https://github.com/MarkEdit-app/MarkEdit), which is excellent

@@ -1,5 +1,5 @@
 import { beforeEach, describe, expect, it } from 'vitest'
-import { isDirty, newBuffer, resetBufferIds, title } from '../../src/app/buffer.js'
+import { fileName, isDirty, newBuffer, resetBufferIds, title } from '../../src/app/buffer.js'
 
 describe('newBuffer', () => {
   beforeEach(() => {
@@ -45,5 +45,19 @@ describe('newBuffer', () => {
     const buffer = newBuffer('macos', { text: '£10\n', name: 'Welcome' })
 
     expect(buffer.byteLength).toBe(5)
+  })
+})
+
+describe('fileName', () => {
+  /**
+   * Windows hands back paths with backslashes. Splitting on forward slashes
+   * alone turned `C:\notes\today.md` into a tab called `C:\notes\today.md`.
+   */
+  it('takes the name off a Windows path', () => {
+    expect(fileName('C:\\notes\\today.md')).toBe('today.md')
+  })
+
+  it('takes the name off a Unix path', () => {
+    expect(fileName('/home/me/today.md')).toBe('today.md')
   })
 })

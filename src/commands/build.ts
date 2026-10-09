@@ -1,6 +1,7 @@
 import type { App } from '../app/app.js'
 import { isDirty } from '../app/buffer.js'
 import { exportHtml, exportPdf } from '../export/export.js'
+import { clipboardHtml, copyRich } from '../export/clipboard.js'
 import { currentTheme, setTheme, THEMES, themeLabel } from '../ui/theme.js'
 import {
   canZoomIn,
@@ -13,6 +14,8 @@ import {
   zoomOut,
 } from '../ui/zoom.js'
 import { FORMAT_ACTIONS } from '../wysiwyg/format.js'
+import { setUpdateChecks, updateChecksEnabled } from '../app/updates.js'
+import { focusMode, setFocusMode, setSpellCheck, spellCheck } from '../ui/writing.js'
 import type { Command } from './types.js'
 
 /**
@@ -103,6 +106,22 @@ export function buildCommands(app: App): Command[] {
       run: async () => {
         const buffer = active()
         if (buffer) await exportPdf(buffer)
+      },
+    },
+    {
+      // Synchronous on purpose: the copy has to happen inside the keypress
+      // or click that asked for it, or the webview refuses it.
+      id: 'edit.copyFormatted',
+      title: 'Copy document as formatted text',
+      category: 'Edit',
+      enabled: hasFile,
+      run: () => {
+        app.flush()
+        const buffer = active()
+        if (!buffer) return
+        if (!copyRich(clipboardHtml(buffer.text), buffer.text)) {
+          void app.host.report('The document could not be copied. Try again, or export it as HTML.')
+        }
       },
     },
     {
@@ -214,6 +233,35 @@ export function buildCommands(app: App): Command[] {
       enabled: () => currentTheme() !== theme,
       run: () => setTheme(theme),
     })),
+    // Pairs that say what they do, like the themes.
+    {
+      id: 'view.focusOn',
+      title: 'Turn on focus mode',
+      category: 'View',
+      enabled: () => !focusMode(),
+      run: () => setFocusMode(true),
+    },
+    {
+      id: 'view.focusOff',
+      title: 'Turn off focus mode',
+      category: 'View',
+      enabled: focusMode,
+      run: () => setFocusMode(false),
+    },
+    {
+      id: 'view.spellingOff',
+      title: 'Turn off spell check',
+      category: 'View',
+      enabled: spellCheck,
+      run: () => setSpellCheck(false),
+    },
+    {
+      id: 'view.spellingOn',
+      title: 'Turn on spell check',
+      category: 'View',
+      enabled: () => !spellCheck(),
+      run: () => setSpellCheck(true),
+    },
     {
       id: 'go.nextTab',
       title: 'Next tab',
@@ -238,6 +286,22 @@ export function buildCommands(app: App): Command[] {
       category: 'Go',
       key: 'Escape',
       run: () => app.focusEditor(),
+    },
+    // Two commands that say what they do, like the themes, rather than one
+    // toggle you have to run to find out which way it went.
+    {
+      id: 'help.updatesOff',
+      title: 'Turn off update checks',
+      category: 'Help',
+      enabled: updateChecksEnabled,
+      run: () => setUpdateChecks(false),
+    },
+    {
+      id: 'help.updatesOn',
+      title: 'Turn on update checks',
+      category: 'Help',
+      enabled: () => !updateChecksEnabled(),
+      run: () => setUpdateChecks(true),
     },
     {
       id: 'file.saveAll',

@@ -28,6 +28,12 @@ export interface TextDocument {
   readonly encoding: Encoding
   /** Size of the file on disk in bytes, or 0 for an unsaved buffer. */
   readonly byteLength: number
+  /**
+   * When the file was last changed on disk, in milliseconds, or null when
+   * there is no file or the filesystem does not say. Compared later to tell
+   * whether something else has written to it.
+   */
+  readonly modified: number | null
 }
 
 export interface SaveRequest {
@@ -37,8 +43,19 @@ export interface SaveRequest {
   readonly encoding: Encoding
 }
 
+/** Which files were open last time, and which one was in front. */
+export interface Session {
+  readonly paths: readonly string[]
+  /** Index into `paths` of the tab that was in front. */
+  readonly active: number
+  /** Files opened lately, newest first, open or not. */
+  readonly recent: readonly string[]
+}
+
 export interface SaveResult {
   readonly byteLength: number
+  /** The file's modified time after this write. */
+  readonly modified: number | null
 }
 
 /**
@@ -53,6 +70,8 @@ export interface Host {
   readFile(path: string): Promise<TextDocument>
   /** Write a file atomically, preserving encoding and line endings. */
   writeFile(request: SaveRequest): Promise<SaveResult>
+  /** When a file was last changed on disk, or null if it is not there. */
+  modifiedTime(path: string): Promise<number | null>
   /** Native open dialog. Empty array if the user cancelled. */
   pickFilesToOpen(): Promise<readonly string[]>
   /** Native save dialog. Null if the user cancelled. */
@@ -68,14 +87,27 @@ export interface Host {
    */
   requestClose(): Promise<void>
   /**
-   * Let the window load images out of one folder.
-   *
-   * Called with the folder a file was opened from, and nothing else. The
-   * window starts able to read no pictures at all, and a document can only
-   * ever show the ones sitting beside it.
+   * Last time's open files. Unchecked: whatever is stored comes back, and the
+   * caller decides whether it is a session at all.
    */
-  allowImagesIn(directory: string): Promise<void>
-  /** A path on disk, written as something the window can actually load. */
-  assetUrl(path: string): string
+  loadSession(): Promise<unknown>
+  /** Remember the open files for next time. Nothing open or recent forgets them. */
+  saveSession(session: Session): Promise<void>
+  /**
+   * Save a pasted picture into an `images` folder beside a document the user
+   * opened. Resolves to the link to put in the document, relative to it.
+   */
+  savePastedImage(documentPath: string, bytes: Uint8Array): Promise<string>
+  /**
+   * Open a link from a document in the browser or mail client. Only web and
+   * email links; anything else is refused with a message saying so.
+   */
+  openLink(url: string): Promise<void>
+  /**
+   * A picture on disk, written as a URL the window can load.
+   *
+   * Only pictures. The host serves image files and refuses everything else,
+   * so a document can point anywhere and still only ever show you an image.
+   */
+  imageUrl(path: string): string
 }
-

@@ -1,15 +1,14 @@
-import { drawDiagram, drawMath, mathStyles } from '../preview/draw.js'
-import { findInlineMath, render } from '../preview/render.js'
+import { drawDiagram, drawInlineMathIn, drawMath, mathStyles } from '../preview/draw.js'
+import { render } from '../preview/render.js'
 import { resolveImagesIn } from '../app/images.js'
 import { el } from './dom.js'
 
 /**
  * The full preview pane.
  *
- * Exists, ships switched off. MarkPad edits Markdown source, and a permanent
- * rendered half-screen is how a source editor turns into a WYSIWYG one by
- * degrees. It is here because sometimes you do want to check a long document
- * reads properly, and the popovers do not cover that.
+ * Exists, ships switched off. Reader mode already shows the document rendered,
+ * so this is for source view: checking a long document reads properly while
+ * you edit the Markdown itself, which the popovers do not cover.
  *
  * Rendering is debounced and only runs while the pane is visible, so a hidden
  * pane costs nothing per keystroke.
@@ -72,7 +71,7 @@ export class PreviewPane {
     const { html, blocks } = render(text)
     this.body.innerHTML = html
     resolveImagesIn(this.body, this.imageUrl)
-    await this.drawInlineMath()
+    await drawInlineMathIn(this.body)
 
     for (const block of blocks) {
       const holder = this.body.querySelector<HTMLElement>(`[data-block-id="${block.id}"]`)
@@ -88,41 +87,6 @@ export class PreviewPane {
     }
 
     await this.loadStyles()
-  }
-
-  /**
-   * Inline maths runs after the Markdown, over the rendered text nodes, so
-   * `$x$` inside a code span is left alone: the renderer has already told us
-   * which parts of the document are code.
-   */
-  private async drawInlineMath(): Promise<void> {
-    const walker = document.createTreeWalker(this.body, NodeFilter.SHOW_TEXT)
-    const candidates: Text[] = []
-
-    while (walker.nextNode()) {
-      const node = walker.currentNode as Text
-      if (node.parentElement?.closest('code, pre')) continue
-      if (node.data.includes('$')) candidates.push(node)
-    }
-
-    for (const node of candidates) {
-      const found = findInlineMath(node.data)
-      if (found.length === 0) continue
-
-      const fragment = document.createDocumentFragment()
-      let cursor = 0
-
-      for (const item of found) {
-        fragment.append(node.data.slice(cursor, item.from))
-        const span = el('span', { class: item.display ? 'mp-math-display' : 'mp-math' })
-        span.innerHTML = await drawMath(item.source, { display: item.display })
-        fragment.append(span)
-        cursor = item.to
-      }
-
-      fragment.append(node.data.slice(cursor))
-      node.replaceWith(fragment)
-    }
   }
 
   private async loadStyles(): Promise<void> {

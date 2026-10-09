@@ -78,8 +78,8 @@ export function slashMenu() {
   // while it is open.
   return [
     keymap({
-      ArrowDown: (state, dispatch, view) => move(state, view, 1),
-      ArrowUp: (state, dispatch, view) => move(state, view, -1),
+      ArrowDown: (state, _dispatch, view) => move(state, view, 1),
+      ArrowUp: (state, _dispatch, view) => move(state, view, -1),
       Enter: (state, _dispatch, view) => choose(state, view),
       Escape: (state, dispatch) => {
         if (slashMenuKey.getState(state)?.from === null) return false
@@ -160,7 +160,7 @@ class SlashView {
   private readonly dom = el('div', { class: 'slash-menu', hidden: true })
 
   constructor(
-    private readonly view: EditorView,
+    view: EditorView,
     private readonly actions: readonly FormatAction[],
   ) {
     document.body.appendChild(this.dom)

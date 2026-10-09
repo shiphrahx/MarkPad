@@ -28,6 +28,8 @@ describe('survives the round trip unchanged', () => {
     ['inline code', 'Some `code` here.\n'],
     ['a link', 'A [link](https://example.com) here.\n'],
     ['a link with a title', 'A [link](https://example.com "Title") here.\n'],
+    ['a bare link after other words', 'See <https://example.com> here.\n'],
+    ['a bare link at the start', '<https://example.com> is the site.\n'],
     ['an image', '![alt text](image.png)\n'],
     ['a bullet list', '- one\n- two\n- three\n'],
     ['a numbered list', '1. one\n2. two\n3. three\n'],

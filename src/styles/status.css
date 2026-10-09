@@ -1,0 +1,41 @@
+/* The status bar. Values come from ../ui/tokens.css. */
+
+/* Status bar
+   ------------------------------------------------------------------------ */
+
+.status {
+  display: flex;
+  align-items: center;
+  gap: var(--gap-status);
+  padding: var(--pad-status);
+  font-family: var(--font-mono);
+  font-size: var(--size-status);
+  color: var(--muted);
+  background: var(--chrome);
+  border-top: 1px solid var(--rule);
+  user-select: none;
+}
+
+.status-spacer {
+  flex: 1;
+}
+
+.status-button {
+  appearance: none;
+  border: 0;
+  background: none;
+  color: inherit;
+  font: inherit;
+  padding: 2px 5px;
+  border-radius: var(--radius-code);
+  cursor: default;
+}
+
+.status-button:hover {
+  background: var(--hover);
+  color: var(--accent);
+}
+
+.status-update {
+  color: var(--accent);
+}

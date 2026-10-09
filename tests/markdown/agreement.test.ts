@@ -1,3 +1,4 @@
+// @vitest-environment jsdom
 import { describe, expect, it } from 'vitest'
 import { markdownParser } from '../../src/wysiwyg/parser.js'
 import { render } from '../../src/preview/render.js'
@@ -124,5 +125,15 @@ describe('finding drawn fences', () => {
   it('treats math and latex as the same thing', () => {
     expect(render('```math\na\n```\n').blocks[0]?.kind).toBe('math')
     expect(render('```latex\na\n```\n').blocks[0]?.kind).toBe('math')
+  })
+})
+
+describe('source positions', () => {
+  it('are kept on an HTML block, like every other block', async () => {
+    const { createMarkdown, HTML_BLOCK_TOKEN } = await import('../../src/markdown/markdown.js')
+    const tokens = createMarkdown().parse('Intro.\n\n<details>x</details>\n', {})
+    const kept = tokens.find((token) => token.type === HTML_BLOCK_TOKEN)
+
+    expect(kept?.map).toEqual([2, 3])
   })
 })
