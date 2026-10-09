@@ -119,7 +119,7 @@ export class Workspace {
     const path = buffer.path ?? (await this.host.pickPathToSave(suggestedName(buffer)))
     if (path === null) return false
 
-    const { byteLength } = await this.host.writeFile({
+    const { byteLength, modified } = await this.host.writeFile({
       path,
       text: buffer.text,
       lineEnding: buffer.lineEnding,
@@ -131,6 +131,7 @@ export class Workspace {
       path,
       savedText: current.text,
       byteLength,
+      modified,
     }))
     return true
   }

@@ -22,7 +22,10 @@ export class TauriHost implements Host {
   readonly platform: Platform = detectPlatform()
 
   async readFile(path: string): Promise<TextDocument> {
-    const raw = await invoke<string>('read_text_file', { path })
+    const { text: raw, modified } = await invoke<{ text: string; modified: number | null }>(
+      'read_text_file',
+      { path },
+    )
 
     return {
       path,
@@ -30,17 +33,22 @@ export class TauriHost implements Host {
       lineEnding: detectLineEnding(raw),
       encoding: detectEncoding(raw),
       byteLength: new TextEncoder().encode(raw).length,
+      modified,
     }
   }
 
   async writeFile(request: SaveRequest): Promise<SaveResult> {
     const contents = toFileText(request.text, request.lineEnding, request.encoding)
-    const byteLength = await invoke<number>('write_text_file', {
-      path: request.path,
-      contents,
-    })
+    const { bytes, modified } = await invoke<{ bytes: number; modified: number | null }>(
+      'write_text_file',
+      { path: request.path, contents },
+    )
 
-    return { byteLength }
+    return { byteLength: bytes, modified }
+  }
+
+  async modifiedTime(path: string): Promise<number | null> {
+    return invoke<number | null>('file_modified', { path })
   }
 
   /**

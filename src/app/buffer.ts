@@ -22,6 +22,8 @@ export interface Buffer {
   readonly lineEnding: LineEnding
   readonly encoding: Encoding
   readonly byteLength: number
+  /** The file's modified time when it was last read or written by us. */
+  readonly modified: number | null
 }
 
 /** Content a new buffer starts with, when it does not start empty. */
@@ -62,6 +64,7 @@ export function newBuffer(platform: Platform, contents?: Contents): Buffer {
     lineEnding: platform === 'windows' ? 'crlf' : 'lf',
     encoding: 'utf-8',
     byteLength: new TextEncoder().encode(text).length,
+    modified: null,
   }
 }
 
@@ -76,6 +79,7 @@ export function bufferFromDocument(document: TextDocument): Buffer {
     lineEnding: document.lineEnding,
     encoding: document.encoding,
     byteLength: document.byteLength,
+    modified: document.modified,
   }
 }
 

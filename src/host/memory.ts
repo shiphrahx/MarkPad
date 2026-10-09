@@ -18,6 +18,9 @@ import type {
 export class MemoryHost implements Host {
   readonly platform: Platform
   private readonly files = new Map<string, string>()
+  private readonly times = new Map<string, number>()
+  /** A clock that only moves when a file is written. */
+  private clock = 1000
   private nextPick: readonly string[] = []
   private nextSavePath: string | null = null
 
@@ -42,6 +45,20 @@ export class MemoryHost implements Host {
   /** Seed a file, written exactly as the bytes would be on disk. */
   seed(path: string, rawContents: string): void {
     this.files.set(path, rawContents)
+    this.times.set(path, this.tick())
+  }
+
+  /**
+   * Change a file behind the app's back, the way git or another editor
+   * would. Moves its modified time on.
+   */
+  changeOnDisk(path: string, rawContents: string): void {
+    this.seed(path, rawContents)
+  }
+
+  private tick(): number {
+    this.clock += 1
+    return this.clock
   }
 
   /** Read back what a save actually wrote, endings and BOM included. */
@@ -66,13 +83,20 @@ export class MemoryHost implements Host {
       lineEnding: detectLineEnding(raw),
       encoding: detectEncoding(raw),
       byteLength: byteLength(raw),
+      modified: this.times.get(path) ?? null,
     }
   }
 
   async writeFile(request: SaveRequest): Promise<SaveResult> {
     const raw = toFileText(request.text, request.lineEnding, request.encoding)
     this.files.set(request.path, raw)
-    return { byteLength: byteLength(raw) }
+    const modified = this.tick()
+    this.times.set(request.path, modified)
+    return { byteLength: byteLength(raw), modified }
+  }
+
+  async modifiedTime(path: string): Promise<number | null> {
+    return this.times.get(path) ?? null
   }
 
   async pickFilesToOpen(): Promise<readonly string[]> {

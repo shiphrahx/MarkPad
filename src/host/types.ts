@@ -28,6 +28,12 @@ export interface TextDocument {
   readonly encoding: Encoding
   /** Size of the file on disk in bytes, or 0 for an unsaved buffer. */
   readonly byteLength: number
+  /**
+   * When the file was last changed on disk, in milliseconds, or null when
+   * there is no file or the filesystem does not say. Compared later to tell
+   * whether something else has written to it.
+   */
+  readonly modified: number | null
 }
 
 export interface SaveRequest {
@@ -46,6 +52,8 @@ export interface Session {
 
 export interface SaveResult {
   readonly byteLength: number
+  /** The file's modified time after this write. */
+  readonly modified: number | null
 }
 
 /**
@@ -60,6 +68,8 @@ export interface Host {
   readFile(path: string): Promise<TextDocument>
   /** Write a file atomically, preserving encoding and line endings. */
   writeFile(request: SaveRequest): Promise<SaveResult>
+  /** When a file was last changed on disk, or null if it is not there. */
+  modifiedTime(path: string): Promise<number | null>
   /** Native open dialog. Empty array if the user cancelled. */
   pickFilesToOpen(): Promise<readonly string[]>
   /** Native save dialog. Null if the user cancelled. */

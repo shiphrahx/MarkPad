@@ -53,6 +53,19 @@ impl serde::Serialize for FileError {
     }
 }
 
+/// When a file was last changed, in milliseconds since the Unix epoch, or
+/// None when it is missing or the filesystem does not say.
+///
+/// The editor keeps this from when it opened a file, and compares before
+/// saving and when the window regains focus. A different answer means
+/// something else wrote to the file in between: git, a sync client, another
+/// editor.
+pub fn modified(path: &Path) -> Option<u64> {
+    let time = fs::metadata(path).ok()?.modified().ok()?;
+    let since = time.duration_since(std::time::UNIX_EPOCH).ok()?;
+    u64::try_from(since.as_millis()).ok()
+}
+
 /// Read a file as text, byte order mark and line endings untouched.
 pub fn read_text(path: &Path) -> Result<String, FileError> {
     let bytes = fs::read(path).map_err(|source| FileError::Read {
@@ -567,6 +580,16 @@ mod tests {
             .map(|entry| entry.unwrap().file_name().to_string_lossy().into_owned())
             .collect();
         assert_eq!(left, vec!["notes.md".to_owned()]);
+    }
+
+    #[test]
+    fn knows_when_a_file_changed() {
+        let directory = tempfile::tempdir().unwrap();
+        let path = directory.path().join("notes.md");
+        fs::write(&path, "one").unwrap();
+
+        assert!(modified(&path).is_some());
+        assert_eq!(modified(&directory.path().join("missing.md")), None);
     }
 
     #[test]

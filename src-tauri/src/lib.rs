@@ -16,15 +16,43 @@ use tauri::Manager;
 use access::Access;
 pub use files::FileError;
 
+/// A file's contents and when it was last changed.
+#[derive(serde::Serialize)]
+struct TextFile {
+    text: String,
+    modified: Option<u64>,
+}
+
+/// What a save wrote: the size, for the status bar, and the new modified time,
+/// so the next save can tell whether anything else has touched the file since.
+#[derive(serde::Serialize)]
+struct Written {
+    bytes: u64,
+    modified: Option<u64>,
+}
+
 /// Read a file as text. The byte order mark and the line endings come back
 /// exactly as they were on disk; the editor decides what to do with them.
 ///
 /// Only a file the user gave the app. See `access.rs`.
 #[tauri::command]
-fn read_text_file(access: tauri::State<'_, Access>, path: String) -> Result<String, FileError> {
+fn read_text_file(access: tauri::State<'_, Access>, path: String) -> Result<TextFile, FileError> {
     let path = PathBuf::from(path);
     allowed(&access, &path)?;
-    files::read_text(&path)
+    // Taken first. If the file changes between the two, the editor sees an
+    // older time than the contents deserve and asks once too often, which is
+    // the safe direction to be wrong in.
+    let modified = files::modified(&path);
+    let text = files::read_text(&path)?;
+    Ok(TextFile { text, modified })
+}
+
+/// When a file the user gave the app was last changed.
+#[tauri::command]
+fn file_modified(access: tauri::State<'_, Access>, path: String) -> Result<Option<u64>, FileError> {
+    let path = PathBuf::from(path);
+    allowed(&access, &path)?;
+    Ok(files::modified(&path))
 }
 
 /// Write a file atomically, retrying while Windows has it locked.
@@ -36,10 +64,14 @@ fn write_text_file(
     access: tauri::State<'_, Access>,
     path: String,
     contents: String,
-) -> Result<u64, FileError> {
+) -> Result<Written, FileError> {
     let path = PathBuf::from(path);
     allowed(&access, &path)?;
-    files::write_text_atomic(&path, &contents)
+    let bytes = files::write_text_atomic(&path, &contents)?;
+    Ok(Written {
+        bytes,
+        modified: files::modified(&path),
+    })
 }
 
 fn allowed(access: &Access, path: &std::path::Path) -> Result<(), FileError> {
@@ -94,6 +126,7 @@ pub fn run() {
         .invoke_handler(tauri::generate_handler![
             read_text_file,
             write_text_file,
+            file_modified,
             opening::startup_files,
             session::load_session,
             session::save_session,

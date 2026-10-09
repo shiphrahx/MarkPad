@@ -14,6 +14,7 @@ function opened(path: string, text: string): Buffer {
     lineEnding: 'lf',
     encoding: 'utf-8',
     byteLength: text.length,
+    modified: null,
   })
 }
 

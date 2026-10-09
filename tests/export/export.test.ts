@@ -12,6 +12,7 @@ function buffer(text: string, path = 'C:/notes.md'): Buffer {
     lineEnding: 'lf',
     encoding: 'utf-8',
     byteLength: text.length,
+    modified: null,
   })
 }
 
