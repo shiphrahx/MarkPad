@@ -36,6 +36,15 @@
       "icons/icon.ico",
       "icons/icon.icns"
     ],
+    "fileAssociations": [
+      {
+        "ext": ["md", "markdown", "mdown", "mkd"],
+        "name": "Markdown document",
+        "description": "Markdown document",
+        "role": "Editor",
+        "mimeType": "text/markdown"
+      }
+    ],
     "shortDescription": "A Markdown editor for Windows, macOS and Linux.",
     "longDescription": "MarkPad opens a Markdown file as a document you type straight into, and saves it back as Markdown. Plain text in, plain text out. No vault, no database, no account, no sync, no telemetry.",
     "windows": {
