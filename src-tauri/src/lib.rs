@@ -99,14 +99,8 @@ pub fn run() {
     tauri::Builder::default()
         // First, as the plugin asks: it has to see a second launch before
         // anything else gets a chance to set up a second window.
-        .plugin(tauri_plugin_single_instance::init(
-            |app, arguments, directory| {
-                opening::second_launch(app, arguments, directory);
-            },
-        ))
         .plugin(tauri_plugin_dialog::init())
         .plugin(tauri_plugin_opener::init())
-        .plugin(links::navigation_guard())
         .manage(opening::Arrivals::default())
         .manage(Access::default())
         .register_asynchronous_uri_scheme_protocol(
