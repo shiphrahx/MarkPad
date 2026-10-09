@@ -6,10 +6,9 @@ import { el } from './dom.js'
 /**
  * The full preview pane.
  *
- * Exists, ships switched off. MarkPad edits Markdown source, and a permanent
- * rendered half-screen is how a source editor turns into a WYSIWYG one by
- * degrees. It is here because sometimes you do want to check a long document
- * reads properly, and the popovers do not cover that.
+ * Exists, ships switched off. Reader mode already shows the document rendered,
+ * so this is for source view: checking a long document reads properly while
+ * you edit the Markdown itself, which the popovers do not cover.
  *
  * Rendering is debounced and only runs while the pane is visible, so a hidden
  * pane costs nothing per keystroke.
