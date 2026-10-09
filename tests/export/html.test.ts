@@ -27,6 +27,12 @@ describe('buildHtmlDocument', () => {
     expect(document).toContain("default-src 'none'")
   })
 
+  /** Neither falls back to default-src, so each has to be said out loud. */
+  it('stops a form posting anywhere and a base tag repointing links', () => {
+    expect(document).toContain("form-action 'none'")
+    expect(document).toContain("base-uri 'none'")
+  })
+
   it('takes extra styles when the document has maths in it', () => {
     const withMath = buildHtmlDocument({
       title: 'Maths',
