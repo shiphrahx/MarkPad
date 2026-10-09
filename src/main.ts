@@ -40,6 +40,7 @@ async function start(): Promise<void> {
   applyNativeChrome()
   await Promise.allSettled([guardTheClose(), openStartupFiles(), followCommandState()])
   followSystemTheme()
+  addEventListener('focus', () => void app.catchUpWithDisk())
 }
 
 /**

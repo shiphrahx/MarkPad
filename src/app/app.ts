@@ -679,6 +679,30 @@ export class App {
     return false
   }
 
+  /**
+   * Catch up with files changed while the window was in the background.
+   *
+   * A tab with no unsaved work just takes the new version, the way every
+   * editor does after a `git pull`. A tab with unsaved work is left alone:
+   * there are two versions now, and the next save asks which one wins.
+   */
+  async catchUpWithDisk(): Promise<void> {
+    this.flush()
+
+    for (const buffer of [...this.workspace.tabs]) {
+      if (buffer.path === null || buffer.modified === null || isDirty(buffer)) continue
+
+      let now: number | null
+      try {
+        now = await this.host.modifiedTime(buffer.path)
+      } catch {
+        continue
+      }
+
+      if (now !== null && now !== buffer.modified) await this.reload(buffer.id)
+    }
+  }
+
   /** Replace a buffer with what is on disk now. */
   async reload(id: string): Promise<void> {
     try {

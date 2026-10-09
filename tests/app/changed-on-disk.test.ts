@@ -103,3 +103,32 @@ describe('saving a file something else has changed', () => {
     expect(host.raw(PATH)).toBe('two\n')
   })
 })
+
+describe('coming back to the window', () => {
+  it('picks up a newer version of a file with no unsaved work', async () => {
+    const { app, host } = await opened('old\n')
+    host.changeOnDisk(PATH, 'new\n')
+
+    await app.catchUpWithDisk()
+
+    expect(app.workspace.active?.text).toBe('new\n')
+  })
+
+  it('leaves a tab with unsaved work alone, so nothing is lost', async () => {
+    const { app, host, id } = await opened('old\n')
+    app.workspace.setText(id, 'mine\n')
+    host.changeOnDisk(PATH, 'theirs\n')
+
+    await app.catchUpWithDisk()
+
+    expect(app.workspace.active?.text).toBe('mine\n')
+  })
+
+  it('does nothing when nothing changed', async () => {
+    const { app } = await opened('same\n')
+
+    await app.catchUpWithDisk()
+
+    expect(app.workspace.active?.text).toBe('same\n')
+  })
+})
