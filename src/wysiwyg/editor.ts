@@ -18,8 +18,8 @@ import { gapCursor } from 'prosemirror-gapcursor'
 import { columnResizing, tableEditing } from 'prosemirror-tables'
 import type { Platform } from '../host/types.js'
 import { markpadSchema } from './schema.js'
-import { markdownParser } from './parser.js'
-import { toMarkdown } from './serializer.js'
+import { parseWithTokens } from './parser.js'
+import { memoryOf, rememberSource, serialisePreserving, sourceMemory } from './source-memory.js'
 import { markpadInputRules } from './input-rules.js'
 import { markpadKeymap } from './keymap.js'
 import { placeholder } from './placeholder.js'
@@ -81,9 +81,12 @@ export class ReaderEditor {
   }
 
   private freshState(markdown: string): EditorState {
+    const { doc, tokens } = parseWithTokens(markdown)
+
     return EditorState.create({
-      doc: markdownParser.parse(markdown),
+      doc,
       plugins: [
+        sourceMemory(rememberSource(markdown, doc, tokens)),
         // Before the keymap, so the slash menu gets the arrow keys and Enter
         // while it is open.
         ...slashMenu(),
@@ -115,9 +118,14 @@ export class ReaderEditor {
     this.applyingExternally = false
   }
 
-  /** Serialise. Walks the whole document, so the app calls it sparingly. */
+  /**
+   * The document as Markdown. Blocks nobody touched come back exactly as the
+   * file had them; see source-memory.ts. Still walks the whole document, so
+   * the app calls it sparingly.
+   */
   getMarkdown(): string {
-    return toMarkdown(this.view.state.doc)
+    const { state } = this.view
+    return serialisePreserving(state.doc, memoryOf(state))
   }
 
   /** Keep the undo history and selection when switching away and back. */
