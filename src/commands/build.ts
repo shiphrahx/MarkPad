@@ -14,6 +14,7 @@ import {
 } from '../ui/zoom.js'
 import { FORMAT_ACTIONS } from '../wysiwyg/format.js'
 import { setUpdateChecks, updateChecksEnabled } from '../app/updates.js'
+import { focusMode, setFocusMode, setSpellCheck, spellCheck } from '../ui/writing.js'
 import type { Command } from './types.js'
 
 /**
@@ -215,6 +216,35 @@ export function buildCommands(app: App): Command[] {
       enabled: () => currentTheme() !== theme,
       run: () => setTheme(theme),
     })),
+    // Pairs that say what they do, like the themes.
+    {
+      id: 'view.focusOn',
+      title: 'Turn on focus mode',
+      category: 'View',
+      enabled: () => !focusMode(),
+      run: () => setFocusMode(true),
+    },
+    {
+      id: 'view.focusOff',
+      title: 'Turn off focus mode',
+      category: 'View',
+      enabled: focusMode,
+      run: () => setFocusMode(false),
+    },
+    {
+      id: 'view.spellingOff',
+      title: 'Turn off spell check',
+      category: 'View',
+      enabled: spellCheck,
+      run: () => setSpellCheck(false),
+    },
+    {
+      id: 'view.spellingOn',
+      title: 'Turn on spell check',
+      category: 'View',
+      enabled: () => !spellCheck(),
+      run: () => setSpellCheck(true),
+    },
     {
       id: 'go.nextTab',
       title: 'Next tab',

@@ -4,6 +4,7 @@ import { TauriHost } from './host/tauri.js'
 import { resetDiagramTheme } from './preview/draw.js'
 import { apply as applyTheme, onThemeChange, watchSystemTheme } from './ui/theme.js'
 import { applyZoom, onZoomChange } from './ui/zoom.js'
+import { apply as applyWriting, onWritingChange } from './ui/writing.js'
 import { installMenus } from './ui/menus.js'
 import { applyNativeChrome } from './ui/native-chrome.js'
 import { DOCUMENT_CSS } from './preview/document-css.js'
@@ -17,6 +18,7 @@ if (!root) throw new Error('MarkPad could not find its root element.')
 // the way to the right ones, or the wrong size on the way to the right one.
 applyTheme()
 applyZoom()
+applyWriting()
 
 // The preview pane and the popovers both render Markdown, so the document
 // styles have to exist in the app as well as inside an exported file.
@@ -107,6 +109,7 @@ async function followCommandState(): Promise<void> {
   app.onStateChange(refresh)
   onThemeChange(refresh)
   onZoomChange(refresh)
+  onWritingChange(refresh)
 }
 
 /**

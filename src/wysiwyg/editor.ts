@@ -27,6 +27,7 @@ import { selectionToolbar } from './selection-toolbar.js'
 import { slashMenu } from './slash-menu.js'
 import { codeHighlight } from './code-highlight.js'
 import { pasteImages } from './paste-image.js'
+import { currentBlock } from './current-block.js'
 
 export interface ReaderOptions {
   readonly platform: Platform
@@ -108,6 +109,7 @@ export class ReaderEditor {
         placeholder(this.options.platform),
         selectionToolbar({ onLink: this.options.onLink }),
         codeHighlight(),
+        currentBlock(),
         ...(this.options.onPasteImage ? [pasteImages(this.options.onPasteImage)] : []),
       ],
     })

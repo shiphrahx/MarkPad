@@ -512,6 +512,30 @@ body {
   color: var(--accent);
 }
 
+/* Focus mode: nothing on screen but the paragraph you are in.
+   ------------------------------------------------------------------------ */
+
+[data-focus] .tabs,
+[data-focus] .rail,
+[data-focus] .status {
+  display: none;
+}
+
+[data-focus] .markpad-document > * {
+  opacity: 0.35;
+  transition: opacity 150ms ease;
+}
+
+[data-focus] .markpad-document > .pm-current {
+  opacity: 1;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  [data-focus] .markpad-document > * {
+    transition: none;
+  }
+}
+
 /* Command palette
    ------------------------------------------------------------------------ */
 
