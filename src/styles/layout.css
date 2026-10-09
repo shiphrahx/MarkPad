@@ -1,0 +1,76 @@
+/* The body and the outline spine. Values come from ../ui/tokens.css. */
+
+/* Body
+   ------------------------------------------------------------------------ */
+
+.middle {
+  display: flex;
+  flex: 1;
+  min-height: 0;
+  background: var(--sheet);
+}
+
+.editor {
+  flex: 1;
+  min-width: 0;
+  overflow: hidden;
+}
+
+.editor[hidden] {
+  display: none;
+}
+
+/* Outline spine
+   ------------------------------------------------------------------------ */
+
+/*
+ * A rail, not a sidebar: 26px, full height, one tick per heading.
+ *
+ * The ticks are positioned rather than stacked, because a tick is only useful
+ * if it sits level with the heading it stands for. The measuring happens in
+ * the app; this file only says what a tick looks like once it has been told
+ * where to go.
+ */
+.rail {
+  position: relative;
+  width: var(--w-spine);
+  flex: none;
+  border-right: 1px solid var(--rule);
+  background: var(--sheet);
+  overflow: hidden;
+}
+
+.rail-tick {
+  position: absolute;
+  left: 50%;
+  transform: translate(-50%, -50%);
+  appearance: none;
+  border: 0;
+  padding: 0;
+  height: var(--h-tick);
+  border-radius: var(--radius-tick);
+  background: var(--mark);
+  cursor: default;
+  transition: background 0.15s, width 0.15s;
+}
+
+.rail-level-1 {
+  width: var(--w-tick-h1);
+}
+
+.rail-level-2 {
+  width: var(--w-tick-h2);
+}
+
+.rail-level-3,
+.rail-level-4 {
+  width: var(--w-tick-h3);
+}
+
+.rail-tick:hover {
+  background: var(--ink);
+}
+
+.rail-tick-current {
+  background: var(--accent);
+}

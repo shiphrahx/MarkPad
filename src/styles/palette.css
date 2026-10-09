@@ -1,0 +1,100 @@
+/* The command palette. Values come from ../ui/tokens.css. */
+
+/* Command palette
+   ------------------------------------------------------------------------ */
+
+.palette-backdrop {
+  position: fixed;
+  inset: 0;
+  background: var(--scrim);
+  backdrop-filter: blur(1.5px);
+  display: flex;
+  justify-content: center;
+  padding-top: 52px;
+  z-index: 20;
+}
+
+.palette-backdrop[hidden] {
+  display: none;
+}
+
+.palette {
+  width: min(430px, 86%);
+  max-height: 60vh;
+  display: flex;
+  flex-direction: column;
+  background: var(--sheet);
+  border: 1px solid var(--rule);
+  border-radius: var(--radius-window);
+  box-shadow: var(--shadow-palette);
+  overflow: hidden;
+}
+
+.palette-input {
+  appearance: none;
+  border: 0;
+  border-bottom: 1px solid var(--rule);
+  background: none;
+  color: var(--ink);
+  font-family: var(--font-mono);
+  font-size: var(--size-palette-input);
+  padding: 13px 15px;
+}
+
+.palette-input::placeholder {
+  color: var(--mark);
+}
+
+.palette-input:focus {
+  outline: none;
+}
+
+.palette-list {
+  list-style: none;
+  margin: 0;
+  padding: 5px;
+  overflow-y: auto;
+}
+
+.palette-row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  padding: 8px 11px;
+  border-radius: var(--radius-row);
+  font-size: var(--size-command);
+  cursor: default;
+}
+
+.palette-row-selected {
+  background: var(--tint);
+}
+
+.palette-row-disabled {
+  color: var(--mark);
+}
+
+.palette-label mark {
+  background: none;
+  color: var(--accent);
+  font-weight: 600;
+}
+
+.palette-shortcut {
+  font-family: var(--font-mono);
+  font-size: var(--size-kbd);
+  color: var(--muted);
+  border: 1px solid var(--rule);
+  border-radius: var(--radius-code);
+  padding: 2px 5px;
+  background: var(--chrome);
+  white-space: nowrap;
+}
+
+.palette-empty {
+  list-style: none;
+  padding: 8px 11px;
+  font-size: var(--size-command);
+  color: var(--muted);
+}

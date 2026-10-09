@@ -1,0 +1,42 @@
+/* Code highlighting. Values come from ../ui/tokens.css. */
+
+/* Code highlighting
+   ------------------------------------------------------------------------ */
+
+.markpad-document .hljs-keyword,
+.markpad-document .hljs-selector-tag,
+.markpad-document .hljs-literal,
+.markpad-document .hljs-section {
+  color: var(--syntax-keyword);
+}
+
+.markpad-document .hljs-string,
+.markpad-document .hljs-attr,
+.markpad-document .hljs-regexp,
+.markpad-document .hljs-addition {
+  color: var(--syntax-string);
+}
+
+.markpad-document .hljs-number,
+.markpad-document .hljs-built_in,
+.markpad-document .hljs-symbol {
+  color: var(--syntax-number);
+}
+
+.markpad-document .hljs-comment,
+.markpad-document .hljs-quote {
+  color: var(--mark);
+  font-style: italic;
+}
+
+.markpad-document .hljs-title,
+.markpad-document .hljs-name,
+.markpad-document .hljs-function {
+  color: var(--syntax-name);
+}
+
+.markpad-document .hljs-variable,
+.markpad-document .hljs-template-variable,
+.markpad-document .hljs-type {
+  color: var(--syntax-type);
+}

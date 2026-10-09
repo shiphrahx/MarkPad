@@ -1,0 +1,90 @@
+/* Dialogs. Values come from ../ui/tokens.css. */
+
+/* Dialogs
+   ------------------------------------------------------------------------ */
+
+.dialog-backdrop {
+  position: fixed;
+  inset: 0;
+  background: var(--scrim);
+  display: grid;
+  place-items: center;
+  z-index: 30;
+}
+
+.dialog {
+  width: min(24rem, calc(100vw - 3rem));
+  padding: 15px 16px 14px;
+  background: var(--sheet);
+  border: 1px solid var(--rule);
+  border-radius: var(--radius-window);
+  box-shadow: var(--shadow-palette);
+}
+
+.dialog-title {
+  margin: 0 0 6px;
+  font-size: var(--size-command);
+  font-weight: 600;
+}
+
+.dialog-message {
+  display: block;
+  margin: 0 0 12px;
+  font-size: var(--size-tab);
+  color: var(--muted);
+}
+
+.dialog-input {
+  width: 100%;
+  appearance: none;
+  font-family: var(--font-mono);
+  font-size: var(--size-tab);
+  padding: 7px 9px;
+  margin-bottom: 12px;
+  border: 1px solid var(--rule);
+  border-radius: var(--radius-code);
+  background: var(--sheet);
+  color: var(--ink);
+}
+
+.dialog-input:focus {
+  outline: none;
+  border-color: var(--accent);
+}
+
+.dialog-buttons {
+  display: flex;
+  justify-content: flex-end;
+  gap: 8px;
+}
+
+.dialog-button {
+  appearance: none;
+  font-family: var(--font-ui);
+  font-size: var(--size-tab);
+  padding: 6px 12px;
+  border-radius: var(--radius-code);
+  border: 1px solid var(--rule);
+  background: var(--sheet);
+  color: var(--ink);
+  cursor: default;
+}
+
+.dialog-button:hover {
+  background: var(--hover);
+}
+
+.dialog-primary {
+  background: var(--accent);
+  border-color: var(--accent);
+  color: var(--sheet);
+}
+
+.dialog-primary:hover {
+  background: var(--accent);
+  filter: brightness(1.08);
+}
+
+.dialog-danger {
+  color: var(--accent);
+}

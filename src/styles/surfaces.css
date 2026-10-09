@@ -1,0 +1,176 @@
+/* Reader mode, source view, tasks, the empty state and the preview pane. Values come from ../ui/tokens.css. */
+
+/* Editing surfaces
+   ------------------------------------------------------------------------ */
+
+.reader {
+  flex: 1;
+  min-width: 0;
+  overflow-y: auto;
+  background: var(--sheet);
+}
+
+.reader[hidden] {
+  display: none;
+}
+
+/*
+ * Mono, because this is a source editor. The rendered document styles are
+ * shared with the preview pane and the export, where a UI sans is right; here
+ * it is not.
+ */
+.reader .markpad-document {
+  font-family: var(--font-mono);
+  font-size: var(--size-doc);
+  line-height: var(--line-doc);
+  background: var(--sheet);
+  color: var(--ink);
+  /* Centred, with a generous measure. Wide enough that a table or a fenced
+     block is not squeezed, narrow enough that a line of prose does not run
+     the whole width of a maximised window. */
+  max-width: 100ch;
+  margin: 0 auto;
+  padding: var(--pad-doc);
+  min-height: 100%;
+  outline: none;
+}
+
+.reader .markpad-document h1 {
+  font-size: calc(20px * var(--zoom));
+  font-weight: 700;
+  letter-spacing: -0.01em;
+}
+
+.reader .markpad-document h2 {
+  font-size: calc(16px * var(--zoom));
+  font-weight: 700;
+}
+
+.reader .markpad-document h3,
+.reader .markpad-document h4,
+.reader .markpad-document h5,
+.reader .markpad-document h6 {
+  font-size: var(--size-doc);
+  font-weight: 700;
+}
+
+.reader .markpad-document code {
+  background: var(--tint);
+  color: var(--accent);
+  padding: 2px 5px;
+  border-radius: var(--radius-code);
+  font-size: calc(12.5px * var(--zoom));
+}
+
+.reader .markpad-document pre {
+  background: var(--tint);
+  border-radius: var(--radius-code);
+}
+
+.reader .markpad-document pre code {
+  background: none;
+  color: var(--ink);
+  padding: 0;
+}
+
+.reader .markpad-document blockquote {
+  border-left: 2px solid var(--rule);
+  padding-left: 14px;
+  color: var(--muted);
+  font-style: normal;
+}
+
+.reader .markpad-document a {
+  color: var(--accent);
+  text-decoration: none;
+}
+
+.reader .markpad-document th {
+  background: var(--tint);
+}
+
+.reader .markpad-document th,
+.reader .markpad-document td {
+  border-color: var(--rule);
+}
+
+.reader .ProseMirror-gapcursor:after {
+  border-top-color: var(--ink);
+}
+
+.reader .ProseMirror-selectednode {
+  outline: 2px solid var(--accent);
+  border-radius: var(--radius-code);
+}
+
+.reader .ProseMirror ::selection,
+.reader .ProseMirror::selection {
+  background: var(--tint);
+}
+
+/* Tasks
+   ------------------------------------------------------------------------ */
+
+.reader li.pm-task {
+  list-style: none;
+  display: flex;
+  align-items: flex-start;
+  gap: 0.5rem;
+  margin-left: -1.4rem;
+}
+
+.reader .pm-checkbox {
+  margin: 0.55em 0 0;
+  flex: none;
+  accent-color: var(--accent);
+}
+
+.reader .pm-item-content {
+  flex: 1;
+  min-width: 0;
+}
+
+.reader li.pm-task[data-checked='true'] .pm-item-content {
+  color: var(--muted);
+}
+
+/*
+ * Raw HTML, including comments.
+ *
+ * It used to sit in a bordered box, which made a one-line comment the loudest
+ * thing on the page. It is kept byte for byte and is not editable as rich
+ * text, and quiet dim type says both of those without shouting.
+ */
+.pm-html-block {
+  font-family: var(--font-mono);
+  font-size: 12.5px;
+  color: var(--mark);
+  white-space: pre-wrap;
+  overflow-x: auto;
+}
+
+/* Empty document
+   ------------------------------------------------------------------------ */
+
+.reader .pm-placeholder::before {
+  content: attr(data-placeholder);
+  color: var(--mark);
+  pointer-events: none;
+  position: absolute;
+  height: 0;
+}
+
+/* Preview pane
+   ------------------------------------------------------------------------ */
+
+.preview {
+  flex: 1;
+  min-width: 0;
+  overflow-y: auto;
+  border-left: 1px solid var(--rule);
+  background: var(--sheet);
+}
+
+.preview[hidden] {
+  display: none;
+}
