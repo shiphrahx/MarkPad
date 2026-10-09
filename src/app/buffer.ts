@@ -98,6 +98,7 @@ export function title(buffer: Buffer): string {
 }
 
 export function fileName(path: string): string {
-  const parts = path.split(/[\/]/)
+  // Both separators: Windows paths arrive with backslashes.
+  const parts = path.split(/[\\/]/)
   return parts[parts.length - 1] ?? path
 }
