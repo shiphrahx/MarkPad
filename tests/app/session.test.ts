@@ -9,6 +9,7 @@ import {
   rememberLaunch,
   saveSession,
   signatureOf,
+  withRecent,
 } from '../../src/app/session.js'
 
 /**
@@ -34,43 +35,43 @@ describe('session storage', () => {
   })
 
   it('starts with nothing remembered', async () => {
-    expect(await loadSession(host)).toEqual({ paths: [], active: 0 })
+    expect(await loadSession(host)).toEqual({ paths: [], active: 0, recent: [] })
   })
 
   it('remembers paths and which was in front', async () => {
-    saveSession(host, { paths: ['C:/a.md', 'C:/b.md'], active: 1 })
-    expect(await loadSession(host)).toEqual({ paths: ['C:/a.md', 'C:/b.md'], active: 1 })
+    saveSession(host, { paths: ['C:/a.md', 'C:/b.md'], active: 1, recent: [] })
+    expect(await loadSession(host)).toEqual({ paths: ['C:/a.md', 'C:/b.md'], active: 1, recent: [] })
   })
 
   it('clears itself when nothing is open', () => {
-    saveSession(host, { paths: ['C:/a.md'], active: 0 })
-    saveSession(host, { paths: [], active: 0 })
+    saveSession(host, { paths: ['C:/a.md'], active: 0, recent: [] })
+    saveSession(host, { paths: [], active: 0, recent: [] })
 
     expect(host.session).toBeNull()
   })
 
   it('ignores nonsense in storage rather than failing to start', async () => {
     host.session = 'not a session at all'
-    expect(await loadSession(host)).toEqual({ paths: [], active: 0 })
+    expect(await loadSession(host)).toEqual({ paths: [], active: 0, recent: [] })
 
-    host.session = { paths: [1, 2], active: 0 }
-    expect(await loadSession(host)).toEqual({ paths: [], active: 0 })
+    host.session = { paths: [1, 2], active: 0, recent: [] }
+    expect(await loadSession(host)).toEqual({ paths: [], active: 0, recent: [] })
 
-    host.session = { paths: [], active: -4 }
-    expect(await loadSession(host)).toEqual({ paths: [], active: 0 })
+    host.session = { paths: [], active: -4, recent: [] }
+    expect(await loadSession(host)).toEqual({ paths: [], active: 0, recent: [] })
   })
 
   it('forgets the copy older versions kept in localStorage', async () => {
     localStorage.setItem('markpad.session', '{"paths":["C:/a.md"],"active":0}')
 
-    expect(await loadSession(host)).toEqual({ paths: [], active: 0 })
+    expect(await loadSession(host)).toEqual({ paths: [], active: 0, recent: [] })
     expect(localStorage.getItem('markpad.session')).toBeNull()
   })
 
   it('changes its signature when the tabs change, not when the text does', () => {
-    const one = signatureOf({ paths: ['C:/a.md'], active: 0 })
-    const same = signatureOf({ paths: ['C:/a.md'], active: 0 })
-    const other = signatureOf({ paths: ['C:/a.md', 'C:/b.md'], active: 1 })
+    const one = signatureOf({ paths: ['C:/a.md'], active: 0, recent: [] })
+    const same = signatureOf({ paths: ['C:/a.md'], active: 0, recent: [] })
+    const other = signatureOf({ paths: ['C:/a.md', 'C:/b.md'], active: 1, recent: [] })
 
     expect(one).toBe(same)
     expect(one).not.toBe(other)
@@ -206,8 +207,44 @@ describe('first launch', () => {
 
   it('does not depend on whether any tabs were remembered', () => {
     rememberLaunch()
-    saveSession(new MemoryHost(), { paths: [], active: 0 })
+    saveSession(new MemoryHost(), { paths: [], active: 0, recent: [] })
 
     expect(isFirstLaunch()).toBe(false)
+  })
+})
+
+describe('recent files', () => {
+  beforeEach(() => {
+    resetBufferIds()
+    document.body.replaceChildren()
+  })
+
+  it('puts newly opened files first, each once, and keeps only ten', () => {
+    const many = Array.from({ length: 12 }, (_, index) => `C:/${index}.md`)
+
+    expect(withRecent(['C:/a.md', 'C:/b.md'], ['C:/b.md'])).toEqual(['C:/b.md', 'C:/a.md'])
+    expect(withRecent([], many)).toHaveLength(10)
+  })
+
+  it('reads an older session that has no recent list', async () => {
+    const host = new MemoryHost()
+    host.session = { paths: ['C:/a.md'], active: 0 }
+
+    expect((await loadSession(host)).recent).toEqual([])
+  })
+
+  it('remembers a file after its tab is closed and offers it in the palette', async () => {
+    const { app, host } = build()
+    host.seed('C:/notes/a.md', 'a\n')
+    await app.openFiles(['C:/notes/a.md'])
+    await app.closeTab(app.workspace.tabs[0]!.id)
+
+    const second = build(host)
+    second.host.seed('C:/notes/a.md', 'a\n')
+    await second.app.start()
+    second.app.openPalette()
+
+    const rows = [...document.querySelectorAll('.palette-row')].map((row) => row.textContent)
+    expect(rows.some((text) => text?.includes('Open recent: a.md in C:/notes'))).toBe(true)
   })
 })

@@ -22,6 +22,10 @@ pub struct Session {
     pub paths: Vec<String>,
     /// Index into `paths` of the tab that was in front.
     pub active: usize,
+    /// Files opened lately, newest first. Missing from sessions written
+    /// before recent files existed.
+    #[serde(default)]
+    pub recent: Vec<String>,
 }
 
 const FILE_NAME: &str = "session.json";
@@ -34,9 +38,9 @@ pub fn read(file: &Path) -> Session {
         .unwrap_or_default()
 }
 
-/// Write the session, or remove the file when nothing is open.
+/// Write the session, or remove the file when there is nothing to remember.
 pub fn write(file: &Path, session: &Session) -> std::io::Result<()> {
-    if session.paths.is_empty() {
+    if session.paths.is_empty() && session.recent.is_empty() {
         return match fs::remove_file(file) {
             Err(error) if error.kind() == std::io::ErrorKind::NotFound => Ok(()),
             other => other,
@@ -66,6 +70,7 @@ pub fn location(app: &tauri::AppHandle) -> Option<PathBuf> {
 pub fn load_session(app: tauri::AppHandle, access: tauri::State<'_, Access>) -> Session {
     let session = location(&app).map(|file| read(&file)).unwrap_or_default();
     access.grant_all(&session.paths);
+    access.grant_all(&session.recent);
     session
 }
 
@@ -91,8 +96,17 @@ fn only_given(access: &Access, session: Session) -> Session {
     let active = front
         .and_then(|front| paths.iter().position(|path| *path == front))
         .unwrap_or(0);
+    let recent = session
+        .recent
+        .into_iter()
+        .filter(|path| access.is_granted(Path::new(path)))
+        .collect();
 
-    Session { paths, active }
+    Session {
+        paths,
+        active,
+        recent,
+    }
 }
 
 #[cfg(test)]
@@ -106,6 +120,7 @@ mod tests {
         let session = Session {
             paths: vec!["C:/a.md".into(), "C:/b.md".into()],
             active: 1,
+            recent: vec!["C:/old.md".into()],
         };
 
         write(&file, &session).unwrap();
@@ -122,6 +137,7 @@ mod tests {
             &Session {
                 paths: vec!["a.md".into()],
                 active: 0,
+                recent: Vec::new(),
             },
         )
         .unwrap();
@@ -156,14 +172,26 @@ mod tests {
                     given.to_string_lossy().into_owned(),
                 ],
                 active: 1,
+                recent: vec![other.to_string_lossy().into_owned()],
             },
         );
 
         assert_eq!(kept.paths, vec![given.to_string_lossy().into_owned()]);
+        assert!(kept.recent.is_empty());
         assert_eq!(
             kept.active, 0,
             "the front tab should still be the front tab"
         );
+    }
+
+    #[test]
+    fn reads_a_session_from_before_recent_files() {
+        let directory = tempfile::tempdir().unwrap();
+        let file = directory.path().join(FILE_NAME);
+        fs::write(&file, r#"{"paths":["C:/a.md"],"active":0}"#).unwrap();
+
+        assert_eq!(read(&file).paths, vec!["C:/a.md".to_owned()]);
+        assert!(read(&file).recent.is_empty());
     }
 
     #[test]

@@ -29,6 +29,7 @@ import {
   rememberLaunch,
   saveSession,
   signatureOf,
+  withRecent,
   type Session,
 } from './session.js'
 import WELCOME from '../welcome.md?raw'
@@ -122,6 +123,10 @@ export class App {
   private syncedText: string | null = null
   /** Last session written to storage, so an unchanged one is not rewritten. */
   private sessionSignature = ''
+  /** Files opened lately, newest first. Offered in the palette. */
+  private recent: readonly string[] = []
+  /** Paths that had tabs last time the session was remembered. */
+  private seenPaths = new Set<string>()
 
   constructor(
     readonly host: Host,
@@ -242,6 +247,7 @@ export class App {
    */
   private async restoreSession(): Promise<void> {
     const session = await loadSession(this.host)
+    this.recent = session.recent
     if (session.paths.length === 0) return
 
     const opened: string[] = []
@@ -266,10 +272,17 @@ export class App {
       .map((buffer) => buffer.path)
       .filter((path): path is string => path !== null)
 
+    // Anything with a tab now that had none before was just opened, by
+    // whatever route: the dialog, a drop, Save as, a second launch.
+    const opened = paths.filter((path) => !this.seenPaths.has(path))
+    if (opened.length > 0) this.recent = withRecent(this.recent, opened)
+    this.seenPaths = new Set(paths)
+
     const activePath = this.workspace.active?.path ?? null
     const session: Session = {
       paths,
       active: activePath === null ? 0 : Math.max(0, paths.indexOf(activePath)),
+      recent: this.recent,
     }
 
     const signature = signatureOf(session)
@@ -493,7 +506,24 @@ export class App {
 
   openPalette(): void {
     this.flush()
-    this.palette.open(this.commands)
+    this.palette.open([...this.commands, ...this.recentCommands()])
+  }
+
+  /**
+   * One palette entry per recent file that is not already open. Built when
+   * the palette opens, since the list changes as files come and go.
+   */
+  private recentCommands(): Command[] {
+    const open = new Set(this.workspace.tabs.map((buffer) => buffer.path))
+
+    return this.recent
+      .filter((path) => !open.has(path))
+      .map((path, index) => ({
+        id: `file.recent.${index}`,
+        title: `Open recent: ${fileName(path)} in ${directoryOf(path) ?? 'its folder'}`,
+        category: 'File' as const,
+        run: () => this.openFiles([path]),
+      }))
   }
 
   togglePreview(): void {

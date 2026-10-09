@@ -121,7 +121,7 @@ export class MemoryHost implements Host {
   }
 
   async saveSession(session: Session): Promise<void> {
-    this.session = session.paths.length === 0 ? null : session
+    this.session = session.paths.length === 0 && session.recent.length === 0 ? null : session
   }
 
   async openLink(url: string): Promise<void> {

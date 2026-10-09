@@ -48,6 +48,8 @@ export interface Session {
   readonly paths: readonly string[]
   /** Index into `paths` of the tab that was in front. */
   readonly active: number
+  /** Files opened lately, newest first, open or not. */
+  readonly recent: readonly string[]
 }
 
 export interface SaveResult {
@@ -89,7 +91,7 @@ export interface Host {
    * caller decides whether it is a session at all.
    */
   loadSession(): Promise<unknown>
-  /** Remember the open files for next time. An empty list forgets them. */
+  /** Remember the open files for next time. Nothing open or recent forgets them. */
   saveSession(session: Session): Promise<void>
   /**
    * Open a link from a document in the browser or mail client. Only web and
