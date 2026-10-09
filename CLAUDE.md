@@ -75,6 +75,7 @@ cd src-tauri && cargo test         # the Rust side
 cd src-tauri && cargo clippy --all-targets -- -D warnings
 ```
 
+`pnpm bench` when touching parsing, saving or anything that walks the whole document.
 `pnpm icons` once after cloning: the icons aren't committed and the Rust crate
 won't compile without them. `pnpm tauri dev` runs the app.
 
@@ -96,7 +97,7 @@ won't compile without them. `pnpm tauri dev` runs the app.
 
 ## Hard budgets
 
-These are pass/fail, checked in CI:
+These are pass/fail:
 
 | Budget | Limit |
 |---|---|
@@ -106,8 +107,14 @@ These are pass/fail, checked in CI:
 | Typing latency in a 5 MB file | indistinguishable from an empty file |
 | Runtime network requests | one, the opt-out update check |
 
-Only the installer size is enforced by CI today. The other four are honoured by hand
-and by the code being shaped around them, which is a weaker thing and worth knowing.
+Only the installer size is enforced by CI today. The network budget is pinned by the
+CSP and its test (`tests/packaging/csp.test.ts`). Opening and typing are measured by
+`pnpm bench`, which CI runs and reports but cannot fail on, because shared runners are
+too noisy. Cold start is honoured by hand. Measured is weaker than enforced, and worth
+knowing.
+
+Files over two million characters open in source view, because reader mode cannot
+meet the 10 MB budget. `LARGE_FILE_CHARACTERS` in `src/app/app.ts`.
 
 The network budget is the reason images on the web do not load: one request, and it is
 the update check. `docs/decisions/0006-images.md` has the rest.
