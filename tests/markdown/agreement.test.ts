@@ -127,3 +127,13 @@ describe('finding drawn fences', () => {
     expect(render('```latex\na\n```\n').blocks[0]?.kind).toBe('math')
   })
 })
+
+describe('source positions', () => {
+  it('are kept on an HTML block, like every other block', async () => {
+    const { createMarkdown, HTML_BLOCK_TOKEN } = await import('../../src/markdown/markdown.js')
+    const tokens = createMarkdown().parse('Intro.\n\n<details>x</details>\n', {})
+    const kept = tokens.find((token) => token.type === HTML_BLOCK_TOKEN)
+
+    expect(kept?.map).toEqual([2, 3])
+  })
+})

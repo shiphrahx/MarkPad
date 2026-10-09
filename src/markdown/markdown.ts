@@ -95,6 +95,9 @@ function keepHtmlBlocks(md: MarkdownIt): void {
       const replacement = new state.Token(HTML_BLOCK_TOKEN, '', 0)
       replacement.content = inline.content
       replacement.block = true
+      // Where it came from in the file, like every other block has. The
+      // editor uses it to write an untouched block back exactly as it was.
+      replacement.map = open.map
 
       tokens.splice(index, 3, replacement)
     }
