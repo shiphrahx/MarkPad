@@ -52,6 +52,10 @@ jobs:
     runs-on: ${{ matrix.os }}
     permissions:
       contents: write
+      # For the provenance attestation: a signed statement, tied to this
+      # workflow run, of exactly which bytes it built.
+      id-token: write
+      attestations: write
     strategy:
       fail-fast: false
       matrix:
@@ -135,10 +139,38 @@ jobs:
         # Unquoted: the Linux leg passes two globs, one per package format.
         run: node scripts/check-budget.mjs ${{ matrix.pattern }}
 
-      - name: Attach the installer to the release
+      # Nothing is code signed, so these are how anybody can check that the
+      # file they downloaded is the file this workflow built.
+      - name: Write a checksum next to each installer
+        id: checksums
+        shell: bash
+        run: |
+          {
+            echo 'files<<END'
+            for file in ${{ matrix.pattern }}; do
+              name=$(basename "$file")
+              if command -v sha256sum >/dev/null; then
+                (cd "$(dirname "$file")" && sha256sum "$name" > "$name.sha256")
+              else
+                (cd "$(dirname "$file")" && shasum -a 256 "$name" > "$name.sha256")
+              fi
+              echo "$file"
+            done
+            echo 'END'
+          } >> "$GITHUB_OUTPUT"
+
+      - name: Attest where the installer came from
+        uses: actions/attest-build-provenance@977bb373ede98d70efdf65b84cb5f73e068dcc2a # v3
+        with:
+          subject-path: ${{ steps.checksums.outputs.files }}
+
+      - name: Attach the installer and its checksum to the release
         shell: bash
         env:
           GH_TOKEN: ${{ github.token }}
           TAG: ${{ inputs.tag || github.ref_name }}
           REPO: ${{ github.repository }}
-        run: gh release upload "$TAG" ${{ matrix.pattern }} --clobber --repo "$REPO"
+        run: |
+          for file in ${{ matrix.pattern }}; do
+            gh release upload "$TAG" "$file" "$file.sha256" --clobber --repo "$REPO"
+          done
