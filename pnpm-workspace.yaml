@@ -1,5 +1,7 @@
 # Settings only. MarkPad is one package, not a monorepo.
 
+minimumReleaseAgeExclude:
+  - '@tauri-apps/api@2.12.2'
 overrides:
   # Mermaid asks for KaTeX 0.16, which has a prototype pollution advisory
   # fixed in 0.18.2. The app already ships 0.18 for its own maths, so this

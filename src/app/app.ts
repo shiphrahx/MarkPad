@@ -23,15 +23,8 @@ import { directoryOf, resolveImage } from './images.js'
 import { ChangedOnDisk, Workspace } from './workspace.js'
 import { followLinks } from './links.js'
 import type { Update } from './updates.js'
-import {
-  isFirstLaunch,
-  loadSession,
-  rememberLaunch,
-  saveSession,
-  signatureOf,
-  withRecent,
-  type Session,
-} from './session.js'
+import { isFirstLaunch, rememberLaunch } from './session.js'
+import { SessionKeeper } from './session-keeper.js'
 import WELCOME from '../welcome.md?raw'
 import { buildCommands } from '../commands/build.js'
 import { ReaderEditor } from '../wysiwyg/editor.js'
@@ -132,18 +125,15 @@ export class App {
    * whole file exists to avoid.
    */
   private syncedText: string | null = null
-  /** Last session written to storage, so an unchanged one is not rewritten. */
-  private sessionSignature = ''
-  /** Files opened lately, newest first. Offered in the palette. */
-  private recent: readonly string[] = []
-  /** Paths that had tabs last time the session was remembered. */
-  private seenPaths = new Set<string>()
+  /** The session file: last time's tabs and the recent files. */
+  private readonly session: SessionKeeper
 
   constructor(
     readonly host: Host,
     root: HTMLElement,
   ) {
     this.workspace = new Workspace(host)
+    this.session = new SessionKeeper(host, this.workspace)
 
     this.tabs = new TabStrip({
       onFocus: (id) => this.focusTab(id),
@@ -213,7 +203,7 @@ export class App {
 
     this.workspace.subscribe(() => {
       this.render()
-      this.rememberSession()
+      this.session.remember()
     })
     document.addEventListener('keydown', (event) => this.onKeyDown(event), true)
     followLinks(root, (href) => void this.openLink(href))
@@ -241,67 +231,12 @@ export class App {
     const first = isFirstLaunch()
     rememberLaunch()
 
-    await this.restoreSession()
+    await this.session.restore()
     if (commandLineFiles.length > 0) await this.openFiles(commandLineFiles)
     if (this.workspace.tabs.length > 0) return
 
     if (first) this.workspace.create({ text: WELCOME, name: 'Welcome' })
     else this.workspace.create()
-  }
-
-  /**
-   * Reopen last time's files.
-   *
-   * One at a time, because a file that has been deleted or renamed since must
-   * not stop the rest from opening. A missing file is dropped quietly: you
-   * already know you deleted it, and a dialog at every launch until you
-   * happen to open something else would be its own kind of rude.
-   */
-  private async restoreSession(): Promise<void> {
-    const session = await loadSession(this.host)
-    this.recent = session.recent
-    if (session.paths.length === 0) return
-
-    const opened: string[] = []
-    for (const path of session.paths) {
-      try {
-        await this.workspace.open([path])
-        opened.push(path)
-      } catch {
-        // Gone since last time. Skip it and open the rest.
-      }
-    }
-
-    const wanted = session.paths[session.active]
-    const target = this.workspace.tabs.find((buffer) => buffer.path === wanted)
-    if (target) this.workspace.focus(target.id)
-    else if (opened.length > 0) this.workspace.focus(this.workspace.tabs[0]!.id)
-  }
-
-  /** Remember the open files, if which files are open has actually changed. */
-  private rememberSession(): void {
-    const paths = this.workspace.tabs
-      .map((buffer) => buffer.path)
-      .filter((path): path is string => path !== null)
-
-    // Anything with a tab now that had none before was just opened, by
-    // whatever route: the dialog, a drop, Save as, a second launch.
-    const opened = paths.filter((path) => !this.seenPaths.has(path))
-    if (opened.length > 0) this.recent = withRecent(this.recent, opened)
-    this.seenPaths = new Set(paths)
-
-    const activePath = this.workspace.active?.path ?? null
-    const session: Session = {
-      paths,
-      active: activePath === null ? 0 : Math.max(0, paths.indexOf(activePath)),
-      recent: this.recent,
-    }
-
-    const signature = signatureOf(session)
-    if (signature === this.sessionSignature) return
-
-    this.sessionSignature = signature
-    saveSession(this.host, session)
   }
 
   private extensions() {
@@ -533,16 +468,12 @@ export class App {
    * the palette opens, since the list changes as files come and go.
    */
   private recentCommands(): Command[] {
-    const open = new Set(this.workspace.tabs.map((buffer) => buffer.path))
-
-    return this.recent
-      .filter((path) => !open.has(path))
-      .map((path, index) => ({
-        id: `file.recent.${index}`,
-        title: `Open recent: ${fileName(path)} in ${directoryOf(path) ?? 'its folder'}`,
-        category: 'File' as const,
-        run: () => this.openFiles([path]),
-      }))
+    return this.session.recentClosed().map((path, index) => ({
+      id: `file.recent.${index}`,
+      title: `Open recent: ${fileName(path)} in ${directoryOf(path) ?? 'its folder'}`,
+      category: 'File' as const,
+      run: () => this.openFiles([path]),
+    }))
   }
 
   togglePreview(): void {
