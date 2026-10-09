@@ -1,4 +1,4 @@
-import { escapeHtml } from './render.js'
+import { escapeHtml, findInlineMath } from './render.js'
 import { isDark } from '../ui/theme.js'
 
 /**
@@ -49,6 +49,57 @@ export async function drawMath(
   } catch (error) {
     return errorHtml('This maths could not be rendered', error)
   }
+}
+
+/**
+ * Draw every `$...$` and `$$...$$` in the text of a rendered fragment.
+ *
+ * Runs after the Markdown, over the rendered text nodes, so `$x$` inside a code
+ * span is left alone: the renderer has already said which parts are code. The
+ * preview pane and the export both need this, and used to carry a copy each.
+ *
+ * Every equation is drawn at once and the text swapped in afterwards. KaTeX is
+ * synchronous once loaded, but awaiting one at a time still meant one trip
+ * through the microtask queue per equation.
+ */
+export async function drawInlineMathIn(
+  root: HTMLElement,
+  { output = 'htmlAndMathml' as MathOutput } = {},
+): Promise<void> {
+  const walker = root.ownerDocument.createTreeWalker(root, NodeFilter.SHOW_TEXT)
+  const candidates: Text[] = []
+
+  while (walker.nextNode()) {
+    const node = walker.currentNode as Text
+    if (node.parentElement?.closest('code, pre')) continue
+    if (node.data.includes('$')) candidates.push(node)
+  }
+
+  await Promise.all(
+    candidates.map(async (node) => {
+      const found = findInlineMath(node.data)
+      if (found.length === 0) return
+
+      const drawn = await Promise.all(
+        found.map((item) => drawMath(item.source, { display: item.display, output })),
+      )
+
+      const fragment = root.ownerDocument.createDocumentFragment()
+      let cursor = 0
+
+      found.forEach((item, index) => {
+        fragment.append(node.data.slice(cursor, item.from))
+        const span = root.ownerDocument.createElement('span')
+        span.className = item.display ? 'mp-math-display' : 'mp-math'
+        span.innerHTML = drawn[index]!
+        fragment.append(span)
+        cursor = item.to
+      })
+
+      fragment.append(node.data.slice(cursor))
+      node.replaceWith(fragment)
+    }),
+  )
 }
 
 /** The stylesheet KaTeX's HTML output needs, for the preview pane. */

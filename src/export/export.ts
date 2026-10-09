@@ -1,8 +1,8 @@
 import type { Buffer } from '../app/buffer.js'
 import { title as titleOf } from '../app/buffer.js'
 import type { Host } from '../host/types.js'
-import { drawDiagram, drawMath } from '../preview/draw.js'
-import { findInlineMath, render } from '../preview/render.js'
+import { drawDiagram, drawInlineMathIn, drawMath } from '../preview/draw.js'
+import { render } from '../preview/render.js'
 import { buildHtmlDocument, htmlNameFor } from './html.js'
 
 /**
@@ -29,46 +29,13 @@ export async function renderForExport(buffer: Buffer): Promise<string> {
         : await drawMath(block.source, { display: true, output: 'mathml' })
   }
 
-  await drawInlineMath(holder)
+  // MathML, so the exported file needs no stylesheet and no font files.
+  await drawInlineMathIn(holder, { output: 'mathml' })
 
   return buildHtmlDocument({
     title: titleOf(buffer).replace(/\.[^.]+$/, ''),
     bodyHtml: holder.innerHTML,
   })
-}
-
-async function drawInlineMath(root: HTMLElement): Promise<void> {
-  const walker = document.createTreeWalker(root, NodeFilter.SHOW_TEXT)
-  const candidates: Text[] = []
-
-  while (walker.nextNode()) {
-    const node = walker.currentNode as Text
-    if (node.parentElement?.closest('code, pre')) continue
-    if (node.data.includes('$')) candidates.push(node)
-  }
-
-  for (const node of candidates) {
-    const found = findInlineMath(node.data)
-    if (found.length === 0) continue
-
-    const fragment = document.createDocumentFragment()
-    let cursor = 0
-
-    for (const item of found) {
-      fragment.append(node.data.slice(cursor, item.from))
-      const span = document.createElement('span')
-      // MathML, so the exported file needs no stylesheet and no font files.
-      span.innerHTML = await drawMath(item.source, {
-        display: item.display,
-        output: 'mathml',
-      })
-      fragment.append(span)
-      cursor = item.to
-    }
-
-    fragment.append(node.data.slice(cursor))
-    node.replaceWith(fragment)
-  }
 }
 
 /** Ask where to put it, render, write it. Returns false if cancelled. */
