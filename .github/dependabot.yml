@@ -1,0 +1,30 @@
+# Weekly, grouped, so it's one PR per ecosystem rather than one per package.
+# Security updates still arrive as soon as an advisory lands, whatever this
+# says.
+version: 2
+updates:
+  - package-ecosystem: npm
+    directory: /
+    schedule:
+      interval: weekly
+    groups:
+      npm:
+        patterns: ['*']
+
+  - package-ecosystem: cargo
+    directory: /src-tauri
+    schedule:
+      interval: weekly
+    groups:
+      cargo:
+        patterns: ['*']
+
+  # The actions are pinned to commits, so this is the only thing that moves
+  # them on.
+  - package-ecosystem: github-actions
+    directory: /
+    schedule:
+      interval: weekly
+    groups:
+      actions:
+        patterns: ['*']
