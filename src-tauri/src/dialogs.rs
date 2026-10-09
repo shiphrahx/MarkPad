@@ -26,7 +26,11 @@ pub async fn pick_files_to_open(window: tauri::Window) -> Vec<String> {
         .blocking_pick_files()
         .unwrap_or_default();
 
-    picked.into_iter().filter_map(into_path).map(display).collect()
+    picked
+        .into_iter()
+        .filter_map(into_path)
+        .map(display)
+        .collect()
 }
 
 /// The save dialog. None when the user cancelled.
