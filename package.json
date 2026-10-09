@@ -17,7 +17,8 @@
     "test": "vitest run",
     "test:watch": "vitest",
     "tauri": "tauri",
-    "icons": "node scripts/make-icon.mjs build/icon.png && tauri icon build/icon.png"
+    "icons": "node scripts/make-icon.mjs build/icon.png && tauri icon build/icon.png",
+    "bench": "vitest bench --run"
   },
   "devDependencies": {
     "@tauri-apps/cli": "^2.11.4",
