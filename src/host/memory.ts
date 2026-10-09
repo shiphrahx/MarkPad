@@ -25,6 +25,8 @@ export class MemoryHost implements Host {
   readonly reported: string[] = []
   /** Every name the app has offered in a save dialog. */
   readonly suggestedNames: string[] = []
+  /** Every link the app has asked to open outside. */
+  readonly openedLinks: string[] = []
   /** How many times the app has asked the window to close. */
   closeRequests = 0
   /**
@@ -96,6 +98,10 @@ export class MemoryHost implements Host {
 
   async saveSession(session: Session): Promise<void> {
     this.session = session.paths.length === 0 ? null : session
+  }
+
+  async openLink(url: string): Promise<void> {
+    this.openedLinks.push(url)
   }
 
   imageUrl(path: string): string {

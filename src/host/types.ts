@@ -82,6 +82,11 @@ export interface Host {
   /** Remember the open files for next time. An empty list forgets them. */
   saveSession(session: Session): Promise<void>
   /**
+   * Open a link from a document in the browser or mail client. Only web and
+   * email links; anything else is refused with a message saying so.
+   */
+  openLink(url: string): Promise<void>
+  /**
    * A picture on disk, written as a URL the window can load.
    *
    * Only pictures. The host serves image files and refuses everything else,

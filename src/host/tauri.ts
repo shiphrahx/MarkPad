@@ -67,6 +67,10 @@ export class TauriHost implements Host {
     await invoke('save_session', { session })
   }
 
+  async openLink(url: string): Promise<void> {
+    await invoke('open_link', { url })
+  }
+
   imageUrl(path: string): string {
     return convertFileSrc(path, 'markpad-image')
   }

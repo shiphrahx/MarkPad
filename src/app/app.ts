@@ -21,6 +21,7 @@ import { isDirty, title as titleOf, type Buffer } from './buffer.js'
 import { extractHeadings, type Heading } from './outline.js'
 import { directoryOf, resolveImage } from './images.js'
 import { Workspace } from './workspace.js'
+import { followLinks } from './links.js'
 import {
   isFirstLaunch,
   loadSession,
@@ -196,6 +197,7 @@ export class App {
       this.rememberSession()
     })
     document.addEventListener('keydown', (event) => this.onKeyDown(event), true)
+    followLinks(root, (href) => void this.openLink(href))
 
     // Nothing in the editor is worth losing to a window closing, and the
     // last tenth of a second of typing lives only in CodeMirror until this
@@ -755,6 +757,15 @@ export class App {
   imageUrl(src: string): string | null {
     const resolved = resolveImage(src, directoryOf(this.workspace.active?.path ?? null))
     return resolved === null ? null : this.host.imageUrl(resolved)
+  }
+
+  /** Open a link from the document outside the app, or say why not. */
+  async openLink(href: string): Promise<void> {
+    try {
+      await this.host.openLink(href)
+    } catch (error) {
+      await this.host.report(describe(error))
+    }
   }
 
   /**
