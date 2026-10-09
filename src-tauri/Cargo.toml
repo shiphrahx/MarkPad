@@ -19,7 +19,12 @@ tauri-plugin-dialog = "2"
 # Opens a document's links in the browser. The page gets no permission to use
 # it directly: links go through our own command, which only allows http(s)
 # and mailto.
-tauri-plugin-opener = "2"
+#
+# Pinned, with the whole Tauri stack held at what 0.1.4 shipped (tauri 2.11,
+# wry 0.55, tao 0.35). opener 2.6 needs tauri 2.12, which brings wry 0.57 and
+# tao 0.37, and with those the Linux smoke test stops being able to type into
+# the window. Bisected to that bump. Lift the pin when it's understood.
+tauri-plugin-opener = "=2.5.5"
 serde = { version = "1", features = ["derive"] }
 # Already in the tree through Tauri. The session file is the only JSON we write.
 serde_json = "1"

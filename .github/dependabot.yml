@@ -7,6 +7,8 @@ updates:
     directory: /
     schedule:
       interval: weekly
+    ignore:
+      - dependency-name: '@tauri-apps/*'
     groups:
       npm:
         patterns: ['*']
@@ -15,6 +17,12 @@ updates:
     directory: /src-tauri
     schedule:
       interval: weekly
+    # Held back on purpose. See the comment on tauri-plugin-opener in Cargo.toml.
+    ignore:
+      - dependency-name: tauri
+      - dependency-name: tauri-*
+      - dependency-name: wry
+      - dependency-name: tao
     groups:
       cargo:
         patterns: ['*']
