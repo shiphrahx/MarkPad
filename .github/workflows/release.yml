@@ -77,7 +77,11 @@ jobs:
             name: Windows (x64)
             args: ''
             rust-targets: ''
-            pattern: src-tauri/target/release/bundle/nsis/*-setup.exe
+            # The installer, and the same app as one .exe that runs without
+            # installing, for machines where installing isn't allowed.
+            pattern: >-
+              src-tauri/target/release/bundle/nsis/*-setup.exe
+              src-tauri/target/release/bundle/nsis/*-portable.exe
           # 22.04 rather than latest on purpose. The binary links against the
           # build machine's glibc, and that sets the floor for who can install
           # it. Building on a newer runner would quietly drop distributions
@@ -131,6 +135,16 @@ jobs:
       - run: pnpm icons
 
       - run: pnpm tauri build ${{ matrix.args }}
+
+      # The app itself is already a single exe. Copied next to the installer
+      # with a name that says what it is, so the rest of the job treats the
+      # two the same way.
+      - name: Make the portable Windows build
+        if: runner.os == 'Windows'
+        shell: bash
+        run: |
+          version=$(node -p "require('./package.json').version")
+          cp src-tauri/target/release/markpad.exe "src-tauri/target/release/bundle/nsis/MarkPad_${version}_x64-portable.exe"
 
       # The size budget applies to what people actually download, not only to
       # the CI build, so it is checked here too.
