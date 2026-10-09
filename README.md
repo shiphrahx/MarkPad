@@ -106,8 +106,9 @@ cd src-tauri && cargo test
 Tauri v2 for the shell, CodeMirror 6 for the editor, TypeScript and hand-written CSS
 for the chrome. No UI framework.
 
-- Hard size and speed budgets live in [`CLAUDE.md`](./CLAUDE.md) and CI enforces them.
-  If a change breaks one, the change is wrong and not the budget.
+- Hard size and speed budgets live in [`CLAUDE.md`](./CLAUDE.md). CI enforces the
+  installer size and benchmarks the rest. If a change breaks one, the change is wrong
+  and not the budget.
 - Design decisions live in [`docs/decisions/`](./docs/decisions). Worth reading before
   suggesting an architectural change.
 - Owes a lot to [MarkEdit](https://github.com/MarkEdit-app/MarkEdit), which is excellent
