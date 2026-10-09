@@ -93,7 +93,7 @@ export class ReaderEditor {
     return EditorState.create({
       doc,
       plugins: [
-        sourceMemory(rememberSource(markdown, doc, tokens)),
+
         // Before the keymap, so the slash menu gets the arrow keys and Enter
         // while it is open.
         ...slashMenu(),
@@ -109,8 +109,6 @@ export class ReaderEditor {
         placeholder(this.options.platform),
         selectionToolbar({ onLink: this.options.onLink }),
         codeHighlight(),
-        currentBlock(),
-        ...(this.options.onPasteImage ? [pasteImages(this.options.onPasteImage)] : []),
       ],
     })
   }
