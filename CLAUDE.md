@@ -41,6 +41,12 @@ every Markdown serialiser is lossy. Marker characters, emphasis delimiters,
 table padding and line wrapping come back in the serialiser's preferred form,
 including on lines nobody touched. Anything that reduces that is worth doing.
 
+Since 0.1.5, blocks nobody touched are written back exactly as the file had
+them (`src/wysiwyg/source-memory.ts`). The loss is now confined to the blocks
+somebody actually edited. Keep it that way: anything that rebuilds top-level
+nodes it didn't change, such as a plugin that re-creates the whole document,
+quietly brings the old problem back.
+
 ## Stack
 
 - **Shell:** Tauri v2 (Rust). WebView2 on Windows, WKWebView on macOS, WebKitGTK on
