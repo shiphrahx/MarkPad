@@ -27,6 +27,10 @@ jobs:
       - run: pnpm install --frozen-lockfile
       - run: pnpm typecheck
       - run: pnpm test
+      # Reported rather than enforced: shared runners are too noisy to fail a
+      # build on a timing. A change that makes these several times slower is
+      # still obvious in the log.
+      - run: pnpm bench
 
   rust:
     name: Rust
