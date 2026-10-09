@@ -43,7 +43,7 @@
     "@lezer/highlight": "^1.2.3",
     "@tauri-apps/api": "^2.11.1",
     "@tauri-apps/plugin-dialog": "^2.7.2",
-    "dompurify": "^3.4.14",
+    "dompurify": "^3.4.16",
     "katex": "^0.18.4",
     "lowlight": "^3.3.0",
     "markdown-it": "^14.3.2",
