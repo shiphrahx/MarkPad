@@ -44,6 +44,9 @@ importers:
       '@tauri-apps/plugin-dialog':
         specifier: ^2.7.2
         version: 2.7.2
+      dompurify:
+        specifier: ^3.4.14
+        version: 3.4.14
       katex:
         specifier: ^0.18.4
         version: 0.18.4

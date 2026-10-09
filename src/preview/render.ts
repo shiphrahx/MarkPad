@@ -1,4 +1,5 @@
 import type MarkdownIt from 'markdown-it'
+import createPurifier from 'dompurify'
 import type Token from 'markdown-it/lib/token.mjs'
 import { createMarkdown, HTML_BLOCK_TOKEN } from '../markdown/markdown.js'
 
@@ -9,11 +10,10 @@ import { createMarkdown, HTML_BLOCK_TOKEN } from '../markdown/markdown.js'
  * point: a document cannot mean one thing in the window and another in the PDF.
  * Only the rendering differs, and only where it has to.
  *
- * Nothing here sanitises the output. The content is the user's own file, shown
- * back to them, and the window runs under a content security policy of
- * `default-src 'self'` which stops an inline script in a Markdown file from
- * doing anything at all. The exported HTML carries a stricter one in a meta
- * tag, so a file that ends up in a browser behaves the same way.
+ * Raw HTML blocks are sanitised before they go anywhere. The content is often
+ * a file from the internet rather than one the user wrote, and the content
+ * security policy, which already stops scripts, should not be the only thing
+ * between it and the app. The exported HTML carries its own policy as well.
  */
 
 /** Blocks the preview hands to something else to draw. */
@@ -89,8 +89,8 @@ function buildRenderer(): MarkdownIt {
     return `<div class="mp-block" data-block-id="${id}"></div>`
   }
 
-  /** Raw HTML, written out as it arrived. */
-  rules[HTML_BLOCK_TOKEN] = (tokens, index) => tokens[index]!.content
+  /** Raw HTML, with anything that could act rather than draw taken out. */
+  rules[HTML_BLOCK_TOKEN] = (tokens, index) => cleanHtml(tokens[index]!.content)
 
   /**
    * markdown-it writes strikethrough as `<s>`. The editor's schema writes
@@ -121,6 +121,29 @@ function buildRenderer(): MarkdownIt {
 
   return markdown
 }
+
+/**
+ * Raw HTML from a document, reduced to the parts that draw.
+ *
+ * DOMPurify takes out scripts, event handlers and `javascript:` URLs. On top
+ * of that: forms, which could post what is typed into them, and the tags that
+ * change how the rest of the page loads. `<details>`, `<kbd>`, `<sup>` and the
+ * rest of what people actually put in Markdown are untouched.
+ *
+ * With no DOM to parse into, as in a Node test, the HTML is escaped instead.
+ * Showing the tags as text is the safe way to be wrong.
+ */
+export function cleanHtml(html: string): string {
+  if (typeof window === 'undefined') return escapeHtml(html)
+
+  purifier ??= createPurifier(window)
+  return purifier.sanitize(html, {
+    FORBID_TAGS: ['form', 'input', 'button', 'select', 'textarea', 'base', 'meta', 'link'],
+    FORBID_ATTR: ['formaction', 'action'],
+  })
+}
+
+let purifier: ReturnType<typeof createPurifier> | null = null
 
 /** Which fences are drawn by a library rather than shown as code. */
 function drawnRatherThanHighlighted(info: string): BlockKind | null {
