@@ -73,7 +73,6 @@ pub fn run() {
         ))
         .plugin(tauri_plugin_dialog::init())
         .plugin(tauri_plugin_opener::init())
-        .plugin(links::navigation_guard())
         .manage(opening::Arrivals::default())
         .manage(Access::default())
         .register_asynchronous_uri_scheme_protocol(
