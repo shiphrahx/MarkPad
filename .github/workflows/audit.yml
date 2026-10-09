@@ -1,0 +1,45 @@
+name: Audit
+
+# Known vulnerabilities in what we ship. On every change to a lockfile, and
+# weekly, because an advisory can land against a dependency nobody touched.
+
+on:
+  push:
+    branches: [main]
+    paths: ['pnpm-lock.yaml', 'src-tauri/Cargo.lock', '.github/workflows/audit.yml']
+  pull_request:
+    paths: ['pnpm-lock.yaml', 'src-tauri/Cargo.lock', '.github/workflows/audit.yml']
+  schedule:
+    - cron: '0 6 * * 1'
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  npm:
+    name: npm packages
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262 # v4
+      - uses: pnpm/action-setup@b906affcce14559ad1aafd4ab0e942779e9f58b1 # v4
+      - uses: actions/setup-node@49933ea5288caeca8642d1e84afbd3f7d6820020 # v4
+        with:
+          node-version: 22
+      # Production dependencies only: those are the ones in the installer.
+      - run: pnpm audit --prod --audit-level high
+
+  cargo:
+    name: Rust crates
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+      # So a finding shows up as an issue rather than only in a log.
+      issues: write
+      checks: write
+    steps:
+      - uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262 # v4
+      - uses: rustsec/audit-check@69366f33c96575abad1ee0dba8212993eecbe998 # v2
+        with:
+          token: ${{ github.token }}
+          working-directory: src-tauri
