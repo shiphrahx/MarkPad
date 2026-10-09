@@ -27,6 +27,8 @@ export class StatusBar {
 
   /** A newer release, once the update check has found one. */
   update: Update | null = null
+  /** A word about the open file, like why it opened as source. */
+  note: string | null = null
 
   constructor(private readonly handlers: StatusBarHandlers) {}
 
@@ -45,6 +47,7 @@ export class StatusBar {
       this.element,
       el('span', { class: 'status-item' }, `${words.toLocaleString()} ${words === 1 ? 'word' : 'words'}`),
       caret && el('span', { class: 'status-item' }, `Ln ${caret.line}, Col ${caret.column}`),
+      this.note && el('span', { class: 'status-item status-note' }, this.note),
       el('span', { class: 'status-spacer' }),
       this.update && this.updateNotice(this.update),
       this.picker(

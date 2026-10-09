@@ -65,6 +65,17 @@ const IDLE_MS = 100
 export type Mode = 'reader' | 'source'
 
 /**
+ * Above this many characters a file opens in source view.
+ *
+ * Reader mode lays out every block of the document as real DOM, with no
+ * virtualisation, and the budget is a 10 MB file open in under a second.
+ * CodeMirror only draws what is on screen and meets that easily. Reader mode
+ * does not, so a big file gets the surface that can open it, and reader mode
+ * is still one command away for anybody who wants to wait.
+ */
+export const LARGE_FILE_CHARACTERS = 2_000_000
+
+/**
  * The app: the workspace, the editor and the chrome, wired together.
  *
  * Everything interesting happens somewhere else. This file is the part that
@@ -450,6 +461,13 @@ export class App {
     if (active.id !== this.currentId) {
       this.rememberState()
 
+      if (this.mode === 'reader' && active.text.length > LARGE_FILE_CHARACTERS) {
+        this.showSurface('source')
+        this.status.note = 'Large file, opened as source'
+      } else {
+        this.status.note = null
+      }
+
       this.applyingExternally = true
       if (this.mode === 'reader') {
         const kept = this.readerStates.get(active.id)
@@ -650,13 +668,17 @@ export class App {
     this.flush()
 
     const active = this.workspace.active
-    this.mode = this.mode === 'reader' ? 'source' : 'reader'
-
-    this.sourceHolder.hidden = this.mode !== 'source'
-    this.reader.element.hidden = this.mode !== 'reader'
+    this.showSurface(this.mode === 'reader' ? 'source' : 'reader')
+    this.status.note = null
 
     if (active) this.loadIntoSurface(active.text)
     this.renderCaretParts()
+  }
+
+  private showSurface(mode: Mode): void {
+    this.mode = mode
+    this.sourceHolder.hidden = mode !== 'source'
+    this.reader.element.hidden = mode !== 'reader'
   }
 
   /**
