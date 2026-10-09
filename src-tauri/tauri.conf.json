@@ -48,7 +48,7 @@
       }
     },
     "macOS": {
-      "minimumSystemVersion": "10.15"
+      "minimumSystemVersion": "13.0"
     },
     "linux": {
       "deb": {
