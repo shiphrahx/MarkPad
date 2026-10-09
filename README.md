@@ -60,12 +60,19 @@ exact wording and the fix.
 - Light and dark, following your system setting
 - Detects CRLF or LF on open and keeps it on save, which matters when files move
   between Windows, Mac and Linux
+- Saves the lines you didn't touch exactly as they were, so a one-word fix is a
+  one-line diff
+- Notices when another program changes an open file, and asks before saving over it
+- Pictures next to the file, in a subfolder or a folder above all show up
+- Links open in your browser with Ctrl+click (⌘-click on a Mac)
 
 ![Exporting a Markdown file from MarkPad](./docs/markpad-export.gif)
 
 ## What it doesn't do
 
 - No accounts, no sync, no telemetry
+- One network request: a once-a-day check for a newer version, with no ID in it.
+  Turn it off from the command palette and there are none
 - No tags, backlinks or graph view
 - No Markdown syntax that only works here
 - No bundled Chromium. It uses the WebView already on your machine, which is how the
