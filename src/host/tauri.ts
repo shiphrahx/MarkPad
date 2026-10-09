@@ -75,6 +75,14 @@ export class TauriHost implements Host {
     await invoke('save_session', { session })
   }
 
+  async savePastedImage(documentPath: string, bytes: Uint8Array): Promise<string> {
+    // The picture goes as the raw body rather than as JSON, which would turn
+    // every byte into a number in a string.
+    return invoke<string>('save_pasted_image', bytes, {
+      headers: { 'x-document': encodeURIComponent(documentPath) },
+    })
+  }
+
   async openLink(url: string): Promise<void> {
     await invoke('open_link', { url })
   }

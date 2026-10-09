@@ -172,6 +172,7 @@ export class App {
       onChange: () => this.onSurfaceEdited(),
       onLink: () => void this.addLink(),
       imageUrl: (src) => this.imageUrl(src),
+      onPasteImage: (file) => this.pasteImage(file),
     })
 
     const sourceHolder = el('div', { class: 'editor', hidden: true })
@@ -866,6 +867,27 @@ export class App {
   showUpdate(update: Update): void {
     this.status.update = update
     this.renderCaretParts()
+  }
+
+  /**
+   * Save a pasted picture beside the open document and return the link to it.
+   *
+   * A document that has never been saved has no folder, so there is nowhere
+   * to put the picture. That gets said rather than guessed at.
+   */
+  async pasteImage(file: Blob): Promise<string | null> {
+    const path = this.workspace.active?.path ?? null
+    if (path === null) {
+      await this.host.report('Save the document first, so the picture has a folder to go in.')
+      return null
+    }
+
+    try {
+      return await this.host.savePastedImage(path, new Uint8Array(await file.arrayBuffer()))
+    } catch (error) {
+      await this.host.report(describe(error))
+      return null
+    }
   }
 
   /** Open a link from the document outside the app, or say why not. */

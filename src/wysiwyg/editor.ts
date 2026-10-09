@@ -26,6 +26,7 @@ import { placeholder } from './placeholder.js'
 import { selectionToolbar } from './selection-toolbar.js'
 import { slashMenu } from './slash-menu.js'
 import { codeHighlight } from './code-highlight.js'
+import { pasteImages } from './paste-image.js'
 
 export interface ReaderOptions {
   readonly platform: Platform
@@ -39,6 +40,11 @@ export interface ReaderOptions {
    * deliberately knows nothing about files.
    */
   readonly imageUrl: (src: string) => string | null
+  /**
+   * Save a pasted picture as a file and say what to link to, or null when it
+   * was not saved. Absent means pictures cannot be pasted at all.
+   */
+  readonly onPasteImage?: (file: File) => Promise<string | null>
 }
 
 /**
@@ -102,6 +108,7 @@ export class ReaderEditor {
         placeholder(this.options.platform),
         selectionToolbar({ onLink: this.options.onLink }),
         codeHighlight(),
+        ...(this.options.onPasteImage ? [pasteImages(this.options.onPasteImage)] : []),
       ],
     })
   }

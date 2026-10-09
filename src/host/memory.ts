@@ -28,6 +28,8 @@ export class MemoryHost implements Host {
   readonly reported: string[] = []
   /** Every name the app has offered in a save dialog. */
   readonly suggestedNames: string[] = []
+  /** Every picture pasted, by the link it was given. */
+  readonly pastedImages = new Map<string, Uint8Array>()
   /** Every link the app has asked to open outside. */
   readonly openedLinks: string[] = []
   /** How many times the app has asked the window to close. */
@@ -122,6 +124,12 @@ export class MemoryHost implements Host {
 
   async saveSession(session: Session): Promise<void> {
     this.session = session.paths.length === 0 && session.recent.length === 0 ? null : session
+  }
+
+  async savePastedImage(_documentPath: string, bytes: Uint8Array): Promise<string> {
+    const link = `images/pasted-${this.pastedImages.size + 1}.png`
+    this.pastedImages.set(link, bytes)
+    return link
   }
 
   async openLink(url: string): Promise<void> {

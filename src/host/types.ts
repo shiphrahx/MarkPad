@@ -94,6 +94,11 @@ export interface Host {
   /** Remember the open files for next time. Nothing open or recent forgets them. */
   saveSession(session: Session): Promise<void>
   /**
+   * Save a pasted picture into an `images` folder beside a document the user
+   * opened. Resolves to the link to put in the document, relative to it.
+   */
+  savePastedImage(documentPath: string, bytes: Uint8Array): Promise<string>
+  /**
    * Open a link from a document in the browser or mail client. Only web and
    * email links; anything else is refused with a message saying so.
    */
