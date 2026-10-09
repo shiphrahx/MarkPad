@@ -23,7 +23,7 @@
   },
   "devDependencies": {
     "@biomejs/biome": "^2.5.15",
-    "@tauri-apps/cli": "^2.11.4",
+    "@tauri-apps/cli": "^2.12.1",
     "@types/markdown-it": "^14.2.0",
     "@types/node": "^26.2.0",
     "@vitest/coverage-v8": "^4.1.11",
@@ -43,7 +43,7 @@
     "@fontsource-variable/instrument-sans": "^5.3.0",
     "@fontsource-variable/jetbrains-mono": "^5.3.0",
     "@lezer/highlight": "^1.2.3",
-    "@tauri-apps/api": "^2.11.1",
+    "@tauri-apps/api": "^2.12.2",
     "@tauri-apps/plugin-dialog": "^2.7.2",
     "dompurify": "^3.4.16",
     "katex": "^0.18.4",
