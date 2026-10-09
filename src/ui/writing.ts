@@ -50,7 +50,8 @@ export function apply(root: HTMLElement = document.documentElement): void {
   root.toggleAttribute('data-focus', focus)
   // Inherited by everything without its own setting, which includes the
   // reader. CodeMirror sets its own, so the source view stays unchecked.
-  root.setAttribute('spellcheck', spelling ? 'true' : 'false')
+  if (!spelling) root.setAttribute('spellcheck', 'false')
+  else root.removeAttribute('spellcheck')
   for (const listener of listeners) listener()
 }
 
