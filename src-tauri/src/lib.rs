@@ -91,6 +91,12 @@ pub fn run() {
             dialogs::pick_path_to_save,
             chrome::set_caption_colors
         ])
-        .run(tauri::generate_context!())
-        .expect("MarkPad could not start.");
+        .build(tauri::generate_context!())
+        .expect("MarkPad could not start.")
+        .run(|_app, _event| {
+            #[cfg(target_os = "macos")]
+            if let tauri::RunEvent::Opened { urls } = &_event {
+                opening::opened(_app, urls);
+            }
+        });
 }

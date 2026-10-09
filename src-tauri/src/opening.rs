@@ -68,6 +68,24 @@ pub fn startup_files(
     paths
 }
 
+/// Files macOS handed us: a double-click in Finder, Open With, or a drop on
+/// the Dock icon.
+///
+/// macOS does not put these on the command line the way Windows and Linux do.
+/// They arrive as an Apple event after launch, or while running, which is why
+/// the README's double-click never worked there.
+#[cfg(target_os = "macos")]
+pub fn opened(app: &tauri::AppHandle, urls: &[tauri::Url]) {
+    let paths = urls
+        .iter()
+        .filter_map(|url| url.to_file_path().ok())
+        .filter(|path| path.is_file())
+        .map(|path| path.to_string_lossy().into_owned())
+        .collect();
+
+    deliver(app, paths);
+}
+
 /// Files dropped on the window. Only the ones that look like Markdown.
 pub fn dropped(app: &tauri::AppHandle, paths: &[PathBuf]) {
     let markdown = paths
