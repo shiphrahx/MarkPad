@@ -1,4 +1,5 @@
 mod chrome;
+mod dialogs;
 mod files;
 #[cfg(windows)]
 mod webview2;
@@ -83,6 +84,8 @@ pub fn run() {
             write_text_file,
             startup_files,
             allow_images_in,
+            dialogs::pick_files_to_open,
+            dialogs::pick_path_to_save,
             chrome::set_caption_colors
         ])
         .run(tauri::generate_context!())

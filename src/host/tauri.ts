@@ -1,5 +1,5 @@
 import { convertFileSrc, invoke } from '@tauri-apps/api/core'
-import { message, open, save } from '@tauri-apps/plugin-dialog'
+import { message } from '@tauri-apps/plugin-dialog'
 import { detectEncoding, detectLineEnding, toEditorText, toFileText } from './text.js'
 import { platformFromUserAgent } from './platform.js'
 import type {
@@ -9,11 +9,6 @@ import type {
   SaveResult,
   TextDocument,
 } from './types.js'
-
-const MARKDOWN_FILTER = {
-  name: 'Markdown',
-  extensions: ['md', 'markdown', 'mdown', 'mkd', 'txt'],
-}
 
 /**
  * The real host. This is the only file in `src/` that knows Tauri exists.
@@ -47,14 +42,16 @@ export class TauriHost implements Host {
     return { byteLength }
   }
 
+  /**
+   * The dialogs run in Rust, so the host learns which paths the user really
+   * chose. A path from here is one the page is then allowed to read and write.
+   */
   async pickFilesToOpen(): Promise<readonly string[]> {
-    const picked = await open({ multiple: true, filters: [MARKDOWN_FILTER] })
-    if (picked === null) return []
-    return Array.isArray(picked) ? picked : [picked]
+    return invoke<string[]>('pick_files_to_open')
   }
 
   async pickPathToSave(suggestedName: string): Promise<string | null> {
-    return save({ defaultPath: suggestedName, filters: [MARKDOWN_FILTER] })
+    return invoke<string | null>('pick_path_to_save', { suggestedName })
   }
 
   async report(text: string, title = 'MarkPad'): Promise<void> {
