@@ -34,7 +34,9 @@ Grab your file from [the latest release](https://github.com/shiphrahx/MarkPad/re
   Not sure which? Apple menu, then About This Mac. Open the dmg, drag MarkPad into
   Applications.
 - **Windows** 🪟 download the `-setup.exe` and run it. Installs for the current user,
-  so no admin prompt.
+  so no admin prompt. Not allowed to install anything? The `-portable.exe` is the
+  same app as one file that runs where it is. It still keeps its settings in your
+  user folder, and it needs WebView2, which Windows 10 and 11 normally have.
 - **Linux** 🐧 the `.deb` on Debian 12 or Ubuntu 22.04 and later, the `.rpm` on Fedora.
   Either one pulls in WebKitGTK if you haven't got it.
 
@@ -87,12 +89,6 @@ exact wording and the fix.
 
 Your files are ordinary files in ordinary folders. Uninstall MarkPad and they still
 open in everything else.
-
-## Coming next
-
-- **A portable Windows build.** One `.exe` you can drop on a USB stick or run on a
-  machine you're not allowed to install anything on. Nothing to install, nothing left
-  behind.
 
 Try it and [open an issue](https://github.com/shiphrahx/MarkPad/issues) when something
 annoys you. That's what shapes the next version.
