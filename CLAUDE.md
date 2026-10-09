@@ -159,5 +159,6 @@ MarkEdit could assume macOS. We cannot. Get these right or the app feels foreign
   `src/host/` boundary so the editor stays testable in Node.
 - Small commits, conventional commit messages, one concern each.
 - New behaviour ships with a test. Bug fixes ship with the failing test first.
-- Never commit binaries, `.env` files, or generated bundles.
+- Never commit binaries, `.env` files, or generated bundles. The one exception is
+  images the README and the docs site show, in `docs/`. Keep each under 1 MB.
 - When something in this file conflicts with a request, say so before writing code.
