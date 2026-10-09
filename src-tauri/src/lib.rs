@@ -5,6 +5,7 @@ mod files;
 mod images;
 mod links;
 mod opening;
+mod pasted;
 mod session;
 #[cfg(windows)]
 mod webview2;
@@ -131,6 +132,7 @@ pub fn run() {
             session::load_session,
             session::save_session,
             links::open_link,
+            pasted::save_pasted_image,
             dialogs::pick_files_to_open,
             dialogs::pick_path_to_save,
             chrome::set_caption_colors
