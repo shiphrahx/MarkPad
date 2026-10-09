@@ -39,7 +39,6 @@ void start()
 async function start(): Promise<void> {
   applyNativeChrome()
   await Promise.allSettled([guardTheClose(), openStartupFiles(), followCommandState()])
-  listenForDroppedFiles()
   followSystemTheme()
 }
 
@@ -95,36 +94,25 @@ async function followCommandState(): Promise<void> {
 }
 
 /**
- * Last time's tabs, plus whatever was double-clicked to get here.
+ * Last time's tabs, plus whatever was double-clicked to get here, plus
+ * anything that arrives while the app is running.
  *
  * Both, rather than one or the other: opening a file should add to what you
  * had, not replace it.
+ *
+ * Every file from outside the window comes through the one `open-files`
+ * event: a drop, and the files Rust held on to because they turned up before
+ * this page was listening. So the listener goes in first, and asking for the
+ * startup files is what tells Rust it can stop holding them.
  */
 async function openStartupFiles(): Promise<void> {
   const { invoke } = await import('@tauri-apps/api/core')
+  const { listen } = await import('@tauri-apps/api/event')
+
+  await listen<string[]>('open-files', (event) => void app.openFiles(event.payload))
+
   const paths = await invoke<string[]>('startup_files')
   await app.start(paths)
-}
-
-/**
- * Files dragged onto the window.
- *
- * Tauri reports the drop on the window rather than through a DOM event,
- * because the WebView never sees a file that came from the desktop.
- */
-function listenForDroppedFiles(): void {
-  void import('@tauri-apps/api/webview').then(({ getCurrentWebview }) => {
-    void getCurrentWebview().onDragDropEvent((event) => {
-      if (event.payload.type !== 'drop') return
-
-      const markdown = event.payload.paths.filter(looksLikeText)
-      if (markdown.length > 0) void app.openFiles(markdown)
-    })
-  })
-}
-
-function looksLikeText(path: string): boolean {
-  return /\.(md|markdown|mdown|mkd|txt)$/i.test(path)
 }
 
 /**
