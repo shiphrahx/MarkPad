@@ -206,7 +206,6 @@ export class App {
       this.session.remember()
     })
     document.addEventListener('keydown', (event) => this.onKeyDown(event), true)
-    followLinks(root, (href) => void this.openLink(href))
 
     // Nothing in the editor is worth losing to a window closing, and the
     // last tenth of a second of typing lives only in CodeMirror until this

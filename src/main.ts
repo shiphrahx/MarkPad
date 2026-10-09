@@ -18,7 +18,6 @@ if (!root) throw new Error('MarkPad could not find its root element.')
 // the way to the right ones, or the wrong size on the way to the right one.
 applyTheme()
 applyZoom()
-applyWriting()
 
 // The preview pane and the popovers both render Markdown, so the document
 // styles have to exist in the app as well as inside an exported file.
@@ -44,8 +43,6 @@ async function start(): Promise<void> {
   applyNativeChrome()
   await Promise.allSettled([guardTheClose(), openStartupFiles(), followCommandState()])
   followSystemTheme()
-  addEventListener('focus', () => void app.catchUpWithDisk())
-  lookForUpdates()
 }
 
 /**
