@@ -18,9 +18,11 @@
     "test:watch": "vitest",
     "tauri": "tauri",
     "icons": "node scripts/make-icon.mjs build/icon.png && tauri icon build/icon.png",
-    "bench": "vitest bench --run"
+    "bench": "vitest bench --run",
+    "lint": "biome lint"
   },
   "devDependencies": {
+    "@biomejs/biome": "^2.5.15",
     "@tauri-apps/cli": "^2.11.4",
     "@types/markdown-it": "^14.2.0",
     "@types/node": "^26.2.0",

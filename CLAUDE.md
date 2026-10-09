@@ -66,10 +66,11 @@ Every new dependency needs a one-line justification in the PR description.
 
 ## Commands
 
-Run all four before every commit. CI runs the same ones.
+Run all of these before every commit. CI runs the same ones.
 
 ```bash
 pnpm typecheck                     # tsc, no emit
+pnpm lint                          # biome, correctness rules only
 pnpm test                          # vitest, editor logic in jsdom
 cd src-tauri && cargo test         # the Rust side
 cd src-tauri && cargo clippy --all-targets -- -D warnings
