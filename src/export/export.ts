@@ -57,6 +57,26 @@ export async function exportHtml(buffer: Buffer, host: Host): Promise<boolean> {
 }
 
 /**
+ * The hidden frame a document is printed from.
+ *
+ * Sandboxed. Without it the frame shares the app's origin, and anything in the
+ * document that managed to run would be one `parent.` away from the app. With
+ * it, nothing in the frame runs at all: `allow-same-origin` is only there so
+ * this side can call `print()` on it, and `allow-modals` so the print dialog
+ * is allowed to open.
+ */
+export function printFrame(html: string): HTMLIFrameElement {
+  const frame = document.createElement('iframe')
+  frame.setAttribute('aria-hidden', 'true')
+  frame.setAttribute('sandbox', 'allow-same-origin allow-modals')
+  frame.style.cssText = 'position:fixed;right:0;bottom:0;width:0;height:0;border:0;'
+  // The title in the rendered document is the file name without its
+  // extension, which is what the print dialog offers as the PDF's name.
+  frame.srcdoc = html
+  return frame
+}
+
+/**
  * Export to PDF through the system print engine.
  *
  * The rules said to use the system print engine rather than bundling a PDF
@@ -69,15 +89,7 @@ export async function exportHtml(buffer: Buffer, host: Host): Promise<boolean> {
  * tab strip and the status bar, does not end up on the page.
  */
 export async function exportPdf(buffer: Buffer): Promise<void> {
-  const html = await renderForExport(buffer)
-
-  const frame = document.createElement('iframe')
-  frame.setAttribute('aria-hidden', 'true')
-  frame.style.cssText = 'position:fixed;right:0;bottom:0;width:0;height:0;border:0;'
-  // The title in the rendered document is the file name without its
-  // extension, which is what the print dialog offers as the PDF's name.
-  frame.srcdoc = html
-
+  const frame = printFrame(await renderForExport(buffer))
   document.body.appendChild(frame)
 
   await new Promise<void>((resolve) => {

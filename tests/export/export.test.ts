@@ -1,6 +1,6 @@
 // @vitest-environment jsdom
 import { beforeEach, describe, expect, it } from 'vitest'
-import { exportHtml, renderForExport } from '../../src/export/export.js'
+import { exportHtml, printFrame, renderForExport } from '../../src/export/export.js'
 import { bufferFromDocument, resetBufferIds } from '../../src/app/buffer.js'
 import type { Buffer } from '../../src/app/buffer.js'
 import { MemoryHost } from '../../src/host/memory.js'
@@ -113,5 +113,19 @@ describe('exportHtml', () => {
     mac.queueSavePick('/Users/cassia/notes.html')
     await exportHtml(buffer('# Title\n'), mac)
     expect(mac.raw('/Users/cassia/notes.html')).not.toContain('\r')
+  })
+})
+
+describe('printFrame', () => {
+  it('prints from a sandbox that runs no scripts', () => {
+    const frame = printFrame('<p>hello</p>')
+
+    const sandbox = frame.getAttribute('sandbox')?.split(' ') ?? []
+    expect(sandbox).toContain('allow-modals')
+    expect(sandbox).not.toContain('allow-scripts')
+  })
+
+  it('carries the document it was given', () => {
+    expect(printFrame('<p>hello</p>').srcdoc).toBe('<p>hello</p>')
   })
 })
