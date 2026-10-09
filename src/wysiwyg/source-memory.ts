@@ -64,7 +64,9 @@ export function rememberSource(
   }
 
   const nodes: ProseNode[] = []
-  doc.forEach((node) => nodes.push(node))
+  doc.forEach((node) => {
+    nodes.push(node)
+  })
 
   return {
     nodes,
@@ -81,7 +83,9 @@ export function serialisePreserving(doc: ProseNode, memory: SourceMemory | null)
   if (memory === null || isBlank(doc)) return toMarkdown(doc)
 
   const children: ProseNode[] = []
-  doc.forEach((node) => children.push(node))
+  doc.forEach((node) => {
+    children.push(node)
+  })
 
   const origins = matchOrigins(children, memory)
 

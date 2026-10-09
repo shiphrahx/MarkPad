@@ -267,7 +267,7 @@ export class App {
         await this.workspace.open([path])
         opened.push(path)
       } catch {
-        continue
+        // Gone since last time. Skip it and open the rest.
       }
     }
 

@@ -1,7 +1,6 @@
 import { Plugin, PluginKey } from 'prosemirror-state'
 import { Decoration, DecorationSet } from 'prosemirror-view'
 import type { EditorState } from 'prosemirror-state'
-import type { Node as ProseNode } from 'prosemirror-model'
 
 /**
  * Syntax highlighting for code blocks in the rendered surface.

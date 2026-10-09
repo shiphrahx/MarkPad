@@ -1,6 +1,5 @@
 import type MarkdownIt from 'markdown-it'
 import createPurifier from 'dompurify'
-import type Token from 'markdown-it/lib/token.mjs'
 import { createMarkdown, HTML_BLOCK_TOKEN } from '../markdown/markdown.js'
 
 /**
@@ -108,7 +107,7 @@ function buildRenderer(): MarkdownIt {
    * the `<li>`, which is not what anybody meant, so it becomes the checkbox
    * that a reader expects and the attribute goes away.
    */
-  rules.list_item_open = (tokens, index, options, env, self) => {
+  rules.list_item_open = (tokens, index, options, _env, self) => {
     const token = tokens[index]!
     const checked = token.attrGet('checked')
     if (checked === null) return self.renderToken(tokens, index, options)

@@ -214,7 +214,7 @@ const marks = {
     open(_state: MarkdownSerializerState, _mark: unknown, parent: ProseNode, index: number) {
       return isPlainAutolink(parent, index) ? '<' : '['
     },
-    close(state: MarkdownSerializerState, mark: { attrs: Record<string, unknown> }, parent: ProseNode, index: number) {
+    close(_state: MarkdownSerializerState, mark: { attrs: Record<string, unknown> }, parent: ProseNode, index: number) {
       if (isPlainAutolink(parent, index)) return '>'
 
       const href = String(mark.attrs.href ?? '').replace(/[()"]/g, '\\$&')

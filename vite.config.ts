@@ -22,7 +22,7 @@ export default defineConfig({
         // quarter of a megabyte of the same code twice.
         advancedChunks: {
           groups: [
-            { name: 'katex', test: /[\/]node_modules[\/]katex[\/]/ },
+            { name: 'katex', test: /[\\/]node_modules[\\/]katex[\\/]/ },
           ],
         },
       },

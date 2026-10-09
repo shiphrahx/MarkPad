@@ -59,7 +59,7 @@ describe('empty document', () => {
   })
 
   it('goes away once there is something in the document', async () => {
-    const app = await withDocument('# Something\n')
+    await withDocument('# Something\n')
     expect(reader().querySelector('.pm-placeholder')).toBeNull()
   })
 })
