@@ -26,11 +26,11 @@
     "@tauri-apps/cli": "~2.11.4",
     "@types/markdown-it": "^14.2.0",
     "@types/node": "^26.6.5",
-    "@vitest/coverage-v8": "^4.1.11",
+    "@vitest/coverage-v8": "^5.0.5",
     "jsdom": "^30.1.2",
     "typescript": "^7.0.2",
     "vite": "^8.3.4",
-    "vitest": "^4.1.11"
+    "vitest": "^5.0.5"
   },
   "dependencies": {
     "@codemirror/autocomplete": "^6.20.3",

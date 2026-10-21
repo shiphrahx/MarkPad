@@ -1,4 +1,4 @@
-import { bench, describe } from 'vitest'
+import { test } from 'vitest'
 import { parseWithTokens } from '../../src/wysiwyg/parser.js'
 import { rememberSource, serialisePreserving } from '../../src/wysiwyg/source-memory.js'
 import { toMarkdown } from '../../src/wysiwyg/serializer.js'
@@ -44,32 +44,49 @@ const FIVE_MB = documentOf(5_000_000)
 const parsed = parseWithTokens(ONE_MB)
 const memory = rememberSource(ONE_MB, parsed.doc, parsed.tokens)
 
-describe('opening', () => {
-  bench('parse 1 MB into reader mode', () => {
+/**
+ * Vitest 5 moved to tinybench 6, which runs 64 iterations for a second by
+ * default where the old one ran 10 for half a second. On multi-megabyte
+ * inputs that would turn a six minute CI step into the best part of an hour, so
+ * these are the old defaults, written down. Keeps the numbers comparable with
+ * earlier runs too.
+ */
+const RUN = { time: 500, iterations: 10, warmupTime: 100, warmupIterations: 5 }
+
+// Benchmarks run inside ordinary tests now, so they inherit the 60 second test
+// timeout. Serialising 1 MB from scratch takes ten seconds a go on its own.
+const SLOW = { timeout: 10 * 60_000 }
+
+test('opening', SLOW, async ({ bench }) => {
+  await bench('parse 1 MB into reader mode', () => {
     parseWithTokens(ONE_MB)
-  })
+  }).run(RUN)
 
-  bench('parse 5 MB into reader mode', () => {
+  await bench('parse 5 MB into reader mode', () => {
     parseWithTokens(FIVE_MB)
-  }, { iterations: 3 })
+  }).run({ ...RUN, iterations: 3 })
 })
 
-describe('when typing pauses, 1 MB', () => {
-  bench('save, keeping untouched blocks', () => {
-    serialisePreserving(parsed.doc, memory)
-  })
-
-  bench('save, serialising everything', () => {
-    toMarkdown(parsed.doc)
-  })
+test('when typing pauses, 1 MB', SLOW, async ({ bench }) => {
+  await bench.compare(
+    bench('save, keeping untouched blocks', () => {
+      serialisePreserving(parsed.doc, memory)
+    }),
+    bench('save, serialising everything', () => {
+      toMarkdown(parsed.doc)
+    }),
+    RUN,
+  )
 })
 
-describe('when typing pauses, 5 MB', () => {
-  bench('count words', () => {
-    countWords(FIVE_MB)
-  })
-
-  bench('find headings', () => {
-    extractHeadings(FIVE_MB)
-  })
+test('when typing pauses, 5 MB', SLOW, async ({ bench }) => {
+  await bench.compare(
+    bench('count words', () => {
+      countWords(FIVE_MB)
+    }),
+    bench('find headings', () => {
+      extractHeadings(FIVE_MB)
+    }),
+    RUN,
+  )
 })
