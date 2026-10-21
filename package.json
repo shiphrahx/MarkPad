@@ -48,7 +48,7 @@
     "dompurify": "^3.4.16",
     "katex": "^0.18.11",
     "lowlight": "^3.3.0",
-    "markdown-it": "^14.3.2",
+    "markdown-it": "^14.3.3",
     "mermaid": "^11.17.2",
     "prosemirror-commands": "^1.7.2",
     "prosemirror-dropcursor": "^1.8.4",
