@@ -9,6 +9,14 @@ updates:
       interval: weekly
     ignore:
       - dependency-name: '@tauri-apps/*'
+      # mermaid 12 needs Safari 17.4 and we still support macOS 13, which
+      # ships with Safari 16. Diagrams would stop drawing there.
+      - dependency-name: mermaid
+        update-types: ['version-update:semver-major']
+      # prosemirror-markdown still pins markdown-it 14, so 15 would mean two
+      # copies of the parser (see 0005). 15 also drops fuzzy linkify.
+      - dependency-name: markdown-it
+        update-types: ['version-update:semver-major']
     groups:
       npm:
         patterns: ['*']
