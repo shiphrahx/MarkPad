@@ -51,8 +51,8 @@ importers:
         specifier: ^3.4.17
         version: 3.4.17
       katex:
-        specifier: ^0.18.11
-        version: 0.18.11
+        specifier: ^0.19.0
+        version: 0.19.0
       lowlight:
         specifier: ^3.3.0
         version: 3.3.0
@@ -1168,6 +1168,10 @@ packages:
   katex@0.18.11:
     resolution: {integrity: sha512-yvyz/2VMKqoho/35Hat5w37wIEdWJ5ElVMidTAlWrxr5uW4aBGsEpveTmKh18/zw08v/7lGswCPon4OhqmqrTA==}
     deprecated: Accidentally published with breaking changes. Use 0.19.0 instead.
+    hasBin: true
+
+  katex@0.19.0:
+    resolution: {integrity: sha512-v6Tznz3zJ7u3niRCoDTsumM2+HA2XXcCu+WAacCeHD2z3p9A9Ks987o5FzfTGBN0e8A0vjEgIDvLbICrXpdw/Q==}
     hasBin: true
 
   khroma@2.1.0:
@@ -2588,6 +2592,10 @@ snapshots:
       - '@noble/hashes'
 
   katex@0.18.11:
+    dependencies:
+      commander: 15.0.0
+
+  katex@0.19.0:
     dependencies:
       commander: 15.0.0
 
